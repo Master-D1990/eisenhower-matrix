@@ -238,6 +238,7 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 /* Cards */
 .task-card{height:34px;flex:0 0 34px;display:flex;align-items:center;gap:5px;padding:0 4px 0 7px;margin:3px 0;border:1px solid var(--line);border-radius:6px;background:var(--field);cursor:grab;position:relative;user-select:none;min-width:0}
 .cell .task-card{height:clamp(32px,9.5cqw,46px);flex-basis:clamp(32px,9.5cqw,46px)}
+.task-card.has-label{background:color-mix(in srgb,var(--lt) 11%,var(--field));border-color:color-mix(in srgb,var(--lt) 35%,var(--line))}
 .task-card:hover{background:var(--hover);border-color:var(--faint)}
 .task-card:active{cursor:grabbing}
 .task-card.dragging{opacity:.4}
@@ -272,7 +273,7 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 body.dragging #dropDone{transform:translate(-50%,0);pointer-events:auto;visibility:visible;transition:transform .18s}
 #dropDone.over{background:color-mix(in srgb,var(--g) 14%,var(--panel))}
 .card-stripes{position:absolute;left:0;top:0;bottom:0;display:flex;border-radius:5px 0 0 5px;overflow:hidden;pointer-events:none}
-.card-stripes i{display:block;width:3px;height:100%}
+.card-stripes i{display:block;width:5px;height:100%}
 
 /* Labels */
 .chip{--lc:var(--muted);--chip-ink:#fff;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--lc);border-radius:999px;padding:1px 8px;font-size:12px;line-height:1.6;cursor:pointer;background:transparent;color:var(--text);max-width:100%}
@@ -991,7 +992,7 @@ de:{
   origin:'Herkunft', inboxOption:'Ablage', noDesc:'(keine Beschreibung)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label-Name', noLabels:'Noch keine Labels',
   labelVisible:'Label anzeigen oder ausblenden', labelColor:'Farbe ändern (Klick wechselt die Farbe)', labelRename:'Klicken zum Umbenennen', labelDelete:'Label löschen',
-  showAllLabels:'Alle zeigen', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
+  showAllLabels:'Alle zeigen', hideAllLabels:'Alle ausblenden', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
   settings:'Einstellungen', settingsT:'Einstellungen öffnen',
   setMatrix:'Matrix', setAxes:'Achsen', setDisplay:'Darstellung', setCustom:'Eigene:',
   setShowAxes:'Achsen anzeigen', setUseInbox:'Ablage verwenden', setUseInboxHint:'Zuerst die Tasks in der Ablage einordnen oder erledigen.', setManageLabels:'Labels verwalten …', setNewLabel:'+ Neues Label',
@@ -1096,7 +1097,7 @@ en:{
   origin:'Origin', inboxOption:'Inbox', noDesc:'(no description)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label name', noLabels:'No labels yet',
   labelVisible:'Show or hide the label', labelColor:'Change colour (click cycles the colour)', labelRename:'Click to rename', labelDelete:'Delete label',
-  showAllLabels:'Show all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
+  showAllLabels:'Show all', hideAllLabels:'Hide all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
   settings:'Settings', settingsT:'Open settings',
   setMatrix:'Matrix', setAxes:'Axes', setDisplay:'Appearance', setCustom:'Custom:',
   setShowAxes:'Show axes', setUseInbox:'Use the inbox', setUseInboxHint:'First sort or finish the tasks in the inbox.', setManageLabels:'Manage labels …', setNewLabel:'+ New label',
@@ -1644,6 +1645,7 @@ function updateFilterDot(){
 function applyFilterChange(){saveFilter();renderBoard();renderInbox();renderMobile();if(ui.archiveOpen)renderArchive();refreshHeader();}
 function setLabelVisible(id,visible){if(visible)filter.hidden.delete(id);else filter.hidden.add(id);applyFilterChange();}
 function showAllLabels(){filter.hidden.clear();filter.none=true;applyFilterChange();renderLabelsMenu();}
+function hideAllLabels(){filter.hidden=new Set(state.labels.map(l=>l.id));filter.none=false;applyFilterChange();renderLabelsMenu();}
 function setLocalAt(v){try{localStorage.setItem('em-localat',String(v));}catch(e){}}
 function getLocalAt(){try{return Number(localStorage.getItem('em-localat')||0)||0;}catch(e){return 0;}}
 const autoSaveSupported=()=>typeof window!=='undefined'&&!!window.showSaveFilePicker;
@@ -1764,6 +1766,7 @@ function renderLabelsMenu(){
   const ncb=document.createElement('input'); ncb.type='checkbox'; ncb.checked=filter.none; ncb.dataset.labelNone='1'; noneRow.append(ncb);
   const ntx=document.createElement('span'); ntx.className='label-name'; ntx.style.cursor='default'; ntx.textContent=t('noLabelTasks'); noneRow.append(ntx); list.append(noneRow);
   const all=document.createElement('button'); all.type='button'; all.dataset.labelAction='showall'; all.textContent=t('showAllLabels'); list.append(all);
+  const none=document.createElement('button'); none.type='button'; none.dataset.labelAction='hideall'; none.textContent=t('hideAllLabels'); list.append(none);
   list.append(document.createElement('hr'));
   const manage=document.createElement('button'); manage.type='button'; manage.dataset.labelAction='manage'; manage.textContent=t('setManageLabels'); list.append(manage);
   updateFilterDot();
@@ -2373,7 +2376,8 @@ function taskCard(task){
     const stripes=document.createElement('span'); stripes.className='card-stripes';
     labels.slice(0,3).forEach(l=>{const s=document.createElement('i');s.style.background=displayLabelColor(l.color);stripes.append(s);});
     el.append(stripes);
-    el.style.paddingLeft=(7+3*Math.min(labels.length,3))+'px';
+    el.style.paddingLeft=(8+5*Math.min(labels.length,3))+'px';
+    el.classList.add('has-label'); el.style.setProperty('--lt',displayLabelColor(labels[0].color));
   }
   const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title||t('untitled'); el.append(title);
   const meta=document.createElement('span'); meta.className='task-meta';
@@ -2886,7 +2890,7 @@ function buildMobileMenu(){
   if(!state.labels.length){const e=document.createElement('div');e.className='label-empty';e.textContent=t('noLabels');list.append(e);}
   state.labels.forEach(l=>add(l.name,'label:'+l.id,!filter.hidden.has(l.id)));
   add(t('noLabelTasks'),'label:none',filter.none);
-  add(t('showAllLabels'),'label:showall');
+  add(t('showAllLabels'),'label:showall'); add(t('hideAllLabels'),'label:hideall');
   sep();
   if(coinsOn()) add(t('account')+' · 🪙 '+coinsState().balance,'account');
   add(t('archive'),'archive'); add(t('settings'),'settings'); add(t('helpBtn'),'help');
@@ -3306,6 +3310,7 @@ function performAction(a){
   if(typeof a==='string'&&a.startsWith('label:')){
     const id=a.slice(6);
     if(id==='showall') showAllLabels();
+    else if(id==='hideall') hideAllLabels();
     else if(id==='none'){filter.none=!filter.none;applyFilterChange();}
     else setLabelVisible(id,filter.hidden.has(id));
     return;
@@ -4001,6 +4006,7 @@ $('#labelsMenuList').addEventListener('click',e=>{
   const act=e.target.closest('[data-label-action]');
   if(act){
     if(act.dataset.labelAction==='showall') showAllLabels();
+    else if(act.dataset.labelAction==='hideall') hideAllLabels();
     else if(act.dataset.labelAction==='create') createLabelFromMenu();
     else if(act.dataset.labelAction==='manage'){closeMenus();openSettings('labels');}
   }
