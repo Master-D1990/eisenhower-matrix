@@ -238,8 +238,8 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .cell-scroll::-webkit-scrollbar-thumb,#inboxBody::-webkit-scrollbar-thumb,.drawer-body::-webkit-scrollbar-thumb,#mobileCellList::-webkit-scrollbar-thumb{background:var(--empty);border-radius:4px}
 
 /* Cards */
-.task-card{height:34px;flex:0 0 34px;display:flex;align-items:center;gap:5px;padding:0 4px 0 7px;margin:3px 0;border:1px solid var(--line);border-radius:6px;background:var(--field);cursor:grab;position:relative;user-select:none;min-width:0}
-.cell .task-card{height:clamp(32px,9.5cqw,46px);flex-basis:clamp(32px,9.5cqw,46px)}
+.task-card{height:calc(34px*var(--tfs,1));flex:0 0 calc(34px*var(--tfs,1));display:flex;align-items:center;gap:5px;padding:0 4px 0 7px;margin:3px 0;border:1px solid var(--line);border-radius:6px;background:var(--field);cursor:grab;position:relative;user-select:none;min-width:0}
+.cell .task-card{height:clamp(calc(32px*var(--tfs,1)),calc(9.5cqw*var(--tfs,1)),calc(46px*var(--tfs,1)));flex-basis:clamp(calc(32px*var(--tfs,1)),calc(9.5cqw*var(--tfs,1)),calc(46px*var(--tfs,1)))}
 .task-card.has-label{background:color-mix(in srgb,var(--lt) 11%,var(--field));border-color:color-mix(in srgb,var(--lt) 35%,var(--line))}
 .task-card:hover{background:var(--hover);border-color:var(--faint)}
 .task-card:active{cursor:grabbing}
@@ -249,17 +249,17 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .task-card.drop-before::before,.task-card.drop-after::after{content:"";position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:2px;z-index:3}
 .task-card.drop-before::before{top:-3px}
 .task-card.drop-after::after{bottom:-3px}
-.task-title{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.2}
+.task-title{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12.5px*var(--tfs,1));line-height:1.2}
 /* hovering a cut title unfolds it over the cards below (up to 3 lines), nothing shifts */
 .task-card.expand{z-index:6}
 .task-card.expand .task-done{position:absolute;right:5px;top:5px;width:21px;border-width:1px;margin:0;opacity:1}
 .task-card.expand .task-title{position:absolute;left:-1px;right:-1px;top:-1px;white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;background:var(--hover);border:1px solid var(--faint);border-radius:6px;padding:.55em 2.4em .55em .7em;box-shadow:var(--shadow);line-height:1.3;pointer-events:none}
-.cell .task-title{font-size:clamp(12px,3.2cqw,15px)}
-.task-meta{display:flex;align-items:center;gap:4px;flex:0 0 auto;font-size:10.5px}
-.cell .task-meta{font-size:clamp(10px,2.4cqw,12.5px)}
+.cell .task-title{font-size:clamp(calc(12px*var(--tfs,1)),calc(3.2cqw*var(--tfs,1)),calc(15px*var(--tfs,1)))}
+.task-meta{display:flex;align-items:center;gap:4px;flex:0 0 auto;font-size:calc(10.5px*var(--tfs,1))}
+.cell .task-meta{font-size:clamp(calc(10px*var(--tfs,1)),calc(2.4cqw*var(--tfs,1)),calc(12.5px*var(--tfs,1)))}
 .descmark{font-size:0;line-height:0;flex:0 0 auto}.descmark::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--faint)}
-.due{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 3px;line-height:15px;white-space:nowrap;background:var(--panel)}
-.coins-badge{color:var(--coin-ink);border:1px solid var(--coin-line);border-radius:4px;padding:0 3px;line-height:15px;white-space:nowrap;background:var(--coin-bg);font-weight:700;flex:0 0 auto}
+.due{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--panel)}
+.coins-badge{color:var(--coin-ink);border:1px solid var(--coin-line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--coin-bg);font-weight:700;flex:0 0 auto}
 .coin-float{position:fixed;z-index:260;transform:translate(-50%,-50%);color:var(--coin-ink);font-weight:800;font-size:17px;text-shadow:0 1px 2px var(--panel),0 0 6px var(--panel);pointer-events:none;animation:coinRise .7s ease-out forwards}
 @keyframes coinRise{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}18%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 42px)) scale(1.08)}}
 .due.soon{color:#6b4300;background:#ffedc2;border-color:#ecc66d}
@@ -442,6 +442,8 @@ label.set-row{justify-content:space-between;cursor:pointer}
 .set-tint input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:14px;border-radius:7px;margin:0;border:1px solid var(--line);cursor:pointer;background:linear-gradient(to right,var(--panel),color-mix(in oklab,var(--r) 45%,var(--panel)))}
 .set-tint input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--panel);border:2px solid var(--text);cursor:pointer}
 .set-tint input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--text);cursor:pointer}
+.set-tint>span:first-child{min-width:9.5em}
+#setTaskFont{background:var(--empty)}
 .set-tint output{font:11px ui-monospace,monospace;text-align:right;color:var(--text)}
 .linkbtn{border:0;background:transparent;color:var(--accent);cursor:pointer;padding:0;font-size:12px;text-decoration:underline;white-space:nowrap}
 
@@ -641,7 +643,8 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   .drawer{top:0;left:0;right:0;bottom:0;width:auto;max-width:none;border-left:0;box-shadow:none}
   .drawer-head{min-height:50px;padding:10px 12px}
   .drawer-body{padding:12px}
-  .task-card{height:40px;flex-basis:40px;font-size:13px;cursor:pointer}
+  .task-card{height:calc(40px*var(--tfs,1));flex-basis:calc(40px*var(--tfs,1));font-size:13px;cursor:pointer}
+  .task-title{font-size:calc(13px*var(--tfs,1))}
   .task-done{display:none}
   .cell-scroll{display:none}
   dialog{width:calc(100% - 16px);padding:16px;max-height:calc(100vh - 16px)}
@@ -890,6 +893,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <div class="set-row"><span class="seg" id="setThemeSeg"><button type="button" data-th="auto"></button><button type="button" data-th="light"></button><button type="button" data-th="dark"></button></span></div>
       <div class="set-row"><span class="seg" id="setLangSeg"><button type="button" data-lang="de">DE</button><button type="button" data-lang="en">EN</button></span></div>
       <div class="set-row set-tint"><span data-i18n="tintLabel"></span><input type="range" id="setTint" min="0" max="100" step="1" data-i18n-aria="tintLabel"><output id="setTintOut"></output><button type="button" class="linkbtn" id="setTintReset" data-i18n="resetShort"></button></div>
+      <div class="set-row set-tint"><span data-i18n="taskFontLabel"></span><input type="range" id="setTaskFont" min="80" max="160" step="5" data-i18n-aria="taskFontLabel"><output id="setTaskFontOut"></output><button type="button" class="linkbtn" id="setTaskFontReset" data-i18n="resetShort"></button></div>
     </section>
   </div>
 </dialog>
@@ -1061,7 +1065,7 @@ de:{
   swapAxes:'⇄ Achsen tauschen', swapAxesT:'Achsen tauschen', swapped:'Achsen getauscht. Rückgängig mit Strg+Z',
   swapHint:(x,y)=>x+' waagrecht, '+y+' senkrecht', hideAxes:'Achsen ausblenden',
   flipDirT:n=>'Richtung umkehren: '+n, flipAxis:n=>n+' umkehren', flipDone:'Richtung umgekehrt. Rückgängig mit Strg+Z',
-  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', resetShort:'Zurücksetzen',
+  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen',
   labelColorPop:'Label-Farbe', hexColor:'Hex-Farbe', channelR:'Rot', channelG:'Grün', channelB:'Blau',
   sampleTitle:'Meine Matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Feld', csvCellName:'Feldname', csvTitle:'Titel', csvDesc:'Beschreibung', csvCoins:'Münzen', csvDue:'Frist', csvCreated:'Erstellt', csvDone:'Erledigt',
@@ -1166,7 +1170,7 @@ en:{
   swapAxes:'⇄ Swap axes', swapAxesT:'Swap axes', swapped:'Axes swapped. Undo with Ctrl+Z',
   swapHint:(x,y)=>x+' horizontal, '+y+' vertical', hideAxes:'Hide axes',
   flipDirT:n=>'Reverse direction: '+n, flipAxis:n=>'Reverse '+n, flipDone:'Direction reversed. Undo with Ctrl+Z',
-  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', resetShort:'Reset',
+  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset',
   labelColorPop:'Label colour', hexColor:'Hex colour', channelR:'Red', channelG:'Green', channelB:'Blue',
   sampleTitle:'My matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Cell', csvCellName:'Cell name', csvTitle:'Title', csvDesc:'Description', csvCoins:'Coins', csvDue:'Due', csvCreated:'Created', csvDone:'Done',
@@ -3082,6 +3086,22 @@ function setTint(v,{save=true}={}){
   scheduleHeadContrast();
 }
 
+/* view preference: font size of the task cards (80 to 160 %) */
+let taskFont=100;
+function clampTaskFont(v){const n=Math.round(Number(v)/5)*5;return Number.isFinite(n)?clamp(n,80,160):100;}
+function applyTaskFont(){
+  document.documentElement.style.setProperty('--tfs',String(taskFont/100));
+  const out=$('#setTaskFontOut'), inp=$('#setTaskFont');
+  if(out) out.textContent=taskFont+' %';
+  if(inp&&inp.value!==String(taskFont)) inp.value=String(taskFont);
+}
+function loadTaskFont(){try{const v=localStorage.getItem('em-taskfont');if(v!=null)taskFont=clampTaskFont(v);}catch(e){}applyTaskFont();}
+function setTaskFont(v){
+  taskFont=clampTaskFont(v);
+  try{localStorage.setItem('em-taskfont',String(taskFont));}catch(e){}
+  applyTaskFont(); updateFades();
+}
+
 /* ---------- task operations ---------- */
 function addTask(title,cell){
   title=String(title||'').trim().slice(0,MAX_TITLE); if(!title) return;
@@ -3697,6 +3717,8 @@ $('#setFlipX').addEventListener('click',()=>{flipAxis('x');renderSettingsMatrix(
 $('#setUseInbox').addEventListener('change',e=>setUseInbox(e.target.checked));
 $('#setTint').addEventListener('input',e=>setTint(e.target.value));
 $('#setTintReset').addEventListener('click',()=>setTint(26));
+$('#setTaskFont').addEventListener('input',e=>setTaskFont(e.target.value));
+$('#setTaskFontReset').addEventListener('click',()=>setTaskFont(100));
 $('#setThemeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(b){setTheme(b.dataset.th);renderSettingsDisplay();}});
 $('#setLangSeg').addEventListener('click',e=>{const b=e.target.closest('[data-lang]');if(b&&b.dataset.lang!==LANG)setLang(b.dataset.lang);});
 $('#setLabelAdd').addEventListener('click',addLabelFromSettings);
@@ -4144,7 +4166,7 @@ function init(){
   if(!Array.isArray(state.labels)) state.labels=[];
   ui.mobileCell=null; ui.detailId=null; ui.archiveOpen=false; ui.search=''; ui.archiveQuery='';
   ui.inboxOpen=initialInboxOpen();
-  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTint();
+  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
   restoreStoredHandle();
