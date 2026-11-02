@@ -1341,7 +1341,7 @@ try{const v=localStorage.getItem('em-autosave');if(v==='0')autoSavePref=false;el
 let filter={hidden:new Set(),none:true};
 let pendingHandle=null;
 let axesHidden=false;
-let axisBtns=true;
+let axisBtns=false;
 let tint=26;
 
 function isValidDateStr(s){
@@ -2477,7 +2477,7 @@ function renderBoard(){
   for(let r=0;r<state.rows;r++){
     for(let c=0;c<state.cols;c++) board.append(cellElement(r,c,cellRow,cellCol));
   }
-  if(yAx&&xAx){
+  if(yAx&&xAx&&axisBtns){
     const sw=document.createElement('button');
     sw.type='button'; sw.className='ax-origin-btn'; sw.dataset.swapAxes='1';
     sw.textContent='⇄'; sw.title=t('swapAxesT'); sw.setAttribute('aria-label',t('swapAxesT'));
@@ -3033,7 +3033,7 @@ function setAxesHidden(v){
 }
 function toggleAxesHidden(){setAxesHidden(!axesHidden);}
 /* view preference: show the small flip buttons in the axis titles */
-function loadAxisBtns(){try{axisBtns=localStorage.getItem('em-axisbtns')!=='0';}catch(e){axisBtns=true;}}
+function loadAxisBtns(){try{axisBtns=localStorage.getItem('em-axisbtns')==='1';}catch(e){axisBtns=false;}}
 function setAxisBtns(v){
   axisBtns=!!v;
   try{localStorage.setItem('em-axisbtns',axisBtns?'1':'0');}catch(e){}
