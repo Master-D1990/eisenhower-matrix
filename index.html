@@ -2175,7 +2175,7 @@ async function driveSave(){
         console.warn('drive merge failed',e);
       }
       if(merged){
-        replaceWithState(merged.state,{dirty:true,handle:null,autoWrite:false});
+        applyRemoteState(merged.state,{dirty:true});
         gdriveMode=true;
         mergedConflicts=merged.conflicts;
         rev=stateRev;
@@ -2212,6 +2212,7 @@ const GDRIVE_PULL_MS=15000;
 async function drivePull(){
   if(!gdriveMode||!gdrive||gdriveSaving||gdriveSaveTimer||dirty||!hasDriveAuth()) return;
   if(document.visibilityState!=='visible'||gdriveStatusState!=='saved') return;
+  if(userBusy()) return;   // try again at the next tick
   gdriveSaving=true;
   const rev=stateRev;
   try{
@@ -2220,7 +2221,7 @@ async function drivePull(){
       const text=await driveRead(gdrive.fileId);
       if(stateRev!==rev||dirty){gdriveAgain=true;return;}   // edited meanwhile: the next save merges
       const next=parseFileText(text);                         // nothing local pending: remote = merge result
-      replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
+      applyRemoteState(next,{dirty:false});
       gdriveMode=true;
       saveDriveBase(text);
       saveDriveConn({fileId:gdrive.fileId,name:meta.name||gdrive.name,version:meta.version});
@@ -2356,7 +2357,7 @@ async function continueDrive(){
     try{ merged=mergeStates(loadDriveBaseState(),state,next); }
     catch(err){ console.warn('drive merge failed',err); }
     if(merged){
-      replaceWithState(merged.state,{dirty:true,handle:null,autoWrite:false});
+      applyRemoteState(merged.state,{dirty:true});
       gdriveMode=true;
       saveDriveBase(remoteText);
       if(matrixComparable(merged.state)!==matrixComparable(next)){
@@ -2386,7 +2387,7 @@ async function continueDrive(){
     let loadRemote=remoteNewer;
     if(remoteNewer&&dirty) loadRemote=confirm(t('gdriveContinueAsk'));
     if(loadRemote){
-      replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
+      applyRemoteState(next,{dirty:false});
       gdriveMode=true;
       saveDriveBase(remoteText);
       setDriveStatus('saved');
@@ -4188,6 +4189,23 @@ function newMatrix(){
 }
 
 /* ---------- load, save, files ---------- */
+/* take over a state from Google Drive without disturbing what the user is doing:
+   open detail, archive, menus, search, phone field and scroll positions stay; fields being typed in are not touched */
+function applyRemoteState(next,{dirty:newDirty=false}={}){
+  state=next; dirty=!!newDirty; stateRev++;
+  if(!Array.isArray(state.labels)) state.labels=[];
+  if(!state.coins||typeof state.coins!=='object'||Array.isArray(state.coins)) state.coins={enabled:false,balance:0,rewards:[],log:[]};
+  setExampleMode(false);
+  resetHistory();            // undo would otherwise revert the other device's changes
+  validateUi(); renderAllDynamic(); saveLocal(true);
+  taskModSnap=taskModMap();
+}
+/* do not pull while the user is typing, dragging or has a field focused */
+function userBusy(){
+  const ae=document.activeElement;
+  if(ae&&ae!==document.body&&(/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)||ae.isContentEditable)) return true;
+  return !!dragTaskId||document.body.classList.contains('dragging');
+}
 function replaceWithState(next,{dirty:newDirty=false,handle=null,autoWrite:newAuto=false,example=false,localAt=null}={}){
   state=next; fileHandle=handle; autoWrite=!!newAuto&&!!handle; dirty=!!newDirty; stateRev++;
   if(!Array.isArray(state.labels)) state.labels=[];

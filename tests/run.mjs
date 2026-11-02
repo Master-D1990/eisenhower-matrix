@@ -336,6 +336,17 @@ async function main() {
     await p.ev(`drivePull()`); await sleep(300);
     check(await p.ev(`state.tasks.some(t=>t.id==='other2')`), 'change of the other device pulled');
     check(await p.ev(`__drive.ver`) === v0, 'pulling does not write to Drive (no ping-pong)');
+    // taking over changes must not interrupt: open detail stays open; while typing nothing is pulled
+    const openId = await p.ev(`state.tasks[0].id`);
+    await p.ev(`openDetail('${openId}')`); await sleep(200);
+    await p.ev(`(()=>{const f=__drive.files[0],s=JSON.parse(f.content);s.tasks.push({...s.tasks[0],id:'other3',title:'quiet',mod:new Date().toISOString()});f.content=JSON.stringify(s);f.version=String(++__drive.ver);})()`);
+    await p.ev(`document.querySelector('#search').focus()`);
+    await p.ev(`drivePull()`); await sleep(300);
+    check(!(await p.ev(`state.tasks.some(t=>t.id==='other3')`)), 'no pull while a field is focused');
+    await p.ev(`document.activeElement.blur(); drivePull()`); await sleep(300);
+    check(await p.ev(`state.tasks.some(t=>t.id==='other3')`), 'pulled after leaving the field');
+    check(await p.ev(`ui.detailId==='${openId}' && !document.querySelector('#detailDrawer').hidden`), 'detail stayed open while taking over changes');
+    await p.ev(`closeDetail()`);
     // the other device deletes a task, this one edits something else: the deletion must win
     const gone = await p.ev(`state.tasks[0].id`);
     await p.ev(`(()=>{const f=__drive.files[0],s=JSON.parse(f.content);s.tasks=s.tasks.filter(t=>t.id!=='${gone}');f.content=JSON.stringify(s);f.version=String(++__drive.ver);})()`);
