@@ -711,6 +711,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <span class="sp-auto"><span data-i18n="autoSave"></span><button class="auto-switch" id="autoSwitchPop" type="button" role="switch" aria-checked="false"><span class="sw"></span><span data-i18n="autoShort"></span></button></span>
       <button class="btn" type="button" data-save-action="save-as" data-i18n="saveAs"></button>
       <button class="btn" type="button" data-save-action="open-other" data-i18n="openOther"></button>
+      <button class="btn" type="button" id="savePopDisconnect" data-save-action="gdrive-disconnect" data-i18n="gdriveDisconnect" hidden></button>
     </span>
   </span>
   <span class="continue-bar" id="continueBar" hidden>
@@ -728,6 +729,9 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <button data-action="saveAs" data-i18n="saveAs"></button>
       <hr>
       <button data-action="downloadTool" data-i18n="downloadTool"></button>
+      <hr id="fileDriveSep">
+      <button data-action="driveConnect" id="fileDriveConnect" data-i18n="gdriveConnect"></button>
+      <button data-action="driveDisconnect" id="fileDriveDisconnect" data-i18n="gdriveDisconnect"></button>
     </span>
   </span>
   <button class="btn desktop-only" id="saveBtn" data-i18n="save" data-i18n-title="saveT"></button>
@@ -849,7 +853,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   <ul class="help-list" id="helpList"></ul>
   <div class="offline" id="offlineBox"><button class="btn" id="dlTool" data-i18n="downloadTool"></button><p data-i18n="downloadToolHint"></p></div>
   <div class="dlg-foot"><button class="btn" id="loadExample" data-i18n="loadExample"></button><span class="spacer"></span><button class="btn primary" id="helpOk" data-i18n="helpOk"></button></div>
-  <p class="repo"><span data-i18n="licenseNote"></span> <a href="https://github.com/Master-D1990/eisenhower-matrix" target="_blank" rel="noopener">GitHub</a></p>
+  <p class="repo"><span data-i18n="licenseNote"></span> <a href="https://github.com/Master-D1990/eisenhower-matrix" target="_blank" rel="noopener">GitHub</a> · <a href="privacy.html" data-i18n="privacy">Datenschutz</a></p>
 </dialog>
 
 <dialog id="settingsDlg" class="settings-dlg" data-i18n-aria="settings" aria-label="Settings">
@@ -973,6 +977,15 @@ const MAX_TASK_COINS=9999, MAX_COIN_BALANCE=999999999, MAX_REWARD_PRICE=999999, 
 /* colour-blind-friendly palette (Okabe-Ito inspired), readable on light and dark */
 const LABEL_PALETTE=['#0072b2','#e69f00','#009e73','#cc79a7','#56b4e9','#d55e00','#8b6bb1','#6b7280'];
 const REPO='https://github.com/Master-D1990/eisenhower-matrix';
+/* ---------- Google Drive (optional) ---------- */
+const GDRIVE_CLIENT_ID='812788676370-2467g9gt6jlkl8j1bssm9vpjiqh44fnd.apps.googleusercontent.com';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const GDRIVE_FILE_NAME='Eisenhower Matrix.matrix.json';
+const GDRIVE_KEY='em-gdrive';
+const GDRIVE_BASE_KEY='em-gdrive-base';
+const DRIVE_API='https://www.googleapis.com/drive/v3/files';
+const DRIVE_UPLOAD='https://www.googleapis.com/upload/drive/v3/files';
+const GDRIVE_VISIBLE=location.protocol==='https:'||location.hostname==='localhost';
 
 /* ---------- language ---------- */
 let LANG='de';
@@ -1037,6 +1050,23 @@ de:{
   continueWith:n=>'Mit «'+n+'» weiterarbeiten',
   permissionDenied:'Keine Schreibberechtigung für diese Datei.', keptLocal:'Lokale Fassung behalten',
   localNewer:'Der lokale Stand ist neuer als die Datei. Lokalen Stand behalten? Abbrechen lädt die Datei.',
+  gdrive:'Google Drive', gdriveConnect:'Mit Google Drive verbinden', gdriveDisconnect:'Google Drive trennen',
+  gdriveContinue:'Mit Google Drive weiterarbeiten',
+  gdriveConnected:n=>'Mit Google Drive verbunden: '+n,
+  gdriveDisconnected:'Google Drive getrennt',
+  gdriveLoading:'Google wird geladen, bitte nochmals klicken',
+  gdriveExistingAsk:'In deinem Google Drive gibt es bereits eine Matrix. OK = diese laden, Abbrechen = die aktuelle Matrix dorthin speichern.',
+  gdriveConflict:'Die Datei in Google Drive wurde inzwischen auf einem anderen Gerät geändert. OK = die Version aus Drive laden (deine letzten Änderungen hier gehen verloren), Abbrechen = mit deiner Version überschreiben.',
+  gdriveContinueAsk:'Die Datei in Google Drive ist neuer als der lokale Stand. OK = Version aus Drive laden, Abbrechen = lokalen Stand behalten und hochladen.',
+  gdriveSaved:'gespeichert', gdriveSaving:'speichert …', gdriveOffline:'offline, wird nachgeholt', gdriveReconnect:'erneut verbinden',
+  gdriveAlwaysOn:'Bei Google Drive immer an',
+  gdriveLoaded:'Aus Google Drive geladen',
+  gdriveMerged:'Änderungen von einem anderen Gerät übernommen',
+  gdriveMergedConflicts:n=>n===1?' (1 Konflikt, jeweils die neuere Änderung behalten)':' ('+n+' Konflikte, jeweils die neuere Änderung behalten)',
+  gdriveMissing:'Die Matrix in Google Drive wurde nicht gefunden.',
+  gdriveMissingHint:'Bitte neu verbinden.',
+  gdriveError:'Google Drive: Verbindung fehlgeschlagen', gdriveAuthFail:'Google-Anmeldung fehlgeschlagen',
+  privacy:'Datenschutz',
   helpH:'So funktioniert Eisenhower Matrix+', helpIntro:'Ordne Aufgaben nach Wichtigkeit (nach oben) und Dringlichkeit (nach rechts). Oben rechts steht, was sofort dran ist.',
   downloadToolHint:'Als HTML-Datei, läuft ohne Internet. <b>Ohne deine Daten.</b>',
   loadExample:'Beispiel öffnen', helpOk:'Los geht\'s', licenseNote:'Open Source (MIT-Lizenz).',
@@ -1134,6 +1164,23 @@ en:{
   continueWith:n=>'Continue with «'+n+'»',
   permissionDenied:'No write permission for this file.', keptLocal:'Kept local version',
   localNewer:'The local version is newer than the file. Keep the local version? Cancel loads the file.',
+  gdrive:'Google Drive', gdriveConnect:'Connect Google Drive', gdriveDisconnect:'Disconnect Google Drive',
+  gdriveContinue:'Continue with Google Drive',
+  gdriveConnected:n=>'Connected to Google Drive: '+n,
+  gdriveDisconnected:'Google Drive disconnected',
+  gdriveLoading:'Loading Google, please click again',
+  gdriveExistingAsk:'There is already a matrix in your Google Drive. OK = load it, Cancel = save the current matrix there.',
+  gdriveConflict:'The file in Google Drive was changed on another device. OK = load the version from Drive (your recent changes here will be lost), Cancel = overwrite with your version.',
+  gdriveContinueAsk:'The file in Google Drive is newer than the local version. OK = load the version from Drive, Cancel = keep the local version and upload it.',
+  gdriveSaved:'saved', gdriveSaving:'saving …', gdriveOffline:'offline, will retry', gdriveReconnect:'reconnect',
+  gdriveAlwaysOn:'Always on with Google Drive',
+  gdriveLoaded:'Loaded from Google Drive',
+  gdriveMerged:'Changes from another device merged',
+  gdriveMergedConflicts:n=>n===1?' (1 conflict, kept the newer change)':' ('+n+' conflicts, kept the newer change)',
+  gdriveMissing:'The matrix in Google Drive was not found.',
+  gdriveMissingHint:'Please connect again.',
+  gdriveError:'Google Drive: connection failed', gdriveAuthFail:'Google sign-in failed',
+  privacy:'Privacy',
   helpH:'How Eisenhower Matrix+ works', helpIntro:'Sort tasks by importance (upwards) and urgency (to the right). Top right is what needs doing now.',
   downloadToolHint:'As an HTML file, runs without internet. <b>Without your data.</b>',
   loadExample:'Open example', helpOk:'Got it', licenseNote:'Open source (MIT License).',
@@ -1331,6 +1378,14 @@ let dirty=false, fileHandle=null, autoWrite=false, stateRev=0;
 let undoStack=[], redoStack=[], editSnap=null, editActive=false;
 const ui={search:'',mobileCell:null,detailId:null,archiveOpen:false,archiveQuery:'',inboxOpen:true,pickTask:null,longPressGuard:0,coinHistoryLimit:100,editReward:null};
 let fileTimer=null,writingFile=false,writeAgain=false,lastSaveError=false;
+/* Google Drive connection state; the access token stays in memory only */
+let gdrive=null;                 // remembered {fileId,name,version}
+let gdriveMode=false;            // true while the matrix is saved to Drive
+let gdriveToken=null, gdriveTokenExp=0, gdriveFirstTime=true;
+let gdriveTokenClient=null, gdrivePending=null, gisPromise=null;
+let gdriveSaveTimer=null, gdriveRetryTimer=null, gdriveSaving=false, gdriveAgain=false;
+let gdriveStatusState='saved';   // saved | saving | offline | auth
+let gdriveContinue=false;        // continue bar refers to Drive
 let inlineAddInput=null, exampleMode=false;
 let autoSavePref=true;
 try{const v=localStorage.getItem('em-autosave');if(v==='0')autoSavePref=false;else if(v==='1')autoSavePref=true;}catch(e){}
@@ -1377,6 +1432,10 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
   const created=reqStr(x.created,path+'.created',40,false);
   if(!isValidISODate(created)) throw new Error(t('invalidReason',path+'.created'));
   const out={id,title,desc,due,cell:reqCoord(x.cell,path+'.cell',rows,cols,true),at:reqAt(x.at,path+'.at'),created,labels:[],coins:reqTaskCoins(x.coins,path+'.coins')};
+  if(x.mod!==undefined&&x.mod!==null){
+    out.mod=reqStr(x.mod,path+'.mod',40,false);
+    if(!isValidISODate(out.mod)) throw new Error(t('invalidReason',path+'.mod'));
+  }
   if(x.labels!==undefined){
     if(!Array.isArray(x.labels)) throw new Error(t('invalidReason',path+'.labels'));
     out.labels=[...new Set(x.labels.filter(l=>typeof l==='string'&&labelIds.has(l)))];
@@ -1676,6 +1735,581 @@ async function idbClearHandle(){
 }
 function showContinueBar(name){const bar=$('#continueBar'),btn=$('#continueBtn');if(!bar||!btn)return;btn.textContent=t('continueWith',name);btn.title=btn.textContent;bar.hidden=false;}
 function hideContinueBar(){const bar=$('#continueBar');if(bar)bar.hidden=true;}
+
+/* ---------- three-way merge (used by the Google Drive sync) ---------- */
+/* base is the last synced Drive content or null; local/remote are validated states */
+function cloneState(st){return JSON.parse(JSON.stringify(st));}
+function entryIndex(st){
+  const m=new Map();
+  for(const e of st.tasks||[]) m.set(e.id,{place:'tasks',entry:e});
+  for(const e of st.archive||[]) m.set(e.id,{place:'archive',entry:e});
+  return m;
+}
+const entryJson=v=>v===undefined?null:JSON.stringify(v);
+const entryEqual=(a,b)=>entryJson(a)===entryJson(b);
+function entryModTime(v){
+  const raw=v&&v.entry&&v.entry.mod;
+  const t=typeof raw==='string'?Date.parse(raw):NaN;
+  return Number.isFinite(t)?t:-Infinity;
+}
+/* both changed: the newer mod wins, ties go to remote (missing mod = oldest) */
+function newerEntry(l,r){return entryModTime(l)>entryModTime(r)?l:r;}
+function mergeStates(base,local,remote){
+  let b=base?cloneState(base):null;
+  let l=cloneState(local);
+  const r=remote;
+  const hasBase=!!b;
+  let conflicts=0;
+
+  /* structure first: bring local (and base) into the structure of remote */
+  if(l.swapped!==r.swapped) l=transposeStateCore(l);
+  if(b&&b.swapped!==r.swapped) b=transposeStateCore(b);
+  if(l.rows!==r.rows||l.cols!==r.cols) l=resizeStateCore(l,r.rows,r.cols,LANG);
+  if(b&&(b.rows!==r.rows||b.cols!==r.cols)) b=resizeStateCore(b,r.rows,r.cols,LANG);
+
+  /* three-way per scalar; with no base remote wins unless it is undefined */
+  const three=(bv,lv,rv,countConflict)=>{
+    if(hasBase){
+      if(lv===bv) return rv;
+      if(rv===bv) return lv;
+      if(lv!==rv&&countConflict) conflicts++;
+      return rv;
+    }
+    return rv===undefined?lv:rv;
+  };
+  /* display-only flips: remote wins unless only local changed them */
+  const mergeFlip=(bv,lv,rv)=>{
+    if(!hasBase) return rv;
+    if(lv===bv) return rv;
+    if(rv===bv) return lv;
+    return rv;
+  };
+
+  const title=three(hasBase?b.title:undefined,l.title,r.title,true);
+  const axisY=three(hasBase?b.axisY:undefined,l.axisY,r.axisY,true);
+  const axisX=three(hasBase?b.axisX:undefined,l.axisX,r.axisX,true);
+  const rowLabels=Array.from({length:r.rows},(_,i)=>three(hasBase?b.rowLabels[i]:undefined,l.rowLabels[i],r.rowLabels[i],true));
+  const colLabels=Array.from({length:r.cols},(_,i)=>three(hasBase?b.colLabels[i]:undefined,l.colLabels[i],r.colLabels[i],true));
+  const cellNames=Array.from({length:r.rows},(_,ri)=>Array.from({length:r.cols},(_,ci)=>
+    three(hasBase?b.cellNames[ri]?.[ci]:undefined,l.cellNames[ri]?.[ci],r.cellNames[ri]?.[ci],true)));
+  const flipX=mergeFlip(hasBase?b.flipX:undefined,l.flipX,r.flipX);
+  const flipY=mergeFlip(hasBase?b.flipY:undefined,l.flipY,r.flipY);
+
+  /* tasks and archive, keyed by id (entries may move between the two lists) */
+  const lIdx=entryIndex(l),rIdx=entryIndex(r),bIdx=b?entryIndex(b):null;
+  const ids=new Set([...lIdx.keys(),...rIdx.keys(),...(bIdx?bIdx.keys():[])]);
+  const chosen=new Map();
+  for(const id of ids){
+    const le=lIdx.get(id),re=rIdx.get(id),be=bIdx?bIdx.get(id):undefined;
+    let pick;
+    if(!bIdx){
+      if(le&&re) pick=newerEntry(le,re);
+      else pick=le||re;
+    }else if(entryEqual(le,be)){
+      pick=re;
+    }else if(entryEqual(re,be)){
+      pick=le;
+    }else if(!le){
+      pick=re;
+    }else if(!re){
+      pick=le;
+    }else{
+      pick=newerEntry(le,re);
+      if(!entryEqual(le,re)) conflicts++;
+    }
+    if(pick) chosen.set(id,pick); else chosen.delete(id);
+  }
+  const orderList=(place,localList,remoteList)=>{
+    const out=remoteList.filter(e=>{const c=chosen.get(e.id);return c&&c.place===place;}).map(e=>e.id);
+    const seen=new Set(out);
+    for(const e of localList){
+      const c=chosen.get(e.id);
+      if(!c||c.place!==place||seen.has(e.id)) continue;
+      let prev=null;
+      for(const p of localList){
+        if(p.id===e.id) break;
+        if(seen.has(p.id)) prev=p.id;
+      }
+      const at=prev?out.indexOf(prev)+1:out.length;
+      out.splice(at,0,e.id); seen.add(e.id);
+    }
+    for(const [id,c] of chosen){
+      if(c.place===place&&!seen.has(id)){out.push(id);seen.add(id);}
+    }
+    return out.map(id=>cloneState(chosen.get(id).entry));
+  };
+  const tasks=orderList('tasks',l.tasks,r.tasks);
+  const archive=orderList('archive',l.archive,r.archive);
+
+  /* labels: same three-way rules; both changed -> remote */
+  const labelList=st=>Array.isArray(st.labels)?st.labels:[];
+  const labelIdx=list=>{const m=new Map();for(const x of list)m.set(x.id,x);return m;};
+  const lLabels=labelIdx(labelList(l)),rLabels=labelIdx(labelList(r)),bLabels=b?labelIdx(labelList(b)):null;
+  const labelIds=new Set([...lLabels.keys(),...rLabels.keys(),...(bLabels?bLabels.keys():[])]);
+  const labelChosen=new Map();
+  for(const id of labelIds){
+    const le=lLabels.get(id),re=rLabels.get(id),be=bLabels?bLabels.get(id):undefined;
+    let pick;
+    if(!bLabels) pick=re||le;
+    else if(JSON.stringify(le)===JSON.stringify(be)) pick=re;
+    else if(JSON.stringify(re)===JSON.stringify(be)) pick=le;
+    else if(!le) pick=re;
+    else if(!re) pick=le;
+    else pick=re;
+    if(pick) labelChosen.set(id,pick);
+  }
+  const labels=[];
+  const takeLabel=x=>{if(!labelChosen.has(x.id))return;labels.push(cloneState(labelChosen.get(x.id)));labelChosen.delete(x.id);};
+  for(const x of labelList(r)) takeLabel(x);
+  for(const x of labelList(l)) takeLabel(x);
+  for(const v of labelChosen.values()) labels.push(cloneState(v));
+
+  /* coins */
+  const lc=l.coins||{},rc=r.coins||{},bc=b?(b.coins||{}):null;
+  const enabled=bc?three(!!bc.enabled,!!lc.enabled,!!rc.enabled,true):(rc.enabled===undefined?!!lc.enabled:!!rc.enabled);
+  const rewardsIdx=list=>{const m=new Map();for(const x of list||[])m.set(x.id,x);return m;};
+  const lRew=rewardsIdx(lc.rewards),rRew=rewardsIdx(rc.rewards),bRew=bc?rewardsIdx(bc.rewards):null;
+  const rewardIds=new Set([...lRew.keys(),...rRew.keys(),...(bRew?bRew.keys():[])]);
+  const rewardChosen=new Map();
+  for(const id of rewardIds){
+    const le=lRew.get(id),re=rRew.get(id),be=bRew?bRew.get(id):undefined;
+    let pick;
+    if(!bRew) pick=re||le;
+    else if(JSON.stringify(le)===JSON.stringify(be)) pick=re;
+    else if(JSON.stringify(re)===JSON.stringify(be)) pick=le;
+    else if(!le) pick=re;
+    else if(!re) pick=le;
+    else pick=re;
+    if(pick) rewardChosen.set(id,pick);
+  }
+  const rewards=[];
+  const takeReward=x=>{if(!rewardChosen.has(x.id))return;rewards.push(cloneState(rewardChosen.get(x.id)));rewardChosen.delete(x.id);};
+  for(const x of rc.rewards||[]) takeReward(x);
+  for(const x of lc.rewards||[]) takeReward(x);
+  for(const v of rewardChosen.values()) rewards.push(cloneState(v));
+
+  /* log: union by id, sorted by at, capped like the validator */
+  const logById=new Map();
+  for(const x of rc.log||[]) logById.set(x.id,x);
+  for(const x of lc.log||[]) if(!logById.has(x.id)) logById.set(x.id,x);
+  if(bc) for(const x of bc.log||[]) if(!logById.has(x.id)) logById.set(x.id,x);
+  let log=[...logById.values()].sort((x,y)=>Date.parse(x.at)-Date.parse(y.at));
+  if(log.length>MAX_COIN_LOG) log=log.slice(-MAX_COIN_LOG);
+
+  /* balance: base plus every log entry that is new on either side */
+  let balance;
+  if(bc){
+    balance=bc.balance||0;
+    const baseIds=new Set((bc.log||[]).map(x=>x.id));
+    for(const x of lc.log||[]) if(!baseIds.has(x.id)) balance+=Number(x.amount)||0;
+    for(const x of rc.log||[]) if(!baseIds.has(x.id)) balance+=Number(x.amount)||0;
+  }else{
+    balance=rc.balance||0;
+    const remoteIds=new Set((rc.log||[]).map(x=>x.id));
+    for(const x of lc.log||[]) if(!remoteIds.has(x.id)) balance+=Number(x.amount)||0;
+  }
+  balance=clamp(Math.round(balance),0,MAX_COIN_BALANCE);
+
+  const raw={format:FORMAT,version:VERSION,title,rows:r.rows,cols:r.cols,swapped:r.swapped,flipX,flipY,axisY,axisX,
+    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:{enabled,balance,rewards,log},savedAt:isoNow()};
+  return {state:validateState(raw),conflicts};
+}
+
+/* ---------- Google Drive: auth, REST and saving ---------- */
+function driveAvailable(){return GDRIVE_VISIBLE;}
+function gisLoaded(){return !!(window.google&&window.google.accounts&&window.google.accounts.oauth2);}
+/* lazily load the Google Identity Services client; cached promise */
+function loadGis(){
+  if(gisPromise) return gisPromise;
+  gisPromise=new Promise((resolve,reject)=>{
+    if(gisLoaded()) return resolve();
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client'; s.async=true; s.defer=true;
+    s.onload=()=>resolve();
+    s.onerror=()=>{gisPromise=null;reject(new Error('gis'));};
+    document.head.append(s);
+  });
+  return gisPromise;
+}
+function clearGdriveToken(){gdriveToken=null;gdriveTokenExp=0;}
+function validGdriveToken(){return !!(gdriveToken&&Date.now()<gdriveTokenExp);}
+/* a non-interactive auth failure has status 401 like an expired token */
+function gdriveAuthError(){const e=new Error('auth');e.status=401;return e;}
+async function getToken(interactive){
+  if(validGdriveToken()) return gdriveToken;
+  if(!interactive) throw gdriveAuthError();
+  if(!gisLoaded()) await loadGis();
+  if(!gisLoaded()) throw new Error('gis');
+  if(!gdriveTokenClient){
+    gdriveTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID, scope:GDRIVE_SCOPE,
+      callback:resp=>{
+        const p=gdrivePending; gdrivePending=null;
+        if(!p) return;
+        if(resp&&resp.access_token){
+          gdriveToken=resp.access_token;
+          const secs=Number(resp.expires_in)||3600;
+          gdriveTokenExp=Date.now()+secs*1000-60000;
+          p.resolve(gdriveToken);
+        }else p.reject(new Error('auth'));
+      }
+    });
+  }
+  return await new Promise((resolve,reject)=>{
+    gdrivePending={resolve,reject};
+    try{
+      gdriveTokenClient.requestAccessToken({prompt:gdriveFirstTime?'consent':''});
+      gdriveFirstTime=false;
+    }catch(e){gdrivePending=null;reject(e);}
+  });
+}
+function loadDriveConn(){
+  try{
+    const raw=localStorage.getItem(GDRIVE_KEY);
+    if(!raw) return null;
+    const v=JSON.parse(raw);
+    if(v&&typeof v.fileId==='string'&&v.fileId) return {fileId:v.fileId,name:String(v.name||GDRIVE_FILE_NAME),version:String(v.version||'')};
+  }catch(e){}
+  return null;
+}
+function saveDriveConn(v){
+  gdrive=v;
+  try{ if(v) localStorage.setItem(GDRIVE_KEY,JSON.stringify(v)); else localStorage.removeItem(GDRIVE_KEY); }catch(e){}
+}
+/* exact JSON text last read from or written to Drive: the merge base */
+function loadDriveBaseText(){
+  try{ return localStorage.getItem(GDRIVE_BASE_KEY); }catch(e){ return null; }
+}
+function loadDriveBaseState(){
+  const text=loadDriveBaseText();
+  if(!text) return null;
+  try{ return parseFileText(text); }catch(e){ return null; }
+}
+function saveDriveBase(text){
+  try{ if(text==null) localStorage.removeItem(GDRIVE_BASE_KEY); else localStorage.setItem(GDRIVE_BASE_KEY,text); }catch(e){}
+}
+function mergeWithRemote(text){
+  return mergeStates(loadDriveBaseState(),state,parseFileText(text));
+}
+function mergedToast(n){
+  toast(t('gdriveMerged')+(n>0?t('gdriveMergedConflicts',n):''));
+}
+async function driveFetch(url,opts={}){
+  const token=await getToken(false);
+  let res;
+  try{
+    res=await fetch(url,{...opts,headers:Object.assign({},opts.headers||{},{Authorization:'Bearer '+token})});
+  }catch(e){
+    const err=new Error('network'); err.status=0; throw err;
+  }
+  if(res.status===401){clearGdriveToken();throw gdriveAuthError();}
+  if(!res.ok){const err=new Error('drive '+res.status);err.status=res.status;throw err;}
+  return res;
+}
+async function driveFind(){
+  const q=encodeURIComponent("name='"+GDRIVE_FILE_NAME+"' and trashed=false");
+  const r=await driveFetch(DRIVE_API+'?q='+q+'&fields=files(id,name,version,modifiedTime)&orderBy=modifiedTime desc&spaces=drive');
+  const j=await r.json();
+  return (j&&Array.isArray(j.files)&&j.files[0])||null;
+}
+async function driveMeta(id){
+  const r=await driveFetch(DRIVE_API+'/'+encodeURIComponent(id)+'?fields=id,name,version,modifiedTime');
+  return await r.json();
+}
+async function driveRead(id){
+  const r=await driveFetch(DRIVE_API+'/'+encodeURIComponent(id)+'?alt=media');
+  return await r.text();
+}
+async function driveCreate(text){
+  const boundary='em'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+  const meta=JSON.stringify({name:GDRIVE_FILE_NAME,mimeType:'application/json'});
+  const body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+
+    '\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+text+'\r\n--'+boundary+'--';
+  const r=await driveFetch(DRIVE_UPLOAD+'?uploadType=multipart&fields=id,name,version,modifiedTime',
+    {method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
+  return await r.json();
+}
+async function driveUpdate(id,text){
+  const r=await driveFetch(DRIVE_UPLOAD+'/'+encodeURIComponent(id)+'?uploadType=media&fields=id,version,modifiedTime',
+    {method:'PATCH',headers:{'Content-Type':'application/json'},body:text});
+  return await r.json();
+}
+function driveText(){return JSON.stringify({...state,savedAt:isoNow()});}
+function matrixComparable(st){const c={...st};c.savedAt=null;return JSON.stringify(c);}
+function setDriveStatus(s){gdriveStatusState=s;refreshHeader();}
+function activateDriveMode(){
+  fileHandle=null; autoWrite=false;
+  pendingHandle=null; hideContinueBar(); gdriveContinue=false; idbClearHandle();
+  gdriveMode=true; gdriveStatusState='saved';
+  refreshHeader(); refreshDriveUi();
+}
+function refreshDriveUi(){
+  const avail=driveAvailable();
+  const sep=$('#fileDriveSep'), c=$('#fileDriveConnect'), d=$('#fileDriveDisconnect');
+  if(sep) sep.hidden=!avail;
+  if(c) c.hidden=!avail||gdriveMode;
+  if(d) d.hidden=!avail||!gdriveMode;
+}
+function showDriveContinueBar(){
+  const bar=$('#continueBar'),btn=$('#continueBtn'); if(!bar||!btn) return;
+  gdriveContinue=true;
+  btn.textContent=t('gdriveContinue'); btn.title=btn.textContent;
+  bar.hidden=false;
+}
+function leaveDriveMode(){
+  if(!gdriveMode&&!gdrive) return;
+  clearTimeout(gdriveSaveTimer); gdriveSaveTimer=null;
+  clearTimeout(gdriveRetryTimer); gdriveRetryTimer=null;
+  gdriveSaving=false; gdriveAgain=false;
+  gdriveMode=false; gdriveStatusState='saved'; gdriveContinue=false;
+  saveDriveConn(null); saveDriveBase(null);
+  refreshDriveUi(); refreshHeader();
+}
+function forgetDrive(){
+  clearTimeout(gdriveSaveTimer); gdriveSaveTimer=null;
+  clearTimeout(gdriveRetryTimer); gdriveRetryTimer=null;
+  gdriveSaving=false; gdriveAgain=false;
+  clearGdriveToken();
+  leaveDriveMode();
+}
+function disconnectDrive(){
+  if(!gdriveMode&&!gdrive) return;
+  if(gdriveToken&&gisLoaded()){
+    try{ google.accounts.oauth2.revoke(gdriveToken); }catch(e){}
+  }
+  leaveDriveMode();
+  toast(t('gdriveDisconnected'));
+}
+function scheduleDriveRetry(){
+  clearTimeout(gdriveRetryTimer);
+  gdriveRetryTimer=setTimeout(()=>{ if(gdriveMode&&gdriveStatusState==='offline') driveSave(); },30000);
+}
+function scheduleDriveSave(immediate=true){
+  if(!gdriveMode||!gdrive) return;
+  gdriveStatusState=validGdriveToken()?'saving':'auth';
+  clearTimeout(gdriveSaveTimer);
+  gdriveSaveTimer=setTimeout(()=>{gdriveSaveTimer=null;driveSave();},immediate?800:1500);
+  refreshHeader();
+}
+async function driveSave(){
+  if(!gdriveMode||!gdrive) return;
+  if(gdriveSaving){gdriveAgain=true;return;}
+  if(!validGdriveToken()){setDriveStatus('auth');return;}
+  gdriveSaving=true; gdriveAgain=false;
+  let rev=stateRev;
+  gdriveStatusState='saving'; refreshHeader();
+  try{
+    const meta=await driveMeta(gdrive.fileId);
+    let mergedConflicts=null;
+    if(meta&&meta.version&&gdrive.version&&meta.version!==gdrive.version){
+      const remoteText=await driveRead(gdrive.fileId);
+      let merged=null;
+      try{
+        merged=mergeWithRemote(remoteText);
+      }catch(e){
+        /* invalid remote file: keep the local version (no confirm in autosave) */
+        console.warn('drive merge failed',e);
+      }
+      if(merged){
+        replaceWithState(merged.state,{dirty:true,handle:null,autoWrite:false});
+        gdriveMode=true;
+        mergedConflicts=merged.conflicts;
+        rev=stateRev;
+      }
+    }
+    const stamp=isoNow();
+    const text=JSON.stringify({...state,savedAt:stamp});
+    const upd=await driveUpdate(gdrive.fileId,text);
+    state.savedAt=stamp;
+    saveDriveBase(text);
+    saveDriveConn({fileId:gdrive.fileId,name:(upd&&upd.name)||gdrive.name,version:(upd&&upd.version)||gdrive.version});
+    if(stateRev===rev){dirty=false;setLocalAt(Date.now());saveLocal();}
+    else gdriveAgain=true;
+    gdriveStatusState='saved';
+    if(mergedConflicts!==null) mergedToast(mergedConflicts);
+  }catch(e){
+    if(e&&e.status===401){clearGdriveToken();gdriveStatusState='auth';}
+    else if(e&&e.status===404){
+      forgetDrive();
+      toast(t('gdriveMissing')+' '+t('gdriveMissingHint'),{label:t('gdriveConnect'),fn:()=>connectDrive()});
+      return;
+    }else{
+      gdriveStatusState='offline'; scheduleDriveRetry();
+    }
+  }finally{
+    gdriveSaving=false;
+    refreshHeader();
+    if(gdriveAgain&&gdriveMode){gdriveAgain=false;driveSave();}
+  }
+}
+async function connectDrive(){
+  if(!driveAvailable()) return;
+  if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+  try{ await getToken(true); }catch(e){ toast(t('gdriveAuthFail')); return; }
+  let meta=null;
+  try{ meta=await driveFind(); }catch(e){ handleDriveError(e); return; }
+  try{
+    if(meta){
+      const text=await driveRead(meta.id);
+      let next=null;
+      try{ next=parseFileText(text); }catch(e){ next=null; }
+      let same=false;
+      if(next){ try{ same=matrixComparable(next)===matrixComparable(state); }catch(e){ same=false; } }
+      const conn={fileId:meta.id,name:meta.name||GDRIVE_FILE_NAME,version:meta.version||''};
+      if(!same){
+        let merged=null;
+        if(next){
+          try{ merged=mergeStates(loadDriveBaseState(),state,next); }
+          catch(err){ console.warn('drive merge failed',err); }
+        }
+        if(merged){
+          saveDriveConn(conn);
+          activateDriveMode();
+          replaceWithState(merged.state,{dirty:false,handle:null,autoWrite:false});
+          gdriveMode=true;
+          saveDriveBase(text);
+          if(matrixComparable(merged.state)!==matrixComparable(next)){
+            const stamp=isoNow();
+            const out=JSON.stringify({...merged.state,savedAt:stamp});
+            const upd=await driveUpdate(conn.fileId,out);
+            state.savedAt=stamp;
+            saveDriveBase(out);
+            conn.name=(upd&&upd.name)||conn.name;
+            conn.version=(upd&&upd.version)||conn.version;
+            saveDriveConn(conn);
+          }
+          dirty=false; lastSaveError=false; setLocalAt(Date.now()); saveLocal();
+          setDriveStatus('saved');
+          mergedToast(merged.conflicts);
+          refreshDriveUi();
+          return;
+        }
+        /* fallback only when the merge itself failed */
+        const load=confirm(t('gdriveExistingAsk'));
+        if(load){
+          if(!next){ try{ next=parseFileText(text); }catch(err){ alert(t('invalidFile')+'\n\n'+err.message); return; } }
+          saveDriveConn(conn);
+          activateDriveMode();
+          replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
+          gdriveMode=true;
+          saveDriveBase(text);
+          setDriveStatus('saved');
+          toast(t('gdriveConnected',conn.name));
+          return;
+        }
+      }
+      const stamp=isoNow();
+      const out=JSON.stringify({...state,savedAt:stamp});
+      const upd=await driveUpdate(conn.fileId,out);
+      state.savedAt=stamp; dirty=false; lastSaveError=false;
+      saveDriveBase(out);
+      setLocalAt(Date.now()); saveLocal();
+      conn.name=(upd&&upd.name)||conn.name;
+      conn.version=(upd&&upd.version)||conn.version;
+      saveDriveConn(conn);
+      activateDriveMode();
+      toast(t('gdriveConnected',conn.name));
+    }else{
+      const stamp=isoNow();
+      const out=JSON.stringify({...state,savedAt:stamp});
+      const created=await driveCreate(out);
+      state.savedAt=stamp; dirty=false; lastSaveError=false;
+      saveDriveBase(out);
+      setLocalAt(Date.now()); saveLocal();
+      const conn={fileId:created.id,name:created.name||GDRIVE_FILE_NAME,version:created.version||''};
+      saveDriveConn(conn);
+      activateDriveMode();
+      toast(t('gdriveConnected',conn.name));
+    }
+  }catch(e){ handleDriveError(e); }
+}
+function handleDriveError(e){
+  if(e&&e.status===401){clearGdriveToken();setDriveStatus('auth');if(!gdriveMode)toast(t('gdriveAuthFail'));return;}
+  if(e&&e.status===404){forgetDrive();toast(t('gdriveMissing'));return;}
+  setDriveStatus('offline');
+  if(!gdriveMode)toast(t('gdriveError'));
+}
+async function continueDrive(){
+  if(!gdrive) return;
+  if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+  try{ await getToken(true); }catch(e){ toast(t('gdriveAuthFail')); return; }
+  let meta;
+  try{ meta=await driveMeta(gdrive.fileId); }
+  catch(e){
+    if(e&&e.status===404){forgetDrive();toast(t('gdriveMissing'));return;}
+    if(e&&e.status===401){setDriveStatus('auth');return;}
+    toast(t('gdriveError')); return;
+  }
+  let next=null,remoteText=null;
+  try{
+    remoteText=await driveRead(gdrive.fileId);
+    try{ next=parseFileText(remoteText); }catch(err){ next=null; }
+  }catch(e){
+    handleDriveError(e); return;
+  }
+  const remoteVersionDiffers=!!(meta&&meta.version&&gdrive.version&&meta.version!==gdrive.version);
+  const remoteAt=next&&next.savedAt?Date.parse(next.savedAt):0;
+  const localAt=state.savedAt?Date.parse(state.savedAt):0;
+  const remoteNewer=!!next&&(remoteVersionDiffers||remoteAt>localAt);
+  const conn={fileId:(meta&&meta.id)||gdrive.fileId,name:(meta&&meta.name)||gdrive.name,version:(meta&&meta.version)||gdrive.version};
+  saveDriveConn(conn);
+  activateDriveMode();
+  let same=false;
+  if(next){ try{ same=matrixComparable(next)===matrixComparable(state); }catch(e){ same=false; } }
+  if(next&&remoteText&&!same){
+    let merged=null;
+    try{ merged=mergeStates(loadDriveBaseState(),state,next); }
+    catch(err){ console.warn('drive merge failed',err); }
+    if(merged){
+      replaceWithState(merged.state,{dirty:true,handle:null,autoWrite:false});
+      gdriveMode=true;
+      saveDriveBase(remoteText);
+      if(matrixComparable(merged.state)!==matrixComparable(next)){
+        try{
+          const stamp=isoNow();
+          const out=JSON.stringify({...merged.state,savedAt:stamp});
+          const upd=await driveUpdate(gdrive.fileId,out);
+          state.savedAt=stamp;
+          saveDriveBase(out);
+          conn.name=(upd&&upd.name)||conn.name;
+          conn.version=(upd&&upd.version)||conn.version;
+          saveDriveConn(conn);
+          dirty=false; lastSaveError=false; setLocalAt(Date.now()); saveLocal();
+        }catch(e){
+          gdriveStatusState='offline'; scheduleDriveRetry(); refreshDriveUi();
+          return;
+        }
+      }else{
+        dirty=false; setLocalAt(Date.now()); saveLocal();
+      }
+      setDriveStatus('saved');
+      mergedToast(merged.conflicts);
+      refreshDriveUi();
+      return;
+    }
+    /* fallback only when the merge itself failed */
+    let loadRemote=remoteNewer;
+    if(remoteNewer&&dirty) loadRemote=confirm(t('gdriveContinueAsk'));
+    if(loadRemote){
+      replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
+      gdriveMode=true;
+      saveDriveBase(remoteText);
+      setDriveStatus('saved');
+      toast(t('gdriveLoaded'));
+    }else{
+      setDriveStatus('saved');
+      toast(t('gdriveConnected',conn.name));
+      if(dirty) scheduleDriveSave(true);
+    }
+    refreshDriveUi();
+    return;
+  }
+  if(next&&remoteText) saveDriveBase(remoteText);
+  setDriveStatus('saved');
+  toast(t('gdriveConnected',conn.name));
+  if(dirty) scheduleDriveSave(true);
+  refreshDriveUi();
+}
 
 function addLabel(name,initialTaskId,color){
   name=String(name||'').trim().slice(0,MAX_LABEL_NAME);
@@ -2130,6 +2764,8 @@ function applyStatic(){
   if(cph) cph.setAttribute('aria-label',t('hexColor'));
   renderTheme(); updateSizeButton(); renderLabelsMenu(); renderSettings(); renderAutoSwitches();
   if(pendingHandle&&!$('#continueBar').hidden) showContinueBar(pendingHandle.name);
+  if(gdriveContinue&&!$('#continueBar').hidden) showDriveContinueBar();
+  refreshDriveUi();
   refreshHeader();
 }
 function lastSavedAtText(){
@@ -2137,23 +2773,24 @@ function lastSavedAtText(){
   return fmtDate(state.savedAt,true)||t('notYet');
 }
 function renderAutoSwitches(){
-  const on=!!(fileHandle&&autoWrite), sup=autoSaveSupported();
+  const on=gdriveMode?true:!!(fileHandle&&autoWrite), sup=autoSaveSupported();
   ['#autoSwitch','#autoSwitchPop'].forEach(sel=>{
     const sw=$(sel); if(!sw) return;
-    sw.disabled=!sup;
+    sw.disabled=gdriveMode?true:!sup;
     sw.setAttribute('aria-checked',String(on));
-    sw.title=sup?t('autoSaveT'):t('autoOnlyChrome');
+    sw.title=gdriveMode?t('gdriveAlwaysOn'):(sup?t('autoSaveT'):t('autoOnlyChrome'));
   });
 }
 function renderSavePop(){
   const pop=$('#savePop'); if(!pop) return;
   const f=$('#savePopFile'), tm=$('#savePopTime');
-  if(f) f.textContent=fileHandle?fileHandle.name:t('notSaved');
+  if(f) f.textContent=gdriveMode&&gdrive?gdrive.name:(fileHandle?fileHandle.name:t('notSaved'));
   if(tm) tm.textContent=t('lastSaved')+': '+lastSavedAtText();
+  const disc=$('#savePopDisconnect'); if(disc) disc.hidden=!gdriveMode;
 }
 function toggleSavePop(force){
   const pop=$('#savePop'); if(!pop) return;
-  if(!fileHandle){pop.hidden=true;return;}
+  if(!fileHandle&&!gdriveMode){pop.hidden=true;return;}
   if(force===false||(force===undefined&&!pop.hidden)){pop.hidden=true;return;}
   renderSavePop(); pop.hidden=false;
 }
@@ -2162,7 +2799,15 @@ function updateStatus(){
   el.classList.remove('ok','warn','err');
   let text='',cls='',title='';
   const sup=autoSaveSupported();
-  if(lastSaveError&&fileHandle){
+  if(gdriveMode){
+    const name=gdrive?gdrive.name:GDRIVE_FILE_NAME;
+    let st=gdriveStatusState;
+    if(st==='saved'&&dirty) st='saving';
+    const map={saved:t('gdriveSaved'),saving:t('gdriveSaving'),offline:t('gdriveOffline'),auth:t('gdriveReconnect')};
+    text=t('gdrive')+': '+(map[st]||map.saved);
+    cls=st==='saved'?'ok':'warn';
+    title=name+' · '+(map[st]||map.saved);
+  }else if(lastSaveError&&fileHandle){
     text='⚠ '+t('statusError'); cls='err'; title=t('saveErrorRetry');
   }else if(fileHandle&&autoWrite){
     text='✓ '+t('statusAutoSaved'); cls='ok';
@@ -2181,7 +2826,7 @@ function updateStatus(){
   el.textContent=text; el.title=title; el.setAttribute('aria-label',text);
   $('#undo').disabled=!undoStack.length; $('#redo').disabled=!redoStack.length;
   const sb=$('#saveBtn');
-  if(sb){const hide=!!(fileHandle&&autoWrite); sb.hidden=hide; sb.classList.toggle('needs-save',!hide&&dirty);}
+  if(sb){const hide=!!(gdriveMode||(fileHandle&&autoWrite)); sb.hidden=hide; sb.classList.toggle('needs-save',!hide&&dirty);}
   renderAutoSwitches();
   if(!$('#savePop').hidden) renderSavePop();
 }
@@ -2880,8 +3525,10 @@ function buildMobileMenu(){
   };
   const sep=()=>{const h=document.createElement('hr');list.append(h);};
   add(t('new'),'new'); add(t('open'),'open'); add(t('save'),'save'); add(t('saveAs'),'saveAs');
-  const auto=add(t('autoSave'),'autosave',!!(fileHandle&&autoWrite),!autoSaveSupported());
-  if(!autoSaveSupported()) auto.title=t('autoOnlyChrome');
+  if(driveAvailable()) add(gdriveMode?t('gdriveDisconnect'):t('gdriveConnect'),gdriveMode?'driveDisconnect':'driveConnect');
+  const auto=add(t('autoSave'),'autosave',gdriveMode?true:!!(fileHandle&&autoWrite),gdriveMode||!autoSaveSupported());
+  if(gdriveMode) auto.title=t('gdriveAlwaysOn');
+  else if(!autoSaveSupported()) auto.title=t('autoOnlyChrome');
   sep();
   add(t('csv'),'csv'); add(t('print'),'print'); sep();
   const ll0=document.createElement('div');ll0.className='menulabel';ll0.textContent=t('labels');list.append(ll0);
@@ -2895,7 +3542,7 @@ function buildMobileMenu(){
 }
 function setupMenu(root,isMobile=false){
   const btn=root.querySelector('.btn');
-  btn.addEventListener('click',e=>{e.stopPropagation();const list=root.querySelector('.menu-list');const open=!list.hidden;closeMenus();if(!open){if(isMobile) buildMobileMenu();if(root.id==='labelsMenu')renderLabelsMenu();if(root.id==='sizeMenu')renderSizeMenu();list.hidden=false;}});
+  btn.addEventListener('click',e=>{e.stopPropagation();const list=root.querySelector('.menu-list');const open=!list.hidden;closeMenus();if(!open){if(root.id==='fileMenu'||isMobile)loadGis().catch(()=>{});if(isMobile) buildMobileMenu();if(root.id==='labelsMenu')renderLabelsMenu();if(root.id==='sizeMenu')renderSizeMenu();refreshDriveUi();list.hidden=false;}});
   root.querySelector('.menu-list').addEventListener('click',e=>{
     const b=e.target.closest('button[data-action],button[data-mobile-action]'); if(!b) return;
     const action=b.dataset.mobileAction||b.dataset.action; closeMenus(); performAction(action);
@@ -2910,6 +3557,30 @@ function setupMenu(root,isMobile=false){
 }
 
 /* ---------- history and change plumbing ---------- */
+let taskModSnap=null;   // JSON of every task/archive entry as of the last stamped change
+function taskModMap(){
+  const m=new Map();
+  for(const t of state.tasks||[]) m.set('tasks:'+t.id,JSON.stringify(t));
+  for(const a of state.archive||[]) m.set('archive:'+a.id,JSON.stringify(a));
+  return m;
+}
+/* set mod=now on every entry whose content changed or that is new */
+function stampTaskMods(prev){
+  const now=isoNow();
+  const snap=new Map();
+  const scan=(place,list)=>{
+    for(const e of list||[]){
+      const key=place+':'+e.id;
+      const before=JSON.stringify(e);
+      if(!prev||!prev.has(key)||prev.get(key)!==before) e.mod=now;
+      snap.set(key,JSON.stringify(e));
+    }
+  };
+  scan('tasks',state.tasks);
+  scan('archive',state.archive);
+  taskModSnap=snap;
+  return snap;
+}
 const snapshot=()=>JSON.stringify(state);
 function updateHistoryButtons(){$('#undo').disabled=!undoStack.length;$('#redo').disabled=!redoStack.length;}
 function pushHistory(){
@@ -2922,6 +3593,7 @@ function beginEdit(){
   redoStack=[]; editSnap=null; editActive=true; updateHistoryButtons();
 }
 function markChanged(o={}){
+  stampTaskMods(taskModSnap);
   dirty=true; stateRev++; saveLocal(); setLocalAt(Date.now()); scheduleFileWrite(!o.text); renderLabelsMenu();
   if(o.board!==false) renderBoard();
   if(o.inbox!==false) renderInbox();
@@ -2933,7 +3605,10 @@ function markChanged(o={}){
 function commit(fn,opts={}){
   undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   redoStack=[]; editSnap=null; editActive=false;
-  fn(); markChanged(opts); updateHistoryButtons(); updateFavicon();
+  const prev=taskModSnap;
+  fn();
+  stampTaskMods(prev);
+  markChanged(opts); updateHistoryButtons(); updateFavicon();
 }
 function validateUi(){
   if(ui.mobileCell&&!validCoord([ui.mobileCell.r,ui.mobileCell.c])) ui.mobileCell={r:0,c:state.cols-1};
@@ -2953,6 +3628,7 @@ function undo(){
   if(colorState.open) closeColorPop(false);
   redoStack.push(snapshot());
   state=JSON.parse(undoStack.pop()); editSnap=null; editActive=false; dirty=true; stateRev++;
+  taskModSnap=taskModMap();
   setLocalAt(Date.now()); validateUi(); saveLocal(); scheduleFileWrite(); renderAllDynamic(); renderLabelsMenu(); refreshHeader(true); if(ui.detailId) refreshDetail(true); renderAccount(); updateHistoryButtons();
 }
 function redo(){
@@ -2960,42 +3636,51 @@ function redo(){
   if(colorState.open) closeColorPop(false);
   undoStack.push(snapshot());
   state=JSON.parse(redoStack.pop()); editSnap=null; editActive=false; dirty=true; stateRev++;
+  taskModSnap=taskModMap();
   setLocalAt(Date.now()); validateUi(); saveLocal(); scheduleFileWrite(); renderAllDynamic(); renderLabelsMenu(); refreshHeader(true); if(ui.detailId) refreshDetail(true); renderAccount(); updateHistoryButtons();
 }
 function resetHistory(){undoStack=[];redoStack=[];editSnap=null;editActive=false;updateHistoryButtons();}
 
 /* ---------- resize ---------- */
 const mapIndex=(oldIndex,oldN,newN)=>Math.min(newN-1,Math.floor((oldIndex+0.5)*newN/oldN));
+/* pure re-mapping of a deep copy; resizeMatrix and mergeStates share this */
+function resizeStateCore(st,newRows,newCols,lang){
+  newRows=clamp(Math.round(newRows),1,5); newCols=clamp(Math.round(newCols),1,5);
+  const oldRows=st.rows,oldCols=st.cols;
+  const out=JSON.parse(JSON.stringify(st));
+  const oldDef=defaultForLayout(oldRows,oldCols,lang,st.swapped),newDef=defaultForLayout(newRows,newCols,lang,st.swapped);
+  const keepRows=!sameArray(st.rowLabels,oldDef.rowLabels);
+  const keepCols=!sameArray(st.colLabels,oldDef.colLabels);
+  const keepNames=!sameGrid(st.cellNames,oldDef.cellNames);
+  const genericR=i=>lang==='de'?(st.swapped?'Dringlichkeit ':'Wichtigkeit ')+(i+1):(st.swapped?'Urgency ':'Importance ')+(i+1);
+  const genericC=i=>lang==='de'?(st.swapped?'Wichtigkeit ':'Dringlichkeit ')+(i+1):(st.swapped?'Importance ':'Urgency ')+(i+1);
+  out.rowLabels=Array.from({length:newRows},(_,i)=>keepRows?(st.rowLabels[i]??newDef.rowLabels[i]??genericR(i)):newDef.rowLabels[i]);
+  out.colLabels=Array.from({length:newCols},(_,i)=>keepCols?(st.colLabels[i]??newDef.colLabels[i]??genericC(i)):newDef.colLabels[i]);
+  out.cellNames=Array.from({length:newRows},(_,r)=>Array.from({length:newCols},(_,c)=>keepNames?(st.cellNames[r]?.[c]??newDef.cellNames[r]?.[c]??''):newDef.cellNames[r][c]));
+  out.tasks.forEach(task=>{
+    if(!task.cell) return;
+    const at=Array.isArray(task.at)?task.at:cellCenter(task.cell[0],task.cell[1],oldRows,oldCols);
+    if(!Array.isArray(task.at)) task.at=at;
+    task.cell=cellFromAt(at,newRows,newCols);
+  });
+  out.archive.forEach(item=>{
+    if(!item.fromCell) return;
+    const at=Array.isArray(item.at)?item.at:cellCenter(item.fromCell[0],item.fromCell[1],oldRows,oldCols);
+    if(!Array.isArray(item.at)) item.at=at;
+    item.fromCell=cellFromAt(at,newRows,newCols);
+    if(item.cell) item.cell=cellFromAt(at,newRows,newCols);
+  });
+  out.rows=newRows; out.cols=newCols;
+  return out;
+}
 function resizeMatrix(newRows,newCols){
   newRows=clamp(Math.round(newRows),1,5); newCols=clamp(Math.round(newCols),1,5);
   if(newRows===state.rows&&newCols===state.cols) return;
   const oldRows=state.rows,oldCols=state.cols;
-  const oldDef=defaultForLayout(oldRows,oldCols,LANG),newDef=defaultForLayout(newRows,newCols,LANG);
-  const keepRows=!sameArray(state.rowLabels,oldDef.rowLabels);
-  const keepCols=!sameArray(state.colLabels,oldDef.colLabels);
-  const keepNames=!sameGrid(state.cellNames,oldDef.cellNames);
-  const genericR=i=>LANG==='de'?(state.swapped?'Dringlichkeit ':'Wichtigkeit ')+(i+1):(state.swapped?'Urgency ':'Importance ')+(i+1);
-  const genericC=i=>LANG==='de'?(state.swapped?'Wichtigkeit ':'Dringlichkeit ')+(i+1):(state.swapped?'Importance ':'Urgency ')+(i+1);
-  const rowLabels=Array.from({length:newRows},(_,i)=>keepRows?(state.rowLabels[i]??newDef.rowLabels[i]??genericR(i)):newDef.rowLabels[i]);
-  const colLabels=Array.from({length:newCols},(_,i)=>keepCols?(state.colLabels[i]??newDef.colLabels[i]??genericC(i)):newDef.colLabels[i]);
-  const cellNames=Array.from({length:newRows},(_,r)=>Array.from({length:newCols},(_,c)=>keepNames?(state.cellNames[r]?.[c]??newDef.cellNames[r]?.[c]??''):newDef.cellNames[r][c]));
   const oldMobile=ui.mobileCell;
   leaveExample();
   commit(()=>{
-    state.tasks.forEach(task=>{
-      if(!task.cell) return;
-      const at=Array.isArray(task.at)?task.at:cellCenter(task.cell[0],task.cell[1],oldRows,oldCols);
-      if(!Array.isArray(task.at)) task.at=at;
-      task.cell=cellFromAt(at,newRows,newCols);
-    });
-    state.archive.forEach(item=>{
-      if(!item.fromCell) return;
-      const at=Array.isArray(item.at)?item.at:cellCenter(item.fromCell[0],item.fromCell[1],oldRows,oldCols);
-      if(!Array.isArray(item.at)) item.at=at;
-      item.fromCell=cellFromAt(at,newRows,newCols);
-      if(item.cell) item.cell=cellFromAt(at,newRows,newCols);
-    });
-    state.rows=newRows; state.cols=newCols; state.rowLabels=rowLabels; state.colLabels=colLabels; state.cellNames=cellNames;
+    Object.assign(state,resizeStateCore(state,newRows,newCols,LANG));
     if(oldMobile) ui.mobileCell={r:mapIndex(oldMobile.r,oldRows,newRows),c:mapIndex(oldMobile.c,oldCols,newCols)};
   },{detail:true});
   if(oldMobile) saveMobileSelKey();
@@ -3003,22 +3688,26 @@ function resizeMatrix(newRows,newCols){
 }
 
 /* ---------- swap axes (real transpose of the stored data) ---------- */
+/* pure transpose of a deep copy; swapAxes and mergeStates share this */
+function transposeStateCore(st){
+  const R=st.rows,C=st.cols;
+  const out=JSON.parse(JSON.stringify(st));
+  out.rows=C; out.cols=R;
+  out.rowLabels=st.colLabels.slice().reverse();
+  out.colLabels=st.rowLabels.slice().reverse();
+  out.cellNames=Array.from({length:C},(_,r)=>Array.from({length:R},(_,c)=>st.cellNames[R-1-c]?.[C-1-r]??''));
+  out.axisY=st.axisX; out.axisX=st.axisY;
+  transposeEntries(out.tasks,out.archive,R,C);
+  out.flipX=!!st.flipY; out.flipY=!!st.flipX;
+  out.swapped=!st.swapped;
+  return out;
+}
 function swapAxes(){
   const R=state.rows,C=state.cols;
   const oldMobile=ui.mobileCell;
   leaveExample();
   commit(()=>{
-    const oldRowLabels=state.rowLabels.slice(),oldColLabels=state.colLabels.slice();
-    const oldNames=state.cellNames.map(line=>line.slice());
-    state.rows=C; state.cols=R;
-    state.rowLabels=oldColLabels.slice().reverse();
-    state.colLabels=oldRowLabels.slice().reverse();
-    state.cellNames=Array.from({length:C},(_,r)=>Array.from({length:R},(_,c)=>oldNames[R-1-c]?.[C-1-r]??''));
-    const ay=state.axisY,ax=state.axisX; state.axisY=ax; state.axisX=ay;
-    transposeEntries(state.tasks,state.archive,R,C);
-    const ofx=!!state.flipX,ofy=!!state.flipY;
-    state.flipX=ofy; state.flipY=ofx;   // the flips travel with their quantity
-    state.swapped=!state.swapped;
+    Object.assign(state,transposeStateCore(state));
     if(oldMobile) ui.mobileCell={r:C-1-oldMobile.c,c:R-1-oldMobile.r};
   },{detail:true});
   if(oldMobile) saveMobileSelKey();
@@ -3342,6 +4031,8 @@ function performAction(a){
     case 'open':openFile();break;
     case 'save':saveFile();break;
     case 'saveAs':saveFileAs();break;
+    case 'driveConnect':connectDrive();break;
+    case 'driveDisconnect':disconnectDrive();break;
     case 'csv':exportCsv();break;
     case 'print':printPage();break;
     case 'archive':openArchive();break;
@@ -3395,6 +4086,7 @@ function setLang(l){
 }
 function newMatrix(){
   if(!confirmDiscard()) return;
+  leaveDriveMode();
   pendingHandle=null; hideContinueBar(); idbClearHandle();
   replaceWithState(blankState(),{dirty:false,handle:null,autoWrite:false});
 }
@@ -3411,6 +4103,7 @@ function replaceWithState(next,{dirty:newDirty=false,handle=null,autoWrite:newAu
   const s=$('#search'); if(s) s.value=''; const as=$('#archiveSearch'); if(as) as.value='';
   setLocalAt(localAt!=null?localAt:Date.now());
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic(); saveLocal(true);
+  taskModSnap=taskModMap();
 }
 const confirmDiscard=()=>!dirty||confirm(t('confirmDiscard'));
 const fileName=ext=>{const base=(state.title||t('fileBase')).replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,80)||t('fileBase');return base+ext;};
@@ -3424,6 +4117,7 @@ async function readPickedFile(handle){
 }
 async function openFile(){
   if(!confirmDiscard()) return;
+  leaveDriveMode();
   if(window.showOpenFilePicker){
     let handle,text,fileAt=null;
     try{
@@ -3451,6 +4145,15 @@ async function ensureWritePermission(handle,request){
 }
 async function saveFile(opts={}){
   const asNew=!!opts.asNew, enableAuto=!!opts.enableAuto;
+  if(gdriveMode&&!asNew){
+    if(!validGdriveToken()){
+      if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+      try{ await getToken(true); }catch(e){ toast(t('gdriveAuthFail')); return; }
+    }
+    await driveSave();
+    return;
+  }
+  if(asNew) leaveDriveMode();
   const stamp=isoNow();
   const data=JSON.stringify({...state,savedAt:stamp});
   if(window.showSaveFilePicker){
@@ -3481,6 +4184,7 @@ async function saveFile(opts={}){
 }
 async function saveFileAs(){ return saveFile({asNew:true}); }
 async function toggleAutoSave(){
+  if(gdriveMode) return;
   if(!autoSaveSupported()) return;
   if(autoWrite){
     autoWrite=false; lastSaveError=false; setAutoSavePref(false); refreshHeader(); return;
@@ -3519,6 +4223,7 @@ async function retrySave(){
 }
 /* discrete actions write immediately; text typing is debounced to 500 ms */
 function scheduleFileWrite(immediate=true){
+  if(gdriveMode){ scheduleDriveSave(immediate); return; }
   if(!autoWrite||!fileHandle) return;
   if(immediate){ clearTimeout(fileTimer); fileTimer=null; writeCurrentFile(); }
   else{
@@ -3527,6 +4232,11 @@ function scheduleFileWrite(immediate=true){
   }
 }
 function flushFileWrite(){
+  if(gdriveMode){
+    if(gdriveSaveTimer!==null){clearTimeout(gdriveSaveTimer);gdriveSaveTimer=null;}
+    if(dirty||gdriveStatusState==='saving'||gdriveStatusState==='offline'||gdriveStatusState==='auth') driveSave();
+    return;
+  }
   if(fileTimer!==null){clearTimeout(fileTimer);fileTimer=null;}
   if(autoWrite&&fileHandle) writeCurrentFile();
 }
@@ -3643,6 +4353,16 @@ $('#undo').addEventListener('click',undo);
 $('#redo').addEventListener('click',redo);
 $('#saveBtn').addEventListener('click',()=>saveFile());
 function onStatusClick(){
+  if(gdriveMode){
+    if(gdriveStatusState==='auth'){
+      if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+      getToken(true).then(()=>driveSave()).catch(()=>toast(t('gdriveAuthFail')));
+      return;
+    }
+    if(gdriveStatusState==='offline'){driveSave();return;}
+    toggleSavePop();
+    return;
+  }
   if(lastSaveError&&fileHandle){retrySave();return;}
   if(!fileHandle){saveFile({enableAuto:autoSaveSupported()});return;}
   if(!autoWrite&&dirty){saveFile();return;}
@@ -3656,6 +4376,7 @@ $('#savePop').addEventListener('click',e=>{
   toggleSavePop(false);
   if(b.dataset.saveAction==='save-as') saveFileAs();
   else if(b.dataset.saveAction==='open-other') openFile();
+  else if(b.dataset.saveAction==='gdrive-disconnect') disconnectDrive();
 });
 $('#settingsBtn').addEventListener('click',()=>openSettings());
 $('#coinsBtn').addEventListener('click',openAccount);
@@ -3739,8 +4460,8 @@ $('#setLabelsList').addEventListener('click',e=>{
 $('#setLabelsList').addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-set-label-name]')){e.preventDefault();e.stopPropagation();startLabelRename(e.target);}
 });
-$('#continueBtn').addEventListener('click',continueWithStored);
-$('#continueDismiss').addEventListener('click',()=>{pendingHandle=null;hideContinueBar();});
+$('#continueBtn').addEventListener('click',()=>{if(gdriveContinue)continueDrive();else continueWithStored();});
+$('#continueDismiss').addEventListener('click',()=>{pendingHandle=null;gdriveContinue=false;hideContinueBar();});
 $('#archiveBtn').addEventListener('click',openArchive);
 $('#helpBtn').addEventListener('click',openHelp);
 $('#search').addEventListener('input',e=>{ui.search=e.target.value;renderBoard();renderInbox();renderMobile();requestAnimationFrame(updateFades);});
@@ -3749,6 +4470,7 @@ $('#openFile').addEventListener('change',async e=>{
   if(!f) return;
   let next;
   try{next=parseFileText(await f.text());}catch(err){alert(t('invalidFile')+'\n\n'+err.message);return;}
+  leaveDriveMode();
   pendingHandle=null; hideContinueBar(); idbClearHandle();
   replaceWithState(next,{dirty:false,handle:null,autoWrite:false,localAt:f.lastModified||Date.now()});
   toast(t('opened')+': '+(next.title||t('appTitle')));
@@ -4141,9 +4863,10 @@ window.addEventListener('resize',()=>{updateFades();scheduleDetailPosition();sch
 let wasNarrow=narrow();
 window.addEventListener('resize',()=>{const n=narrow();if(n!==wasNarrow){wasNarrow=n;validateUi();syncDetailMode();renderAllDynamic();}});
 window.addEventListener('beforeprint',updatePrintHead);
-window.addEventListener('beforeunload',e=>{if(dirty||writingFile||writeAgain||fileTimer!==null){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(dirty||writingFile||writeAgain||fileTimer!==null||gdriveSaving||gdriveSaveTimer!==null){e.preventDefault();e.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushFileWrite();});
 window.addEventListener('pagehide',()=>flushFileWrite());
+window.addEventListener('online',()=>{if(gdriveMode&&(gdriveStatusState==='offline'||gdriveStatusState==='auth'))driveSave();});
 
 /* first start */
 function init(){
@@ -4163,7 +4886,15 @@ function init(){
   loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
-  restoreStoredHandle();
+  gdrive=driveAvailable()?loadDriveConn():null;
+  gdriveMode=false; gdriveContinue=false; gdriveStatusState='saved';
+  if(driveAvailable()&&gdrive){
+    loadGis().catch(()=>{});
+    showDriveContinueBar();
+  }else{
+    restoreStoredHandle();
+  }
+  refreshDriveUi();
   let seen=false; try{seen=!!localStorage.getItem('em-seen');}catch(e){}
   let nohelp=false; try{nohelp=new URLSearchParams(location.search).has('nohelp');}catch(e){}
   if(!seen&&!nohelp) openHelp();

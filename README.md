@@ -36,11 +36,12 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - Your matrix is cached in your browser automatically. That cache is **not a backup**: it is lost if you clear your browser data or use another browser.
 - **Chrome and Edge:** choose a file once (e.g. in a cloud folder like OneDrive, Google Drive, Dropbox or Syncthing). With **Auto-save** on, every change is written to that file right away.
 - **Firefox and Safari:** click **Save** regularly. This downloads a `.matrix.json` file.
+- **Google Drive (optional, every browser):** **File → Connect Google Drive** saves your matrix in your own Google Drive and keeps it in sync across devices. Changes made on two devices, even offline, are merged task by task. The tool only gets access to the file it creates (`drive.file`).
 - To use the matrix on several devices, keep the file in a synced folder and open it there. Only one device should edit it at a time.
 
 ### Privacy, security and warranty
 
-- **Privacy:** the tool sends no data. The website is hosted on GitHub Pages, and GitHub may log technical data such as your IP address ([GitHub privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)).
+- **Privacy:** the tool sends no data, except to your own Google Drive if you connect it ([privacy policy](https://master-d1990.github.io/eisenhower-matrix/privacy.html)). The website is hosted on GitHub Pages, and GitHub may log technical data such as your IP address ([GitHub privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)).
 - **Security:** `.matrix.json` files contain only data, no code. The tool checks every file when opening it.
 - **Warranty:** use at your own risk, without any warranty. See the [MIT License](LICENSE).
 
@@ -81,11 +82,12 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - Deine Matrix wird automatisch im Browser zwischengespeichert. Dieser Zwischenspeicher ist **keine Sicherung**: Er geht verloren, wenn du die Browserdaten löschst oder einen anderen Browser nutzt.
 - **Chrome und Edge:** Wähle einmal eine Datei, zum Beispiel in einem Cloud-Ordner wie OneDrive, Google Drive, Dropbox oder Syncthing. Mit **Automatisch speichern** landet danach jede Änderung sofort in dieser Datei.
 - **Firefox und Safari:** Klicke regelmässig auf **Speichern**. Das lädt eine `.matrix.json`-Datei herunter.
+- **Google Drive (freiwillig, jeder Browser):** Mit **Datei → Mit Google Drive verbinden** liegt deine Matrix in deinem eigenen Google Drive und bleibt auf allen Geräten aktuell. Änderungen auf zwei Geräten, auch offline, werden Aufgabe für Aufgabe zusammengeführt. Das Tool erhält nur Zugriff auf die Datei, die es selbst anlegt (`drive.file`).
 - Für mehrere Geräte legst du die Datei in einen synchronisierten Ordner und öffnest sie dort. Es sollte immer nur ein Gerät gleichzeitig daran arbeiten.
 
 ### Datenschutz, Sicherheit und Gewähr
 
-- **Datenschutz:** Das Tool sendet keine Daten. Die Seite liegt auf GitHub Pages, GitHub kann technische Daten wie die IP-Adresse protokollieren ([Datenschutzerklärung von GitHub](https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement)).
+- **Datenschutz:** Das Tool sendet keine Daten, ausser an dein eigenes Google Drive, wenn du es verbindest ([Datenschutzerklärung](https://master-d1990.github.io/eisenhower-matrix/privacy.html)). Die Seite liegt auf GitHub Pages, GitHub kann technische Daten wie die IP-Adresse protokollieren ([Datenschutzerklärung von GitHub](https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement)).
 - **Sicherheit:** `.matrix.json`-Dateien enthalten nur Daten, keinen Code. Das Tool prüft jede Datei beim Öffnen.
 - **Gewähr:** Nutzung auf eigenes Risiko, ohne Gewähr. Siehe [MIT-Lizenz](LICENSE).
 
