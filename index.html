@@ -1037,8 +1037,8 @@ de:{
   continueWith:n=>'Mit «'+n+'» weiterarbeiten',
   permissionDenied:'Keine Schreibberechtigung für diese Datei.', keptLocal:'Lokale Fassung behalten',
   localNewer:'Der lokale Stand ist neuer als die Datei. Lokalen Stand behalten? Abbrechen lädt die Datei.',
-  helpH:'So funktioniert Eisenhower Matrix+', helpIntro:'Ordne Aufgaben nach Wichtigkeit und Dringlichkeit. Die Matrix zeigt, was sofort dran ist, was geplant, delegiert oder gestrichen wird. Wähle einmal einen Speicherort, zum Beispiel in deinem Cloud-Ordner. Danach speichert das Tool jede Änderung automatisch.',
-  downloadToolHint:'Lädt das Programm selbst als HTML-Datei herunter. Läuft per Doppelklick ohne Internet. <b>Deine Matrix ist nicht enthalten</b>, die speicherst du separat.',
+  helpH:'So funktioniert Eisenhower Matrix+', helpIntro:'Ordne Aufgaben nach Wichtigkeit (nach oben) und Dringlichkeit (nach rechts). Oben rechts steht, was sofort dran ist.',
+  downloadToolHint:'Als HTML-Datei, läuft ohne Internet. <b>Ohne deine Daten.</b>',
   loadExample:'Beispiel öffnen', helpOk:'Los geht\'s', licenseNote:'Open Source (MIT-Lizenz).',
   dropDone:'✓ Hierher ziehen = erledigt',
   savedInFile:'in Datei gespeichert', notSaved:'nicht gespeichert',
@@ -1076,20 +1076,12 @@ de:{
   csvOpen:'offen', csvDoneStatus:'erledigt',
   cellName:'Zellenname', rowLabel:'Zeilenbeschriftung', colLabel:'Spaltenbeschriftung', axisY:'Achse vertikal', axisX:'Achse horizontal',
   printTitle:'Eisenhower-Matrix', printDate:'Stand',
-  helpListHtml:`<li><b>Eisenhower-Prinzip</b>: Aufgaben nach Wichtigkeit und Dringlichkeit ordnen. Wichtig und dringend zuerst, wichtig und nicht dringend planen, nicht wichtig und dringend delegieren, weder wichtig noch dringend streichen.</li>
-    <li><b>3 x 3</b>: Die Standardmatrix hat drei Stufen pro Achse. Die Dringlichkeit steigt nach rechts, die Wichtigkeit nach oben. C1 (oben rechts) ist am wichtigsten und dringendsten, A3 (unten links) am wenigsten. Jede Zelle hat einen Namen, der sich per Doppelklick ändern lässt.</li>
-    <li><b>Aufgabe anlegen</b>: Mit dem Plus im Zellenkopf oder in der Ablage eine Aufgabe direkt im Feld anlegen. Enter fügt sie am Ende der Liste ein und lässt die Eingabe für die nächste Aufgabe offen. Esc oder ein Klick daneben schliesst sie.</li>
-    <li><b>Verschieben</b>: Karten mit der Maus in ein anderes Feld oder in die Ablage ziehen. Innerhalb eines Feldes lässt sich die Reihenfolge ändern. Die Leiste unten nimmt Karten zum Erledigen an.</li>
-    <li><b>Detail</b>: Klick auf eine Karte öffnet Titel, Beschreibung, Frist und Feld. Änderungen werden sofort übernommen und lassen sich rückgängig machen.</li>
-    <li><b>Fristen</b>: Rote Fristen sind überfällig, orange Fristen sind heute oder in den nächsten zwei Tagen fällig.</li>
-    <li><b>Archiv</b>: Erledigte Aufgaben wandern ins Archiv. Dort lassen sie sich wiederherstellen oder endgültig löschen.</li>
-    <li><b>Labels</b>: Mit Labels trennst du zum Beispiel Privat, Beruf und Studium in derselben Matrix. Labels werden pro Aufgabe im Detail vergeben. Anlegen, Umbenennen, Einfärben und Löschen geht im Fenster Einstellungen. Im Menü Labels blendest du einzelne Labels aus, zeigst alle wieder an oder steuerst Aufgaben ohne Label. Der Filter gilt nur im Browser, nicht in der Datei.</li>
-    <li><b>Goldmünzen</b>: Mit «🪙 Wert» im Aufgabendetail legst du fest, wie viele Münzen eine Aufgabe beim Erledigen einbringt. Die Münzen landen im Konto (Schaltfläche 🪙 im Kopf), wo du sie für eigene Belohnungen einlöst oder abbuchst. Jede Buchung lässt sich rückgängig machen. Die Funktion ist standardmässig aus und wird in den Einstellungen eingeschaltet.</li>
-    <li><b>Einstellungen</b>: Das Fenster «⚙ Einstellungen» im Kopf enthält die Matrixgrösse, die Achsen, die Labels, die Goldmünzen sowie Farbschema (System, Hell, Dunkel) und Sprache. Die Grösse lässt sich dort als Vorlage oder frei über die beiden Auswahlfelder ändern.</li>
-    <li><b>Speichern</b>: Der Stand liegt automatisch im Browserspeicher (localStorage). Der Browserspeicher ist keine Sicherung: Speichere regelmässig eine Datei in einem Cloud-Ordner, wenn du synchronisieren möchtest. In Chrome und Edge schaltest du oben im Kopf mit dem Schalter Auto die automatische Speicherung ein und wählst einmal den Speicherort; danach schreibt das Tool Änderungen sofort in die gewählte Datei. Beim Tippen von Texten schreibt es beim Verlassen des Feldes oder spätestens eine halbe Sekunde nach dem letzten Tastendruck. In Firefox und Safari speicherst du manuell.</li>
-    <li><b>Öffnen</b>: Dateien werden beim Öffnen streng geprüft. Sie enthalten nur Daten, keinen ausführbaren Code. Nach einem Neustart kannst du mit der gespeicherten Datei weiterarbeiten; die Schaltfläche im Kopf fragt nach der Berechtigung.</li>
-    <li><b>Tasten</b>: <kbd>N</kbd> oder <kbd>/</kbd> öffnet die Aufgabe-Eingabe in der Ablage, <kbd>Esc</kbd> schliesst Dialoge und Eingaben, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kbd>Z</kbd> oder <kbd>Strg</kbd>+<kbd>Y</kbd> wiederholen, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen ein- und ausblenden.</li>
-    <li><b>Datenschutz</b>: Das Tool sendet keine Daten. Alles bleibt im Browser. Die Seite liegt auf GitHub Pages, GitHub kann technische Daten wie die IP-Adresse protokollieren (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Datenschutzerklärung von GitHub</a>). Nutzung ohne Gewähr, MIT-Lizenz.</li>`
+  helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
+    <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
+    <li><b>Speichern</b>: In Chrome und Edge einmal eine Datei wählen und «Automatisch speichern» einschalten. In Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung.</li>
+    <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
+    <li><b>Tasten</b>: <kbd>N</kbd> neue Aufgabe, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen.</li>
+    <li><b>Datenschutz</b>: Das Tool sendet keine Daten, alles bleibt auf deinem Gerät (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Hosting durch GitHub</a>). Ohne Gewähr.</li>`
 },
 en:{
   appTitle:'Eisenhower Matrix+', untitled:'Untitled',
@@ -1142,8 +1134,8 @@ en:{
   continueWith:n=>'Continue with «'+n+'»',
   permissionDenied:'No write permission for this file.', keptLocal:'Kept local version',
   localNewer:'The local version is newer than the file. Keep the local version? Cancel loads the file.',
-  helpH:'How Eisenhower Matrix+ works', helpIntro:'Sort tasks by importance and urgency. The matrix shows what to do first, what to schedule, delegate or drop. Choose a storage location once, for example in your cloud folder. After that the tool saves every change automatically.',
-  downloadToolHint:'Downloads the program itself as an HTML file. Runs with a double-click, no internet needed. <b>Your matrix is not included</b>, save it separately.',
+  helpH:'How Eisenhower Matrix+ works', helpIntro:'Sort tasks by importance (upwards) and urgency (to the right). Top right is what needs doing now.',
+  downloadToolHint:'As an HTML file, runs without internet. <b>Without your data.</b>',
   loadExample:'Open example', helpOk:'Got it', licenseNote:'Open source (MIT License).',
   dropDone:'✓ Drop here = done',
   savedInFile:'saved to file', notSaved:'not saved',
@@ -1181,20 +1173,12 @@ en:{
   csvOpen:'open', csvDoneStatus:'done',
   cellName:'Cell name', rowLabel:'Row label', colLabel:'Column label', axisY:'Vertical axis', axisX:'Horizontal axis',
   printTitle:'Eisenhower matrix', printDate:'As of',
-  helpListHtml:`<li><b>Eisenhower principle</b>: sort tasks by importance and urgency. Important and urgent first, important and not urgent gets planned, not important and urgent gets delegated, neither important nor urgent gets dropped.</li>
-    <li><b>3 x 3</b>: the default matrix has three levels per axis. Urgency increases to the right, importance upwards. C1 (top right) is the most important and most urgent, A3 (bottom left) the least. Each cell has a name that can be changed by double-clicking.</li>
-    <li><b>Add a task</b>: use the plus in a cell header or in the inbox to add a task directly to that cell. Enter appends it to the end of the list and keeps the input open for the next task. Esc or a click outside closes it.</li>
-    <li><b>Move</b>: drag cards with the mouse into another cell or the inbox. Reorder within a cell. The bar at the bottom accepts cards as done.</li>
-    <li><b>Labels</b>: use labels to separate private, work and study in one matrix. Assign labels to a task in the detail view. Create, rename, colour and delete labels in the settings window. In the Labels menu you can hide single labels, show them all again or control tasks without a label. The filter is stored in the browser only, not in the file.</li>
-    <li><b>Gold coins</b>: use «🪙 Value» in the task details to set how many coins a task earns when you finish it. The coins go into the account (🪙 button in the header), where you redeem them for your own rewards or withdraw them. Every entry can be undone. The feature is off by default and is enabled in the settings.</li>
-    <li><b>Settings</b>: the «⚙ Settings» window in the header contains the matrix size, the axes, the labels, the gold coins as well as the colour scheme (System, Light, Dark) and language. Change the size there with a preset or freely with the two selects.</li>
-    <li><b>Details</b>: click a card to edit title, description, due date and cell. Changes apply immediately and can be undone.</li>
-    <li><b>Due dates</b>: red dates are overdue, orange dates are due today or within the next two days.</li>
-    <li><b>Archive</b>: completed tasks move to the archive. Restore them or delete them permanently there.</li>
-    <li><b>Saving</b>: the state is cached in the browser (localStorage) automatically. Browser storage is not a backup: save a file regularly and put it in a cloud folder if you want to sync. In Chrome and Edge, use the Auto switch in the header and choose a storage location once; the tool then writes changes into the chosen file immediately. While typing text it writes on blur or at the latest half a second after the last keystroke. In Firefox and Safari you save manually.</li>
-    <li><b>Opening</b>: files are checked strictly when opened. They contain only data, no executable code. After a restart you can continue with the stored file; the button in the header asks for permission.</li>
-    <li><b>Keys</b>: <kbd>N</kbd> or <kbd>/</kbd> opens the add field in the inbox, <kbd>Esc</kbd> closes dialogs and inputs, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> show or hide the axes.</li>
-    <li><b>Privacy</b>: the tool sends no data. Everything stays in your browser. The site is hosted on GitHub Pages, and GitHub may log technical data such as your IP address (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub privacy statement</a>). No warranty, MIT License.</li>`
+  helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
+    <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
+    <li><b>Saving</b>: In Chrome and Edge choose a file once and switch on “Auto-save”. In Firefox and Safari click “Save” regularly. The browser cache alone is not a backup.</li>
+    <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
+    <li><b>Keys</b>: <kbd>N</kbd> new task, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> axes.</li>
+    <li><b>Privacy</b>: The tool sends no data, everything stays on your device (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">hosted by GitHub</a>). No warranty.</li>`
 }};
 const t=(k,...a)=>{const v=L[LANG][k]??L.de[k];return typeof v==='function'?v(...a):v;};
 
