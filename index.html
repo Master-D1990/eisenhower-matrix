@@ -20,6 +20,7 @@
 <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='16' height='16' rx='3.5' fill='%23a95fa3'/%3E%3Crect x='24' y='4' width='16' height='16' rx='3.5' fill='%23da3b66'/%3E%3Crect x='44' y='4' width='16' height='16' rx='3.5' fill='%23d93b3b'/%3E%3Crect x='4' y='24' width='16' height='16' rx='3.5' fill='%236d7fad'/%3E%3Crect x='24' y='24' width='16' height='16' rx='3.5' fill='%23ad6f70'/%3E%3Crect x='44' y='24' width='16' height='16' rx='3.5' fill='%23e24b00'/%3E%3Crect x='4' y='44' width='16' height='16' rx='3.5' fill='%230097b5'/%3E%3Crect x='24' y='44' width='16' height='16' rx='3.5' fill='%23708d79'/%3E%3Crect x='44' y='44' width='16' height='16' rx='3.5' fill='%23b5791c'/%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="icon" id="faviconPng" href="favicon.png" type="image/png" sizes="96x96">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Eisenhower Matrix+","alternateName":["Eisenhower-Matrix","Eisenhower matrix","Priorisierungsmatrix"],"description":"Kostenloses Browser-Tool für eine Eisenhower-Matrix mit einstellbarer Grösse, Fristen, Ablage, Archiv, Suche, Drag and Drop, CSV-Export und Druck als PDF. Daten bleiben lokal.","url":"https://master-d1990.github.io/eisenhower-matrix/","applicationCategory":"ProductivityApplication","operatingSystem":"Any (web browser)","inLanguage":["de-CH","en"],"isAccessibleForFree":true,"license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"CHF"},"codeRepository":"https://github.com/Master-D1990/eisenhower-matrix"}
 </script>
@@ -4182,5 +4183,6 @@ document.addEventListener('mouseover',e=>{
 document.addEventListener('dragstart',collapseCard,true);
 document.addEventListener('scroll',collapseCard,true);
 </script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body>
 </html>

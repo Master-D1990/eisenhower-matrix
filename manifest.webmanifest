@@ -1,0 +1,16 @@
+{
+  "id": "/eisenhower-matrix/",
+  "name": "Eisenhower Matrix+",
+  "short_name": "Eisenhower+",
+  "description": "Eisenhower matrix in the size that suits you. Offline, no account, data stays local.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2f6fed",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
