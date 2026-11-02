@@ -857,6 +857,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
         <span aria-hidden="true">×</span>
         <label><span id="setColsName"></span><select id="setColsSel"></select></label>
       </div>
+      <label class="set-row"><input type="checkbox" id="setCellNames"><span data-i18n="showCellNames"></span></label>
     </section>
     <section class="set-section" data-section="axes">
       <h3 data-i18n="setAxes"></h3>
@@ -1060,7 +1061,7 @@ de:{
   swapAxes:'⇄ Achsen tauschen', swapAxesT:'Achsen tauschen', swapped:'Achsen getauscht. Rückgängig mit Strg+Z',
   swapHint:(x,y)=>x+' waagrecht, '+y+' senkrecht', hideAxes:'Achsen ausblenden',
   flipDirT:n=>'Richtung umkehren: '+n, flipAxis:n=>n+' umkehren', flipDone:'Richtung umgekehrt. Rückgängig mit Strg+Z',
-  showAxisButtons:'Achsen-Knöpfe anzeigen', tintLabel:'Farbstärke', resetShort:'Zurücksetzen',
+  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', resetShort:'Zurücksetzen',
   labelColorPop:'Label-Farbe', hexColor:'Hex-Farbe', channelR:'Rot', channelG:'Grün', channelB:'Blau',
   sampleTitle:'Meine Matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Feld', csvCellName:'Feldname', csvTitle:'Titel', csvDesc:'Beschreibung', csvCoins:'Münzen', csvDue:'Frist', csvCreated:'Erstellt', csvDone:'Erledigt',
@@ -1165,7 +1166,7 @@ en:{
   swapAxes:'⇄ Swap axes', swapAxesT:'Swap axes', swapped:'Axes swapped. Undo with Ctrl+Z',
   swapHint:(x,y)=>x+' horizontal, '+y+' vertical', hideAxes:'Hide axes',
   flipDirT:n=>'Reverse direction: '+n, flipAxis:n=>'Reverse '+n, flipDone:'Direction reversed. Undo with Ctrl+Z',
-  showAxisButtons:'Show axis buttons', tintLabel:'Colour strength', resetShort:'Reset',
+  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', resetShort:'Reset',
   labelColorPop:'Label colour', hexColor:'Hex colour', channelR:'Red', channelG:'Green', channelB:'Blue',
   sampleTitle:'My matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Cell', csvCellName:'Cell name', csvTitle:'Title', csvDesc:'Description', csvCoins:'Coins', csvDue:'Due', csvCreated:'Created', csvDone:'Done',
@@ -1345,6 +1346,7 @@ let filter={hidden:new Set(),none:true};
 let pendingHandle=null;
 let axesHidden=false;
 let axisBtns=false;
+let cellNamesOn=true;
 let tint=26;
 
 function isValidDateStr(s){
@@ -2062,6 +2064,7 @@ function renderSettingsMatrix(){
   const cn=$('#setColsName'); if(cn) cn.textContent=state.axisX;
   const axes=$('#setShowAxes'); if(axes) axes.checked=!axesHidden;
   const ab=$('#setAxisBtns'); if(ab) ab.checked=axisBtns;
+  const cnb=$('#setCellNames'); if(cnb) cnb.checked=cellNamesOn;
   syncInboxSetting();
   const fy=$('#setFlipY'), fx=$('#setFlipX');
   if(fy){fy.textContent=t('flipAxis',state.axisY);fy.title=t('flipDirT',state.axisY);fy.disabled=state.rows<=1;}
@@ -2502,6 +2505,7 @@ function cellElement(r,c,cellRow=1,cellCol=1){
   const co=document.createElement('span'); co.className='coord'; co.textContent=coordOf(r,c);
   const name=document.createElement('span'); name.className='cell-name'; name.dataset.editCellName='1'; name.dataset.r=String(r); name.dataset.c=String(c); name.textContent=cellNameAt(r,c); name.title=t('cellName');
   if(!cellNameAt(r,c)) name.style.opacity='0.45';
+  if(!cellNamesOn){name.textContent='';delete name.dataset.editCellName;name.removeAttribute('title');}
   const count=document.createElement('span'); count.className='cell-count'; const n=visibleTasksIn(r,c).length; count.textContent=String(n); count.title=taskCountText(n);
   const add=document.createElement('button'); add.type='button'; add.className='cell-add'; add.dataset.addCell=key; add.textContent='+'; add.title=t('addTaskT'); add.setAttribute('aria-label',t('addTaskT'));
   head.append(co,name,count,add); cell.append(head);
@@ -2573,7 +2577,7 @@ function renderMobileHead(){
   if(target) paintCellColors(head,target.r,target.c);
   else {head.style.removeProperty('--rc');head.style.removeProperty('--cc');head.style.removeProperty('--mix');}
   $('#mobileCoord').textContent=target?coordOf(target.r,target.c):'IN';
-  $('#mobileCellTitle').textContent=target?(cellNameAt(target.r,target.c)||coordOf(target.r,target.c)):t('inbox');
+  $('#mobileCellTitle').textContent=target?((cellNamesOn&&cellNameAt(target.r,target.c))||coordOf(target.r,target.c)):t('inbox');
   $('#mobileLevels').textContent=target?(state.rowLabels[target.r]+' · '+state.colLabels[target.c]):'';
 }
 function renderMobileList(){
@@ -3046,6 +3050,14 @@ function setAxisBtns(v){
   const cb=$('#setAxisBtns'); if(cb) cb.checked=axisBtns;
   renderBoard();
 }
+/* view preference: show the field names (Delegieren etc.) in the matrix */
+function loadCellNames(){try{cellNamesOn=localStorage.getItem('em-cellnames')!=='0';}catch(e){cellNamesOn=true;}}
+function setCellNames(v){
+  cellNamesOn=!!v;
+  try{localStorage.setItem('em-cellnames',cellNamesOn?'1':'0');}catch(e){}
+  const cb=$('#setCellNames'); if(cb) cb.checked=cellNamesOn;
+  renderBoard(); renderMobile();
+}
 /* one click flips the direction of an axis; the flags travel with their axis on swap */
 function flipAxis(axis){
   leaveExample();
@@ -3241,7 +3253,7 @@ function openMovePicker(id){
     const b=document.createElement('button');b.type='button';b.dataset.pickCell=r+','+c;
     paintCellColors(b,r,c);
     const co=document.createElement('span');co.className='pick-co';co.textContent=coordOf(r,c);
-    const nm=document.createElement('span');nm.textContent=cellNameAt(r,c);b.append(co,nm);grid.append(b);
+    const nm=document.createElement('span');nm.textContent=cellNamesOn?cellNameAt(r,c):'';b.append(co,nm);grid.append(b);
   }
   const inbox=document.createElement('button');inbox.type='button';inbox.className='picker-inbox';inbox.dataset.pickCell='inbox';inbox.textContent=t('inboxOption');grid.append(inbox);
   const done=document.createElement('button');done.type='button';done.className='picker-done';done.dataset.pickCell='done';done.textContent=t('done');grid.append(done);
@@ -3679,6 +3691,7 @@ $('#setColsSel').addEventListener('change',onSettingsSizeChange);
 $('#setSwapAxes').addEventListener('click',()=>{swapAxes();renderSettings();});
 $('#setShowAxes').addEventListener('change',e=>setAxesHidden(!e.target.checked));
 $('#setAxisBtns').addEventListener('change',e=>setAxisBtns(e.target.checked));
+$('#setCellNames').addEventListener('change',e=>setCellNames(e.target.checked));
 $('#setFlipY').addEventListener('click',()=>{flipAxis('y');renderSettingsMatrix();});
 $('#setFlipX').addEventListener('click',()=>{flipAxis('x');renderSettingsMatrix();});
 $('#setUseInbox').addEventListener('change',e=>setUseInbox(e.target.checked));
@@ -3753,7 +3766,7 @@ $('#board').addEventListener('dblclick',e=>{
   const name=e.target.closest('[data-edit-cell-name]');
   if(name){e.preventDefault();startCellNameEdit(name,Number(name.dataset.r),Number(name.dataset.c));return;}
   const head=e.target.closest('.cell-head');
-  if(head){e.preventDefault();const cell=head.closest('.cell');startCellNameEdit(head.querySelector('.cell-name'),Number(cell.dataset.r),Number(cell.dataset.c));return;}
+  if(head&&cellNamesOn){e.preventDefault();const cell=head.closest('.cell');startCellNameEdit(head.querySelector('.cell-name'),Number(cell.dataset.r),Number(cell.dataset.c));return;}
   const lab=e.target.closest('[data-edit-label]');
   if(lab){
     e.preventDefault();
@@ -4131,7 +4144,7 @@ function init(){
   if(!Array.isArray(state.labels)) state.labels=[];
   ui.mobileCell=null; ui.detailId=null; ui.archiveOpen=false; ui.search=''; ui.archiveQuery='';
   ui.inboxOpen=initialInboxOpen();
-  loadAxesHidden(); loadAxisBtns(); loadTint();
+  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTint();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
   restoreStoredHandle();
