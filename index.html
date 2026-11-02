@@ -3607,7 +3607,8 @@ function commit(fn,opts={}){
   redoStack=[]; editSnap=null; editActive=false;
   const prev=taskModSnap;
   fn();
-  stampTaskMods(prev);
+  // swapping axes or resizing only moves tasks: no task counts as edited (matters for merging devices)
+  if(opts.structural) taskModSnap=taskModMap(); else stampTaskMods(prev);
   markChanged(opts); updateHistoryButtons(); updateFavicon();
 }
 function validateUi(){
@@ -3682,7 +3683,7 @@ function resizeMatrix(newRows,newCols){
   commit(()=>{
     Object.assign(state,resizeStateCore(state,newRows,newCols,LANG));
     if(oldMobile) ui.mobileCell={r:mapIndex(oldMobile.r,oldRows,newRows),c:mapIndex(oldMobile.c,oldCols,newCols)};
-  },{detail:true});
+  },{detail:true,structural:true});
   if(oldMobile) saveMobileSelKey();
   toast(t('redistributed'),{label:t('undoAction'),fn:undo});
 }
@@ -3709,7 +3710,7 @@ function swapAxes(){
   commit(()=>{
     Object.assign(state,transposeStateCore(state));
     if(oldMobile) ui.mobileCell={r:C-1-oldMobile.c,c:R-1-oldMobile.r};
-  },{detail:true});
+  },{detail:true,structural:true});
   if(oldMobile) saveMobileSelKey();
   toast(t('swapped'),{label:t('undoAction'),fn:undo});
 }
@@ -3742,7 +3743,7 @@ function setCellNames(v){
 /* one click flips the direction of an axis; the flags travel with their axis on swap */
 function flipAxis(axis){
   leaveExample();
-  commit(()=>{ if(axis==='x') state.flipX=!state.flipX; else state.flipY=!state.flipY; },{detail:true});
+  commit(()=>{ if(axis==='x') state.flipX=!state.flipX; else state.flipY=!state.flipY; },{detail:true,structural:true});
   toast(t('flipDone'),{label:t('undoAction'),fn:undo});
 }
 /* view preference: colour strength mixed into the cell heads */
