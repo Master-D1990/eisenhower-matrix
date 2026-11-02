@@ -107,6 +107,10 @@ Eröffne ein [Issue auf GitHub](https://github.com/Master-D1990/eisenhower-matri
 
 The whole tool is a single file, [`index.html`](index.html): HTML, CSS and plain JavaScript, **no dependencies and no build step**. What is in the repository is exactly what runs, so the tool also works offline with a double-click. GitHub Pages serves the `main` branch directly.
 
+### Tests
+
+`node tests/run.mjs` runs the browser tests (Node 22+ and Chrome or Chromium, no `npm install`): loading, axes in every direction on desktop and phone, view settings, merging changes of two devices and the Google Drive sync against an emulated Drive. They also run on every push via GitHub Actions.
+
 ### File format (`.matrix.json`)
 
 ```json
