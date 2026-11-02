@@ -107,6 +107,10 @@ Eröffne ein [Issue auf GitHub](https://github.com/Master-D1990/eisenhower-matri
 
 The whole tool is a single file, [`index.html`](index.html): HTML, CSS and plain JavaScript, **no dependencies and no build step**. What is in the repository is exactly what runs, so the tool also works offline with a double-click. GitHub Pages serves the `main` branch directly.
 
+### Google Drive helper
+
+Google gives a browser-only app a one-hour sign-in only. [`worker/token-worker.js`](worker/token-worker.js) is a tiny Cloudflare Worker that adds the OAuth client secret and forwards two requests to Google's token endpoint, so the connection lasts. It stores nothing and never sees the matrix. Its settings are `GOOGLE_CLIENT_ID` (text) and `GOOGLE_CLIENT_SECRET` (secret); the page points to it with `GDRIVE_TOKEN_URL`.
+
 ### Tests
 
 `node tests/run.mjs` runs the browser tests (Node 22+ and Chrome or Chromium, no `npm install`): loading, axes in every direction on desktop and phone, view settings, merging changes of two devices and the Google Drive sync against an emulated Drive. They also run on every push via GitHub Actions.

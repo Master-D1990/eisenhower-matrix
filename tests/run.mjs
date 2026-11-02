@@ -147,6 +147,7 @@ const __keep=()=>sessionStorage.setItem('__drive',JSON.stringify(window.__drive)
 addEventListener('pagehide',__keep);
 window.google={accounts:{oauth2:{
   initTokenClient:cfg=>({requestAccessToken:()=>setTimeout(()=>cfg.callback({access_token:'tok',expires_in:3600}),0)}),
+  initCodeClient:cfg=>({requestCode:()=>setTimeout(()=>cfg.callback({code:'code1'}),0)}),
   revoke:()=>{window.__drive.revoked=true;}
 }}};
 window.confirm=()=>{window.__drive.confirms++;return true;};
@@ -154,8 +155,17 @@ window.confirm=()=>{window.__drive.confirms++;return true;};
 const j=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}});
 const meta=f=>({id:f.id,name:f.name,version:f.version,modifiedTime:f.modifiedTime});
 window.fetch=async(url,opts={})=>{
-  url=String(url); if(!url.includes('googleapis.com')) return real(url,opts);
-  const D=window.__drive; if(D.offline) throw new TypeError('Failed to fetch');
+  url=String(url);
+  const D=window.__drive;
+  // token helper (Cloudflare worker): code -> lasting connection, refresh -> new access token
+  if(/\\/(token|refresh)$/.test(url)&&!url.startsWith(location.origin)){
+    if(D.offline) throw new TypeError('Failed to fetch');
+    D.helperCalls=(D.helperCalls||0)+1;
+    return j({access_token:'tok'+D.helperCalls,expires_in:3600,refresh_token:url.endsWith('/token')?'rt1':undefined});
+  }
+  if(url.includes('oauth2.googleapis.com/revoke')) return new Response('');
+  if(!url.includes('googleapis.com')) return real(url,opts);
+  if(D.offline) throw new TypeError('Failed to fetch');
   const method=(opts.method||'GET').toUpperCase(), m=url.match(/files\\/([^?]+)/), id=m&&m[1];
   const f=id&&D.files.find(x=>x.id===id);
   if(url.includes('/upload/')){
@@ -341,18 +351,36 @@ async function main() {
     check(await p.ev(`gdriveStatusState`) === 'offline', 'status offline');
     await p.ev(`__drive.offline=false; window.dispatchEvent(new Event('online'))`); await sleep(800);
     check(await p.ev(`JSON.parse(__drive.files[0].content).tasks.some(t=>t.title==='offline task')`), 'offline change uploaded later');
-    // after a restart: continue bar
+    // after a restart within the token lifetime: continues by itself
+    await p.reload(); await sleep(600);
+    check(await p.ev(`gdriveMode&&state.tasks.some(t=>t.title==='offline task')`), 'continued with Drive without a click');
+    check(await p.ev(`document.querySelector('#continueBar').hidden`), 'no continue bar while signed in');
+    // lasting connection (token helper configured): an expired token renews itself, no click at all
+    if (await p.ev(`!!GDRIVE_TOKEN_URL`)) {
+      check(await p.ev(`!!localStorage.getItem('em-gdrive-refresh')`), 'lasting connection stored');
+      await p.ev(`localStorage.setItem('em-gdrive-token',JSON.stringify({t:'old',exp:Date.now()-1000}))`);
+      await p.reload(); await sleep(800);
+      check(await p.ev(`gdriveMode && document.querySelector('#continueBar').hidden`), 'expired token renewed without a click');
+      await p.ev(`localStorage.removeItem('em-gdrive-refresh')`);
+    } else console.log('      (token helper not configured: lasting-connection check skipped)');
+    // token expired: one click on the continue bar
+    await p.ev(`localStorage.setItem('em-gdrive-token',JSON.stringify({t:'old',exp:Date.now()-1000}))`);
     await p.reload(); await p.ev(`setLang('de')`);
-    check(await p.ev(`!document.querySelector('#continueBar').hidden`), 'continue bar after restart');
+    check(await p.ev(`!document.querySelector('#continueBar').hidden && !gdriveMode`), 'continue bar after the token expired');
     await p.ev(`document.querySelector('#continueBtn').click()`); await sleep(600);
-    const c = await p.ev(`JSON.stringify({mode:gdriveMode,has:state.tasks.some(t=>t.title==='offline task'),status:gdriveStatusState,bar:!document.querySelector('#continueBar').hidden,toast:document.querySelector('#toast').textContent})`);
-    check(JSON.parse(c).mode && JSON.parse(c).has, 'continued with Drive: ' + c);
+    const c = await p.ev(`JSON.stringify({mode:gdriveMode,has:state.tasks.some(t=>t.title==='offline task')})`);
+    check(JSON.parse(c).mode && JSON.parse(c).has, 'continued with Drive after one click: ' + c);
+    // disconnect forgets the stored sign-in
+    await p.ev(`disconnectDrive()`);
+    check(await p.ev(`localStorage.getItem('em-gdrive-token')===null && localStorage.getItem('em-gdrive-refresh')===null && !gdriveMode`), 'disconnect clears the stored sign-in');
     noErrors(p);
   });
 
   await browser.send('Browser.close').catch(() => {});
+  await Promise.race([new Promise(r => chrome.proc.once('exit', r)), sleep(3000)]);
   chrome.proc.kill(); srv.close();
-  if (!process.env.KEEP) fs.rmSync(chrome.dir, { recursive: true, force: true });
+  // Chrome may still flush its profile for a moment: cleaning up must never fail the run
+  if (!process.env.KEEP) { try { fs.rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch {} }
   const failed = results.filter(r => !r.ok).length;
   console.log(`\n${results.length - failed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

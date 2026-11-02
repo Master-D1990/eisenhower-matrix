@@ -980,6 +980,9 @@ const REPO='https://github.com/Master-D1990/eisenhower-matrix';
 /* ---------- Google Drive (optional) ---------- */
 const GDRIVE_CLIENT_ID='812788676370-2467g9gt6jlkl8j1bssm9vpjiqh44fnd.apps.googleusercontent.com';
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+/* token helper (worker/token-worker.js on Cloudflare): turns the one-hour Google sign-in into a lasting connection.
+   Empty = fall back to the one-hour token without helper. */
+const GDRIVE_TOKEN_URL='https://em-token.davidmeister90.workers.dev';
 const GDRIVE_FILE_NAME='Eisenhower Matrix.matrix.json';
 const GDRIVE_KEY='em-gdrive';
 const GDRIVE_BASE_KEY='em-gdrive-base';
@@ -1931,15 +1934,67 @@ function loadGis(){
   });
   return gisPromise;
 }
-function clearGdriveToken(){gdriveToken=null;gdriveTokenExp=0;}
+/* the access token (scope drive.file, valid about 1 h) is kept in this browser so a reload continues without a click */
+const GDRIVE_TOKEN_KEY='em-gdrive-token';
+function storeGdriveToken(){try{if(gdriveToken)localStorage.setItem(GDRIVE_TOKEN_KEY,JSON.stringify({t:gdriveToken,exp:gdriveTokenExp}));else localStorage.removeItem(GDRIVE_TOKEN_KEY);}catch(e){}}
+function loadGdriveToken(){try{const v=JSON.parse(localStorage.getItem(GDRIVE_TOKEN_KEY)||'null');if(v&&typeof v.t==='string'&&Number(v.exp)>Date.now()){gdriveToken=v.t;gdriveTokenExp=Number(v.exp);}}catch(e){}}
+function clearGdriveToken(){gdriveToken=null;gdriveTokenExp=0;storeGdriveToken();}
+const GDRIVE_REFRESH_KEY='em-gdrive-refresh';
+function gdriveRefreshToken(){try{return GDRIVE_TOKEN_URL?localStorage.getItem(GDRIVE_REFRESH_KEY):null;}catch(e){return null;}}
+function setGdriveRefreshToken(v){try{if(v)localStorage.setItem(GDRIVE_REFRESH_KEY,v);else localStorage.removeItem(GDRIVE_REFRESH_KEY);}catch(e){}}
+/* signed in for good: a valid token now, or a lasting connection that renews itself without a click */
+function hasDriveAuth(){return validGdriveToken()||!!gdriveRefreshToken();}
+function acceptGdriveToken(d){
+  gdriveToken=d.access_token;
+  gdriveTokenExp=Date.now()+(Number(d.expires_in)||3600)*1000-60000;
+  storeGdriveToken();
+  if(d.refresh_token) setGdriveRefreshToken(d.refresh_token);
+}
+async function tokenHelper(path,body){
+  let res;
+  try{ res=await fetch(GDRIVE_TOKEN_URL.replace(/\/$/,'')+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); }
+  catch(e){ const err=new Error('network'); err.status=0; throw err; }
+  let d={}; try{ d=await res.json(); }catch(e){}
+  if(!res.ok||!d.access_token){ const err=new Error(d.error||'auth'); err.status=res.status>=500?0:401; err.code=d.error; throw err; }
+  return d;
+}
+let gdriveRefreshing=null;
+function refreshGdriveToken(){
+  if(gdriveRefreshing) return gdriveRefreshing;
+  const rt=gdriveRefreshToken();
+  if(!rt) return Promise.reject(gdriveAuthError());
+  gdriveRefreshing=tokenHelper('/refresh',{refresh_token:rt})
+    .then(d=>{acceptGdriveToken(d);return gdriveToken;})
+    .catch(e=>{ if(e.code==='invalid_grant') setGdriveRefreshToken(null); throw e.status===0?e:gdriveAuthError(); })
+    .finally(()=>{gdriveRefreshing=null;});
+  return gdriveRefreshing;
+}
 function validGdriveToken(){return !!(gdriveToken&&Date.now()<gdriveTokenExp);}
 /* a non-interactive auth failure has status 401 like an expired token */
 function gdriveAuthError(){const e=new Error('auth');e.status=401;return e;}
 async function getToken(interactive){
   if(validGdriveToken()) return gdriveToken;
+  if(gdriveRefreshToken()){
+    try{ return await refreshGdriveToken(); }
+    catch(e){ if(e.status===0||!interactive) throw e; }   // offline: keep the connection; revoked: sign in again below
+  }
   if(!interactive) throw gdriveAuthError();
   if(!gisLoaded()) await loadGis();
   if(!gisLoaded()) throw new Error('gis');
+  if(GDRIVE_TOKEN_URL){
+    // code flow: Google returns a one-time code, the helper exchanges it for a lasting connection
+    const code=await new Promise((resolve,reject)=>{
+      try{
+        google.accounts.oauth2.initCodeClient({
+          client_id:GDRIVE_CLIENT_ID, scope:GDRIVE_SCOPE, ux_mode:'popup',
+          callback:resp=>resp&&resp.code?resolve(resp.code):reject(new Error('auth')),
+          error_callback:()=>reject(new Error('auth'))
+        }).requestCode();
+      }catch(e){reject(e);}
+    });
+    acceptGdriveToken(await tokenHelper('/token',{code}));
+    return gdriveToken;
+  }
   if(!gdriveTokenClient){
     gdriveTokenClient=google.accounts.oauth2.initTokenClient({
       client_id:GDRIVE_CLIENT_ID, scope:GDRIVE_SCOPE,
@@ -1950,6 +2005,7 @@ async function getToken(interactive){
           gdriveToken=resp.access_token;
           const secs=Number(resp.expires_in)||3600;
           gdriveTokenExp=Date.now()+secs*1000-60000;
+          storeGdriveToken();
           p.resolve(gdriveToken);
         }else p.reject(new Error('auth'));
       }
@@ -2002,7 +2058,11 @@ async function driveFetch(url,opts={}){
   }catch(e){
     const err=new Error('network'); err.status=0; throw err;
   }
-  if(res.status===401){clearGdriveToken();throw gdriveAuthError();}
+  if(res.status===401){
+    clearGdriveToken();
+    if(gdriveRefreshToken()&&!opts.__retried) return driveFetch(url,{...opts,__retried:true});   // renew once without a click
+    throw gdriveAuthError();
+  }
   if(!res.ok){const err=new Error('drive '+res.status);err.status=res.status;throw err;}
   return res;
 }
@@ -2077,6 +2137,10 @@ function disconnectDrive(){
   if(gdriveToken&&gisLoaded()){
     try{ google.accounts.oauth2.revoke(gdriveToken); }catch(e){}
   }
+  const rt=gdriveRefreshToken();
+  if(rt) fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(rt),{method:'POST',mode:'no-cors'}).catch(()=>{});
+  setGdriveRefreshToken(null);
+  clearGdriveToken();
   leaveDriveMode();
   toast(t('gdriveDisconnected'));
 }
@@ -2086,7 +2150,7 @@ function scheduleDriveRetry(){
 }
 function scheduleDriveSave(immediate=true){
   if(!gdriveMode||!gdrive) return;
-  gdriveStatusState=validGdriveToken()?'saving':'auth';
+  gdriveStatusState=hasDriveAuth()?'saving':'auth';
   clearTimeout(gdriveSaveTimer);
   gdriveSaveTimer=setTimeout(()=>{gdriveSaveTimer=null;driveSave();},immediate?800:1500);
   refreshHeader();
@@ -2094,7 +2158,7 @@ function scheduleDriveSave(immediate=true){
 async function driveSave(){
   if(!gdriveMode||!gdrive) return;
   if(gdriveSaving){gdriveAgain=true;return;}
-  if(!validGdriveToken()){setDriveStatus('auth');return;}
+  if(!hasDriveAuth()){setDriveStatus('auth');return;}
   gdriveSaving=true; gdriveAgain=false;
   let rev=stateRev;
   gdriveStatusState='saving'; refreshHeader();
@@ -2146,7 +2210,7 @@ async function driveSave(){
    Costs one small metadata request; the file is only downloaded when its version changed. */
 const GDRIVE_PULL_MS=15000;
 async function drivePull(){
-  if(!gdriveMode||!gdrive||gdriveSaving||gdriveSaveTimer||dirty||!validGdriveToken()) return;
+  if(!gdriveMode||!gdrive||gdriveSaving||gdriveSaveTimer||dirty||!hasDriveAuth()) return;
   if(document.visibilityState!=='visible'||gdriveStatusState!=='saved') return;
   gdriveSaving=true;
   const rev=stateRev;
@@ -2262,7 +2326,7 @@ function handleDriveError(e){
 }
 async function continueDrive(){
   if(!gdrive) return;
-  if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+  if(!hasDriveAuth()&&!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
   try{ await getToken(true); }catch(e){ toast(t('gdriveAuthFail')); return; }
   let meta;
   try{ meta=await driveMeta(gdrive.fileId); }
@@ -4178,7 +4242,7 @@ async function ensureWritePermission(handle,request){
 async function saveFile(opts={}){
   const asNew=!!opts.asNew, enableAuto=!!opts.enableAuto;
   if(gdriveMode&&!asNew){
-    if(!validGdriveToken()){
+    if(!hasDriveAuth()){
       if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
       try{ await getToken(true); }catch(e){ toast(t('gdriveAuthFail')); return; }
     }
@@ -4923,6 +4987,8 @@ function init(){
   if(driveAvailable()&&gdrive){
     loadGis().catch(()=>{});
     showDriveContinueBar();
+    loadGdriveToken();
+    if(hasDriveAuth()) continueDrive();   // still signed in (or lasting connection): continue without a click
   }else{
     restoreStoredHandle();
   }
