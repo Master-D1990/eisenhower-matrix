@@ -3583,7 +3583,13 @@ async function restoreStoredHandle(){
   if(!autoSaveSupported()) return;
   const h=await idbGetHandle();
   if(!h||!h.name) return;
-  pendingHandle=h; showContinueBar(h.name);
+  pendingHandle=h;
+  // Chrome keeps the permission when the user chose "allow on every visit" (or for an installed app):
+  // then continue with the file right away, otherwise ask with one click
+  let p='prompt';
+  try{if(h.queryPermission) p=await h.queryPermission({mode:'readwrite'});}catch(e){}
+  if(p==='granted'){await continueWithStored();if(!pendingHandle)return;}
+  showContinueBar(h.name);
 }
 
 /* ---------- CSV ---------- */
