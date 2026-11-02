@@ -1060,7 +1060,7 @@ de:{
   gdriveContinueAsk:'Die Datei in Google Drive ist neuer als der lokale Stand. OK = Version aus Drive laden, Abbrechen = lokalen Stand behalten und hochladen.',
   gdriveSaved:'gespeichert', gdriveSaving:'speichert …', gdriveOffline:'offline, wird nachgeholt', gdriveReconnect:'erneut verbinden',
   gdriveAlwaysOn:'Bei Google Drive immer an',
-  gdriveLoaded:'Aus Google Drive geladen',
+  gdriveLoaded:'Aus Google Drive geladen', gdriveUpdated:'Neue Änderungen von einem anderen Gerät geladen',
   gdriveMerged:'Änderungen von einem anderen Gerät übernommen',
   gdriveMergedConflicts:n=>n===1?' (1 Konflikt, jeweils die neuere Änderung behalten)':' ('+n+' Konflikte, jeweils die neuere Änderung behalten)',
   gdriveMissing:'Die Matrix in Google Drive wurde nicht gefunden.',
@@ -1174,7 +1174,7 @@ en:{
   gdriveContinueAsk:'The file in Google Drive is newer than the local version. OK = load the version from Drive, Cancel = keep the local version and upload it.',
   gdriveSaved:'saved', gdriveSaving:'saving …', gdriveOffline:'offline, will retry', gdriveReconnect:'reconnect',
   gdriveAlwaysOn:'Always on with Google Drive',
-  gdriveLoaded:'Loaded from Google Drive',
+  gdriveLoaded:'Loaded from Google Drive', gdriveUpdated:'Loaded new changes from another device',
   gdriveMerged:'Changes from another device merged',
   gdriveMergedConflicts:n=>n===1?' (1 conflict, kept the newer change)':' ('+n+' conflicts, kept the newer change)',
   gdriveMissing:'The matrix in Google Drive was not found.',
@@ -2142,6 +2142,37 @@ async function driveSave(){
     if(gdriveAgain&&gdriveMode){gdriveAgain=false;driveSave();}
   }
 }
+/* fetch changes of other devices: every 15 s while the page is visible, and when it becomes visible again.
+   Costs one small metadata request; the file is only downloaded when its version changed. */
+const GDRIVE_PULL_MS=15000;
+async function drivePull(){
+  if(!gdriveMode||!gdrive||gdriveSaving||gdriveSaveTimer||dirty||!validGdriveToken()) return;
+  if(document.visibilityState!=='visible'||gdriveStatusState!=='saved') return;
+  gdriveSaving=true;
+  const rev=stateRev;
+  try{
+    const meta=await driveMeta(gdrive.fileId);
+    if(meta&&meta.version&&meta.version!==gdrive.version){
+      const text=await driveRead(gdrive.fileId);
+      if(stateRev!==rev||dirty){gdriveAgain=true;return;}   // edited meanwhile: the next save merges
+      const next=parseFileText(text);                         // nothing local pending: remote = merge result
+      replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
+      gdriveMode=true;
+      saveDriveBase(text);
+      saveDriveConn({fileId:gdrive.fileId,name:meta.name||gdrive.name,version:meta.version});
+      toast(t('gdriveUpdated'));
+    }
+  }catch(e){
+    if(e&&e.status===401){clearGdriveToken();gdriveStatusState='auth';}
+    else if(e&&e.status===404){forgetDrive();toast(t('gdriveMissing'));}
+  }finally{
+    gdriveSaving=false;
+    refreshHeader();
+    if(gdriveAgain&&gdriveMode){gdriveAgain=false;driveSave();}
+  }
+}
+setInterval(drivePull,GDRIVE_PULL_MS);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')drivePull();});
 async function connectDrive(){
   if(!driveAvailable()) return;
   if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
