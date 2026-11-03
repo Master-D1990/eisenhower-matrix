@@ -383,6 +383,26 @@ async function main() {
     noErrors(p);
   });
 
+  await test('drag onto the bin deletes without a question, undo brings it back', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(async()=>{
+      let asked=0; window.confirm=()=>{asked++;return true;};
+      leaveExample(); addTask('bin me',[0,0]); renderAllDynamic();
+      const id=state.tasks.find(x=>x.title==='bin me').id, card=document.querySelector('.task-card[data-task="'+id+'"]');
+      const ev=(type,el)=>el.dispatchEvent(new DragEvent(type,{bubbles:true,cancelable:true,dataTransfer:new DataTransfer()}));
+      ev('dragstart',card); const shown=getComputedStyle(document.querySelector('#dropTrash')).visibility;
+      ev('dragover',document.querySelector('#dropTrash')); const over=document.querySelector('#dropTrash').classList.contains('over');
+      ev('drop',document.querySelector('#dropTrash'));
+      const gone=!state.tasks.some(x=>x.id===id), archived=state.archive.some(x=>x.id===id);
+      undo(); const back=state.tasks.some(x=>x.id===id);
+      return {shown, over, gone, archived, back, asked, dragging:document.body.classList.contains('dragging')};
+    })()`);
+    check(r.shown === 'visible' && r.over, 'bin shown while dragging: ' + JSON.stringify(r));
+    check(r.gone && !r.archived && r.asked === 0 && !r.dragging, 'deleted, not archived, no question: ' + JSON.stringify(r));
+    check(r.back, 'undo restores it');
+    noErrors(p);
+  });
+
   await test('repeat: two devices tick off the same task, merged without a duplicate', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{

@@ -278,9 +278,12 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .task-card:not(:hover):not(:focus-within) .task-done{width:0;border-width:0;margin-left:-5px}
 .task-done:hover{background:color-mix(in srgb,var(--g) 12%,var(--panel));border-color:var(--g)}
 .task-done:focus-visible{opacity:1}
-#dropDone{position:fixed;left:50%;bottom:14px;transform:translate(-50%,calc(100% + 40px));visibility:hidden;z-index:150;background:var(--panel);border:2px solid var(--g);box-shadow:var(--shadow);border-radius:9px;padding:10px 22px;font-weight:650;color:var(--g);transition:transform .18s,visibility 0s .18s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 24px)}
-body.dragging #dropDone{transform:translate(-50%,0);pointer-events:auto;visibility:visible;transition:transform .18s}
+#dropBar{position:fixed;left:50%;bottom:14px;transform:translate(-50%,calc(100% + 40px));visibility:hidden;z-index:150;display:flex;gap:10px;transition:transform .18s,visibility 0s .18s;pointer-events:none;max-width:calc(100vw - 24px)}
+body.dragging #dropBar{transform:translate(-50%,0);pointer-events:auto;visibility:visible;transition:transform .18s}
+#dropDone,#dropTrash{background:var(--panel);border:2px solid var(--g);box-shadow:var(--shadow);border-radius:9px;padding:10px 22px;font-weight:650;color:var(--g);white-space:nowrap}
+#dropTrash{border-color:var(--r);color:var(--r)}
 #dropDone.over{background:color-mix(in srgb,var(--g) 14%,var(--panel))}
+#dropTrash.over{background:color-mix(in srgb,var(--r) 14%,var(--panel))}
 .card-stripes{position:absolute;left:0;top:0;bottom:0;display:flex;border-radius:5px 0 0 5px;overflow:hidden;pointer-events:none}
 .card-stripes i{display:block;width:5px;height:100%}
 
@@ -708,7 +711,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   :root{--bg:#fff;--panel:#fff;--line:#c9cdd4;--text:#1d2330;--muted:#555f6e;--accent:#2f6fed;--field:#fff;--hover:#fff;--soft:#f4f5f7;--faint:#777;--accent-soft:#eef3ff;--ring:#b9c9e8;--empty:#d9dde3;color-scheme:light}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   html,body{height:auto;overflow:visible;background:#fff;display:block}
-  #bar,.drawer,#movePicker,#dropDone,#toast,#mobileView,.menu-list,#printHead,.ax-origin-btn,.ax-flip-btn,.color-pop{display:none!important}
+  #bar,.drawer,#movePicker,#dropBar,#toast,#mobileView,.menu-list,#printHead,.ax-origin-btn,.ax-flip-btn,.color-pop{display:none!important}
   .cell-add,.inline-add{display:none!important}
   .ax-title.y:has(.ax-flip-btn){padding-bottom:0!important}
   #printHead{display:block!important;padding:0 0 8px}
@@ -1007,7 +1010,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   </div>
 </div>
 
-<div id="dropDone"><span data-i18n="dropDone"></span></div>
+<div id="dropBar"><div id="dropDone"><span data-i18n="dropDone"></span></div><div id="dropTrash"><span data-i18n="dropTrash"></span></div></div>
 <div id="colorPop" class="color-pop" role="dialog" aria-modal="false" hidden>
   <div class="cp-palette" id="cpPalette"></div>
   <div class="cp-divider"></div>
@@ -1139,7 +1142,7 @@ de:{
   helpH:'So funktioniert Eisenhower Matrix+', helpIntro:'Ordne Aufgaben nach Wichtigkeit (nach oben) und Dringlichkeit (nach rechts). Oben rechts steht, was sofort dran ist.',
   downloadToolHint:'Als HTML-Datei, läuft ohne Internet. Ohne deine Daten.',
   loadExample:'Beispiel öffnen', helpOk:'Los geht\'s', licenseNote:'Open Source (MIT-Lizenz).',
-  dropDone:'✓ Hierher ziehen = erledigt',
+  dropDone:'✓ Hierher ziehen = erledigt', dropTrash:'🗑 Hierher ziehen = löschen',
   savedInFile:'in Datei gespeichert', notSaved:'nicht gespeichert',
   saveNoteBrowser:'Der Stand liegt automatisch im Browserspeicher. Eine Datei ist die eigentliche Sicherung.',
   confirmDiscard:'Änderungen sind noch nicht in einer Datei gespeichert. Trotzdem fortfahren?',
@@ -1275,7 +1278,7 @@ en:{
   helpH:'How Eisenhower Matrix+ works', helpIntro:'Sort tasks by importance (upwards) and urgency (to the right). Top right is what needs doing now.',
   downloadToolHint:'As an HTML file, runs without internet. Without your data.',
   loadExample:'Open example', helpOk:'Got it', licenseNote:'Open source (MIT License).',
-  dropDone:'✓ Drop here = done',
+  dropDone:'✓ Drop here = done', dropTrash:'🗑 Drop here = delete',
   savedInFile:'saved to file', notSaved:'not saved',
   saveNoteBrowser:'The state is cached in the browser automatically. A file is the real backup.',
   confirmDiscard:'Changes are not saved to a file yet. Continue anyway?',
@@ -4462,6 +4465,14 @@ function deleteTask(id){
   closeDetail();
   toast(t('deleted'));
 }
+/* dropped on the bin: no question, the toast offers undo instead */
+function trashTask(id){
+  if(!findTask(id)) return;
+  leaveExample();
+  commit(()=>{state.tasks=state.tasks.filter(x=>x.id!==id);});
+  if(ui.detailId===id) closeDetail();
+  toast(t('deleted'),{label:t('undoAction'),fn:undo});
+}
 function moveTaskTo(id,cellKey,targetId,after){
   const task=findTask(id); if(!task) return;
   if(targetId===id) return;
@@ -5546,7 +5557,7 @@ document.addEventListener('keydown',e=>{
 
 /* drag and drop */
 let dragTaskId=null,dropInfo=null;
-function clearDropMarks(){$$('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));$$('.cell-list.drop-empty').forEach(el=>el.classList.remove('drop-empty'));$('#dropDone').classList.remove('over');}
+function clearDropMarks(){$$('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));$$('.cell-list.drop-empty').forEach(el=>el.classList.remove('drop-empty'));$$('#dropDone,#dropTrash').forEach(el=>el.classList.remove('over'));}
 function finishDrag(){dragTaskId=null;dropInfo=null;clearDropMarks();document.body.classList.remove('dragging');$$('.task-card.dragging').forEach(el=>el.classList.remove('dragging'));}
 document.addEventListener('dragstart',e=>{
   const card=e.target.closest('.task-card'); if(!card||narrow()) return;
@@ -5557,7 +5568,7 @@ document.addEventListener('dragend',finishDrag);
 document.addEventListener('dragleave',e=>{if(!e.relatedTarget)clearDropMarks();});
 document.addEventListener('dragover',e=>{
   if(!dragTaskId) return;
-  const bar=e.target.closest&&e.target.closest('#dropDone');
+  const bar=e.target.closest&&e.target.closest('#dropDone,#dropTrash');
   if(bar){e.preventDefault();e.dataTransfer.dropEffect='move';clearDropMarks();bar.classList.add('over');dropInfo={done:true};return;}
   const el=e.target.closest?e.target:e.target.parentElement;
   const list=el.closest('.cell-list')||el.closest('.cell')?.querySelector('.cell-list')||el.closest('#inbox')?.querySelector('.cell-list');
@@ -5578,6 +5589,7 @@ document.addEventListener('drop',e=>{
   if(!dragTaskId) return;
   e.preventDefault();
   if(e.target.closest('#dropDone')){const id=dragTaskId;finishDrag();archiveTask(id);return;}
+  if(e.target.closest('#dropTrash')){const id=dragTaskId;finishDrag();trashTask(id);return;}
   const info=dropInfo; const id=dragTaskId;
   finishDrag();
   if(info&&!info.done&&info.cellKey) moveTaskTo(id,info.cellKey,info.targetId,info.after);
