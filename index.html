@@ -2260,6 +2260,8 @@ async function drivePull(){
 }
 setInterval(drivePull,GDRIVE_PULL_MS);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')drivePull();});
+/* ask the browser to keep the site data (Safari otherwise may clear it after 7 days without a visit) */
+function keepStorage(){try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}}
 async function connectDrive(){
   if(!driveAvailable()) return;
   if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
@@ -2267,7 +2269,9 @@ async function connectDrive(){
   let meta=null;
   try{ meta=await driveFind(); }catch(e){ handleDriveError(e); return; }
   try{
+    keepStorage();
     if(meta){
+      const wasExample=exampleMode;
       const text=await driveRead(meta.id);
       let next=null;
       try{ next=parseFileText(text); }catch(e){ next=null; }
@@ -2276,7 +2280,9 @@ async function connectDrive(){
       const conn={fileId:meta.id,name:meta.name||GDRIVE_FILE_NAME,version:meta.version||''};
       if(!same){
         let merged=null;
-        if(next){
+        if(next&&exampleMode){
+          merged={state:next,conflicts:0};   // the example (new device, or site data cleared) is never mixed into the own matrix
+        }else if(next){
           try{ merged=mergeStates(loadDriveBaseState(),state,next); }
           catch(err){ console.warn('drive merge failed',err); }
         }
@@ -2298,7 +2304,7 @@ async function connectDrive(){
           }
           dirty=false; lastSaveError=false; setLocalAt(Date.now()); saveLocal();
           setDriveStatus('saved');
-          mergedToast(merged.conflicts);
+          if(wasExample) toast(t('gdriveConnected',conn.name)); else mergedToast(merged.conflicts);
           refreshDriveUi();
           return;
         }

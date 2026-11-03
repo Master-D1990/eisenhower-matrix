@@ -316,6 +316,17 @@ async function main() {
     noErrors(p);
   });
 
+  await test('new device or cleared site data: connecting loads the own matrix, no example tasks mixed in', async () => {
+    const p = await open(browser, base, { init: DRIVE_MOCK });
+    await p.ev(`(()=>{const s=JSON.parse(JSON.stringify(state));s.title='Own matrix';s.tasks=[{...s.tasks[0],id:'u1',title:'own 1'},{...s.tasks[1],id:'u2',title:'own 2'}];s.archive=[];
+      __drive.files.push({id:'f9',name:'Eisenhower Matrix.matrix.json',version:'5',modifiedTime:new Date().toISOString(),content:JSON.stringify(s)});})()`);
+    check(await p.ev(`exampleMode`), 'starts with the example');
+    await p.ev(`connectDrive()`); await sleep(800);
+    const r = await p.ev(`({title:state.title,tasks:state.tasks.map(t=>t.title),drive:JSON.parse(__drive.files[0].content).tasks.map(t=>t.title),ex:exampleMode})`);
+    check(r.title === 'Own matrix' && r.tasks.join() === 'own 1,own 2' && r.drive.join() === 'own 1,own 2' && !r.ex, 'own matrix only: ' + JSON.stringify(r));
+    noErrors(p);
+  });
+
   await test('merge: two devices worked offline', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
