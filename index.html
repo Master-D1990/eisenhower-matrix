@@ -4689,8 +4689,39 @@ function cleanupTouchOp(){
   if(touchOp.ghost) touchOp.ghost.remove();
   if(touchOp.card) touchOp.card.classList.remove('drag-src','swiping');
   if(touchOp.reveal) touchOp.reveal.remove();
-  clearPadHover();
+  if(touchOp.raf) cancelAnimationFrame(touchOp.raf);
+  clearPadHover(); clearListDrop();
   touchOp=null;
+}
+/* phone: sorting inside the open field while dragging */
+function clearListDrop(){$$('#mobileCellList .drop-before,#mobileCellList .drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));}
+function listDropAt(x,y){
+  const el=document.elementFromPoint(x,y);
+  const list=el&&el.closest('#mobileCellList'); if(!list) return null;
+  const wrap=list.querySelector('.cell-list'); if(!wrap) return null;
+  let targetId=null,after=false;
+  for(const card of $$('.task-card:not(.drag-src)',wrap)){
+    const r=card.getBoundingClientRect();
+    if(y<r.top+r.height/2){targetId=card.dataset.task;after=false;break;}
+    targetId=card.dataset.task;after=true;
+  }
+  return targetId?{cellKey:wrap.dataset.cellkey,targetId,after}:null;
+}
+function dragAutoScroll(){
+  const t=touchOp; if(!t||t.mode!=='drag') return;
+  const list=$('#mobileCellList'), r=list.getBoundingClientRect(), edge=48;
+  let v=0;
+  if(t.y!=null&&t.x>=r.left&&t.x<=r.right){
+    if(t.y<r.top+edge&&t.y>r.top-edge) v=-Math.ceil((r.top+edge-t.y)/6);
+    else if(t.y>r.bottom-edge&&t.y<r.bottom+edge) v=Math.ceil((t.y-(r.bottom-edge))/6);
+  }
+  if(v){list.scrollTop+=v; markListDrop(t.x,t.y);}
+  t.raf=requestAnimationFrame(dragAutoScroll);
+}
+function markListDrop(x,y){
+  clearListDrop();
+  const d=listDropAt(x,y);
+  if(d) $('#mobileCellList').querySelector(`.task-card[data-task="${d.targetId}"]`)?.classList.add(d.after?'drop-after':'drop-before');
 }
 function beginLongPressDrag(){
   if(!touchOp||touchOp.mode!=='press') return;
@@ -4703,6 +4734,7 @@ function beginLongPressDrag(){
   document.body.append(ghost);
   t.ghost=ghost; t.card.classList.add('drag-src');
   try{t.card.setPointerCapture(t.pointerId);}catch(e){}
+  t.x=t.sx; t.y=t.sy; t.raf=requestAnimationFrame(dragAutoScroll);
   if(navigator.vibrate) {try{navigator.vibrate(12);}catch(e){}}
 }
 function startSwipe(t){
@@ -4735,10 +4767,12 @@ document.addEventListener('pointermove',e=>{
   }
   if(t.mode==='drag'){
     if(t.ghost) t.ghost.style.transform=`translate(${dx}px,${dy}px) rotate(1.5deg)`;
+    t.x=e.clientX; t.y=e.clientY;
     clearPadHover();
     const el=document.elementFromPoint(e.clientX,e.clientY);
     const pad=el&&el.closest('[data-pad-cell]');
     if(pad) pad.classList.add('drop-hover');
+    markListDrop(e.clientX,e.clientY);
     return;
   }
   if(t.mode==='swipe'){
@@ -4758,9 +4792,16 @@ document.addEventListener('pointerup',e=>{
     const el=document.elementFromPoint(e.clientX,e.clientY);
     const pad=el&&el.closest('[data-pad-cell]');
     const key=pad?pad.dataset.padCell:null;
+    const sort=key?null:listDropAt(e.clientX,e.clientY);
     cleanupTouchOp();
     ui.longPressGuard=Date.now()+700;
     if(key){moveByIdToCell(op.id,key);toast(t('moved'));}
+    else if(sort){
+      // dropped where it already was: no change, no undo step
+      const ids=state.tasks.map(x=>x.id), rest=ids.filter(x=>x!==op.id);
+      rest.splice(rest.indexOf(sort.targetId)+(sort.after?1:0),0,op.id);
+      if(rest.join()!==ids.join()) moveTaskTo(op.id,sort.cellKey,sort.targetId,sort.after);
+    }
     return;
   }
   if(op.mode==='swipe'){

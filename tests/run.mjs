@@ -235,6 +235,30 @@ async function main() {
     check(r.swapMod && r.resizeMod && r.flipMod, 'structural change stamped tasks as edited: ' + JSON.stringify(r));
   });
 
+  await test('phone: sort inside a field by long press and drag', async () => {
+    const p = await open(browser, base, { width: 390, height: 844, mobile: true });
+    await p.ev(`addTask('one',[0,2]);addTask('two',[0,2]);addTask('three',[0,2]);setMobileSel('0,2')`); await sleep(100);
+    const titles = () => p.ev(`[...document.querySelectorAll('#mobileCellList .task-card')].map(c=>findTask(c.dataset.task).title)`);
+    const t0 = await titles();
+    const box = n => p.ev(`(()=>{const r=document.querySelectorAll('#mobileCellList .task-card')[${n}].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,h:r.height};})()`);
+    const touch = (type, x, y) => p.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    const drag = async (from, toY) => {
+      await touch('touchStart', from.x, from.y); await sleep(550);          // long press
+      for (let i = 1; i <= 6; i++) { await touch('touchMove', from.x, from.y + (toY - from.y) * i / 6); await sleep(30); }
+      await touch('touchEnd'); await sleep(200);
+    };
+    const last = await box(t0.length - 1), first = await box(0);
+    await drag(last, first.y - first.h * 0.3);                              // last card to the top
+    const t1 = await titles();
+    check(t1[0] === t0[t0.length - 1] && t1.length === t0.length, 'last card moved to the top: ' + t1.join(', '));
+    const u = await p.ev(`undoStack.length`);
+    const b0 = await box(0); await drag(b0, b0.y + 2);                      // dropped in place: nothing changes
+    check(JSON.stringify(await titles()) === JSON.stringify(t1) && await p.ev(`undoStack.length`) === u, 'drop in place is no change');
+    await p.ev(`undo()`);
+    check(JSON.stringify(await titles()) === JSON.stringify(t0), 'undo restores the order');
+    noErrors(p);
+  });
+
   await test('view settings: field names, task font, axis buttons, label filter', async () => {
     const p = await open(browser, base);
     check(await p.ev(`document.querySelectorAll('.ax-origin-btn,.ax-flip-btn').length`) === 0, 'axis buttons hidden by default');
