@@ -530,6 +530,8 @@ label.set-row{justify-content:space-between;cursor:pointer}
 /* Dialog */
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);max-width:680px;width:calc(100% - 32px);padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:calc(100vh - 40px);overflow:auto}
 dialog::backdrop{background:rgba(0,0,0,.45)}
+.ask-dlg{max-width:460px}
+#askText{white-space:pre-line;margin:2px 0 0;line-height:1.45;overflow-wrap:anywhere}
 .dlg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .dlg-head h2{margin:0;font-size:19px}
 .dlg-close{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;border-radius:5px;width:30px;height:30px;flex:0 0 auto}
@@ -910,6 +912,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   <div class="drawer-foot"><button class="btn danger" id="archiveClear" data-i18n="archiveClear"></button></div>
 </aside>
 
+<dialog id="askDlg" class="ask-dlg"><form method="dialog"><p id="askText"></p><div class="dlg-foot"><span class="spacer"></span><button class="btn" id="askCancel" value="" data-i18n="cancel"></button><button class="btn primary" id="askOk" value="ok">OK</button></div></form></dialog>
 <dialog id="helpDlg">
   <div class="dlg-head"><h2 data-i18n="helpH"></h2><button class="dlg-close" id="helpClose" aria-label="Close">✕</button></div>
   <p class="intro" data-i18n="helpIntro"></p>
@@ -1099,13 +1102,11 @@ de:{
   coinsConfirmReward:(name,price)=>'«'+name+'» für '+price+' 🪙 einlösen?',
   coinsRewardInvalid:'Bitte einen Namen und einen Preis von 1 bis 999999 eingeben.',
   coinsRewardAdded:'Belohnung hinzugefügt', coinsRewardUpdated:'Belohnung gespeichert', coinsRewardDeleted:'Belohnung gelöscht',
-  coinsConfirmDeleteReward:n=>'Belohnung «'+n+'» löschen?',
   coinsEdit:'Bearbeiten', coinsSave:'Speichern', coinsDelete:'Löschen',
   coinsHistory:'Verlauf', coinsNoHistory:'Noch keine Buchungen.', coinsShowMore:'mehr zeigen',
   coinsRestoredSuffix:'wiederhergestellt', coinsPartial:(taken,total)=>'(nur '+taken+' von '+total+' vorhanden)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Nicht genug Münzen',
   themeSystem:'System',
-  confirmDeleteLabel:n=>'Label «'+n+'» löschen? Es wird aus allen Aufgaben entfernt, die Aufgaben bleiben erhalten.',
   autoSave:'Automatisch speichern', autoSaveT:'Änderungen sofort in die Datei schreiben',
   autoShort:'Auto', autoOnlyChrome:'Nur in Chrome und Edge möglich',
   statusNoFilePick:'Nur im Browser · Datei wählen', statusNoFileSave:'Nur im Browser · Speichern', statusNoStore:'Noch nicht gespeichert', storeWhere:'Wo soll deine Matrix liegen?', storeGdriveHint:'Empfohlen: speichert automatisch und ist auf allen Geräten aktuell', storeFilePick:'Datei auf diesem Gerät wählen', storeFilePickHint:'Speichert automatisch in eine Datei, nur auf diesem Gerät', storeFileSave:'Als Datei speichern', storeFileSaveHint:'Lädt eine Datei herunter, ab und zu wiederholen',
@@ -1147,9 +1148,6 @@ de:{
   saveNoteBrowser:'Der Stand liegt automatisch im Browserspeicher. Eine Datei ist die eigentliche Sicherung.',
   confirmDiscard:'Änderungen sind noch nicht in einer Datei gespeichert. Trotzdem fortfahren?',
   confirmNew:'Neue leere 3 x 3 Matrix anlegen? Die aktuelle Matrix wird ersetzt.',
-  confirmDeleteTask:'Diese Aufgabe wirklich löschen? Sie wird nicht ins Archiv verschoben.',
-  confirmArchiveClear:'Das ganze Archiv endgültig löschen? Das lässt sich nicht rückgängig machen.',
-  confirmDeleteArchived:'Diesen Eintrag endgültig löschen?',
   confirmLoadExample:'Beispiel öffnen? Die aktuelle Matrix wird ersetzt.',
   invalidFile:'Die Datei ist keine gültige Eisenhower-Matrix-Datei.',
   invalidJSON:'Die Datei enthält kein gültiges JSON.',
@@ -1235,13 +1233,11 @@ en:{
   coinsConfirmReward:(name,price)=>'Redeem «'+name+'» for '+price+' 🪙?',
   coinsRewardInvalid:'Enter a name and a price from 1 to 999999.',
   coinsRewardAdded:'Reward added', coinsRewardUpdated:'Reward saved', coinsRewardDeleted:'Reward deleted',
-  coinsConfirmDeleteReward:n=>'Delete reward «'+n+'»?',
   coinsEdit:'Edit', coinsSave:'Save', coinsDelete:'Delete',
   coinsHistory:'History', coinsNoHistory:'No entries yet.', coinsShowMore:'show more',
   coinsRestoredSuffix:'restored', coinsPartial:(taken,total)=>'(only '+taken+' of '+total+' available)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Not enough coins',
   themeSystem:'System',
-  confirmDeleteLabel:n=>'Delete label «'+n+'»? It is removed from all tasks, the tasks stay.',
   autoSave:'Auto-save', autoSaveT:'Write changes into the file immediately',
   autoShort:'Auto', autoOnlyChrome:'Only possible in Chrome and Edge',
   statusNoFilePick:'Browser only · Choose file', statusNoFileSave:'Browser only · Save', statusNoStore:'Not saved yet', storeWhere:'Where should your matrix live?', storeGdriveHint:'Recommended: saves automatically and stays up to date on all devices', storeFilePick:'Choose a file on this device', storeFilePickHint:'Saves automatically to a file, this device only', storeFileSave:'Save as a file', storeFileSaveHint:'Downloads a file, repeat now and then',
@@ -1283,9 +1279,6 @@ en:{
   saveNoteBrowser:'The state is cached in the browser automatically. A file is the real backup.',
   confirmDiscard:'Changes are not saved to a file yet. Continue anyway?',
   confirmNew:'Create a new empty 3 x 3 matrix? The current matrix will be replaced.',
-  confirmDeleteTask:'Delete this task? It will not be moved to the archive.',
-  confirmArchiveClear:'Delete the whole archive permanently? This cannot be undone.',
-  confirmDeleteArchived:'Delete this entry permanently?',
   confirmLoadExample:'Open the example? The current matrix will be replaced.',
   invalidFile:'This is not a valid Eisenhower matrix file.',
   invalidJSON:'The file does not contain valid JSON.',
@@ -2483,9 +2476,9 @@ async function connectDrive(){
           return;
         }
         /* fallback only when the merge itself failed */
-        const load=confirm(t('gdriveExistingAsk'));
+        const load=await ask(t('gdriveExistingAsk'));
         if(load){
-          if(!next){ try{ next=parseFileText(text); }catch(err){ alert(t('invalidFile')+'\n\n'+err.message); return; } }
+          if(!next){ try{ next=parseFileText(text); }catch(err){ ask(t('invalidFile')+'\n\n'+err.message,{cancel:false}); return; } }
           saveDriveConn(conn);
           activateDriveMode();
           replaceWithState(next,{dirty:false,handle:null,autoWrite:false});
@@ -2587,7 +2580,7 @@ async function continueDrive(){
     }
     /* fallback only when the merge itself failed */
     let loadRemote=remoteNewer;
-    if(remoteNewer&&dirty) loadRemote=confirm(t('gdriveContinueAsk'));
+    if(remoteNewer&&dirty) loadRemote=await ask(t('gdriveContinueAsk'));
     if(loadRemote){
       applyRemoteState(next,{dirty:false});
       gdriveMode=true;
@@ -2643,7 +2636,6 @@ function cycleLabelColor(labelId){
 }
 function deleteLabel(labelId){
   const l=labelById(labelId); if(!l) return;
-  if(!confirm(t('confirmDeleteLabel',l.name))) return;
   leaveExample();
   commit(()=>{
     state.labels=state.labels.filter(x=>x.id!==labelId);
@@ -2656,6 +2648,7 @@ function deleteLabel(labelId){
   if(colorState.open&&colorState.labelId===labelId) closeColorPop(false);
   applyFilterChange();
   renderSettingsLabels();
+  toast(t('deleted'),{label:t('undoAction'),fn:()=>{undo();refreshLabelViews();}});
 }
 function refreshLabelViews(){renderLabelsMenu();renderSettingsLabels();}
 function startLabelRename(nameEl){
@@ -3462,10 +3455,11 @@ function addRewardFromAccount(){
   if(nameEl) nameEl.value=''; if(priceEl) priceEl.value='';
   clearAccMsg(); renderAccount(); toast(t('coinsRewardAdded'));
 }
-function buyReward(id){
+async function buyReward(id){
   const c=coinsState(), r=c.rewards.find(x=>x.id===id); if(!r) return;
   if(c.balance<r.price){showAccMsg(t('coinsNotEnough',c.balance));return;}
-  if(!confirm(t('coinsConfirmReward',r.name,r.price))) return;
+  if(!await ask(t('coinsConfirmReward',r.name,r.price))) return;
+  if(coinsState()!==c||c.balance<r.price) return;
   commit(()=>{c.balance-=r.price;pushCoinLog(-r.price,r.name,null);},{board:false,inbox:false,mobile:false,header:true});
   clearAccMsg(); renderAccount();
 }
@@ -3480,10 +3474,9 @@ function saveRewardEdit(id){
 }
 function deleteReward(id){
   const c=coinsState(), r=c.rewards.find(x=>x.id===id); if(!r) return;
-  if(!confirm(t('coinsConfirmDeleteReward',r.name))) return;
   commit(()=>{coinsState().rewards=coinsState().rewards.filter(x=>x.id!==id);},{board:false,inbox:false,mobile:false,header:true});
   if(ui.editReward===id) ui.editReward=null;
-  clearAccMsg(); renderAccount(); toast(t('coinsRewardDeleted'));
+  clearAccMsg(); renderAccount(); toast(t('coinsRewardDeleted'),{label:t('undoAction'),fn:undo});
 }
 function withdrawCoins(){
   const c=coinsState();
@@ -4451,22 +4444,14 @@ function restoreArchive(id){
   ui.expandedArchive?.delete(id);
   toast(t('restored'));
 }
+/* deleting asks no question (a browser may block confirm dialogs silently); the toast offers undo instead */
 function deleteArchived(id){
-  if(!confirm(t('confirmDeleteArchived'))) return;
   leaveExample();
   commit(()=>{state.archive=state.archive.filter(x=>x.id!==id);},{archive:true});
   ui.expandedArchive?.delete(id);
-  toast(t('deleted'));
+  toast(t('deleted'),{label:t('undoAction'),fn:undo});
 }
 function deleteTask(id){
-  if(!confirm(t('confirmDeleteTask'))) return;
-  leaveExample();
-  commit(()=>{state.tasks=state.tasks.filter(x=>x.id!==id);});
-  closeDetail();
-  toast(t('deleted'));
-}
-/* dropped on the bin: no question, the toast offers undo instead */
-function trashTask(id){
   if(!findTask(id)) return;
   leaveExample();
   commit(()=>{state.tasks=state.tasks.filter(x=>x.id!==id);});
@@ -4613,9 +4598,9 @@ function openHelp(){
   const d=$('#helpDlg'); if(!d.open) d.showModal();
 }
 function closeHelp(){const d=$('#helpDlg');if(d.open)d.close();}
-function openExample(){
-  if(!confirmDiscard()) return;
-  if(!confirm(t('confirmLoadExample'))) return;
+async function openExample(){
+  if(!await confirmDiscard()) return;
+  if(!await ask(t('confirmLoadExample'))) return;
   pendingHandle=null; hideContinueBar(); idbClearHandle();
   replaceWithState(sampleState(),{dirty:false,handle:null,autoWrite:false,example:true});
   closeHelp();
@@ -4727,8 +4712,8 @@ function setLang(l){
     saveLocal(true); scheduleFileWrite(); refreshHeader(true);
   }
 }
-function newMatrix(){
-  if(!confirmDiscard()) return;
+async function newMatrix(){
+  if(!await confirmDiscard()) return;
   leaveDriveMode();
   pendingHandle=null; hideContinueBar(); idbClearHandle();
   replaceWithState(blankState(),{dirty:false,handle:null,autoWrite:false});
@@ -4765,7 +4750,18 @@ function replaceWithState(next,{dirty:newDirty=false,handle=null,autoWrite:newAu
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic(); saveLocal(true);
   taskModSnap=taskModMap();
 }
-const confirmDiscard=()=>!dirty||confirm(t('confirmDiscard'));
+/* questions in the page instead of confirm()/alert(): installed Chrome apps sometimes drop those popups silently.
+   Resolves true for OK; Cancel, Escape or a second question while one is open resolve false. */
+function ask(text,{cancel=true}={}){
+  const d=$('#askDlg');
+  if(d.open){d.returnValue='';d.close();}
+  $('#askText').textContent=text; $('#askCancel').hidden=!cancel; d.returnValue='';
+  return new Promise(res=>{
+    d.addEventListener('close',()=>res(d.returnValue==='ok'),{once:true});
+    d.showModal(); $('#askOk').focus();
+  });
+}
+const confirmDiscard=async()=>!dirty||await ask(t('confirmDiscard'));
 const fileName=ext=>{const base=(state.title||t('fileBase')).replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,80)||t('fileBase');return base+ext;};
 function pickerTypes(){return [{description:'Eisenhower matrix',accept:{'application/json':['.json']}}];}
 function downloadBlob(blob,name){
@@ -4776,7 +4772,7 @@ async function readPickedFile(handle){
   const file=await handle.getFile(); return await file.text();
 }
 async function openFile(){
-  if(!confirmDiscard()) return;
+  if(!await confirmDiscard()) return;
   leaveDriveMode();
   if(window.showOpenFilePicker){
     let handle,text,fileAt=null;
@@ -4789,7 +4785,7 @@ async function openFile(){
       console.warn(err); toast(t('openFail')); return;
     }
     let next;
-    try{next=parseFileText(text);}catch(err){alert(t('invalidFile')+'\n\n'+err.message);return;}
+    try{next=parseFileText(text);}catch(err){ask(t('invalidFile')+'\n\n'+err.message,{cancel:false});return;}
     replaceWithState(next,{dirty:false,handle,autoWrite:autoSavePref,localAt:fileAt});
     pendingHandle=null; hideContinueBar(); await idbSetHandle(handle);
     toast(t('opened')+': '+(next.title||t('appTitle')));
@@ -4931,7 +4927,7 @@ async function continueWithStored(){
     const fileAt=file.lastModified||0;
     const stateAt=state.savedAt?Date.parse(state.savedAt):0;
     if(getLocalAt()>fileAt+2000||stateAt>fileAt+2000){
-      const keepLocal=confirm(t('localNewer'));
+      const keepLocal=await ask(t('localNewer'));
       if(keepLocal){
         fileHandle=h; autoWrite=autoSavePref; pendingHandle=null; hideContinueBar();
         await idbSetHandle(h);
@@ -4941,7 +4937,7 @@ async function continueWithStored(){
       }
     }
     let next;
-    try{next=parseFileText(text);}catch(err){alert(t('invalidFile')+'\n\n'+err.message);return;}
+    try{next=parseFileText(text);}catch(err){ask(t('invalidFile')+'\n\n'+err.message,{cancel:false});return;}
     replaceWithState(next,{dirty:false,handle:h,autoWrite:autoSavePref,localAt:fileAt});
     pendingHandle=null; hideContinueBar(); await idbSetHandle(h);
     toast(t('opened')+': '+(next.title||t('appTitle')));
@@ -5150,7 +5146,7 @@ $('#openFile').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value='';
   if(!f) return;
   let next;
-  try{next=parseFileText(await f.text());}catch(err){alert(t('invalidFile')+'\n\n'+err.message);return;}
+  try{next=parseFileText(await f.text());}catch(err){ask(t('invalidFile')+'\n\n'+err.message,{cancel:false});return;}
   leaveDriveMode();
   pendingHandle=null; hideContinueBar(); idbClearHandle();
   replaceWithState(next,{dirty:false,handle:null,autoWrite:false,localAt:f.lastModified||Date.now()});
@@ -5450,11 +5446,10 @@ $('#archiveClose').addEventListener('click',closeArchive);
 $('#archiveSearch').addEventListener('input',e=>{ui.archiveQuery=e.target.value;renderArchive();});
 $('#archiveClear').addEventListener('click',()=>{
   if(!state.archive.length) return;
-  if(!confirm(t('confirmArchiveClear'))) return;
   leaveExample();
   commit(()=>{state.archive=[];},{archive:true});
   ui.expandedArchive= new Set();
-  toast(t('deleted'));
+  toast(t('deleted'),{label:t('undoAction'),fn:undo});
 });
 $('#archiveList').addEventListener('click',e=>{
   const r=e.target.closest('[data-archive-restore]'); if(r){restoreArchive(r.dataset.archiveRestore);return;}
@@ -5589,7 +5584,7 @@ document.addEventListener('drop',e=>{
   if(!dragTaskId) return;
   e.preventDefault();
   if(e.target.closest('#dropDone')){const id=dragTaskId;finishDrag();archiveTask(id);return;}
-  if(e.target.closest('#dropTrash')){const id=dragTaskId;finishDrag();trashTask(id);return;}
+  if(e.target.closest('#dropTrash')){const id=dragTaskId;finishDrag();deleteTask(id);return;}
   const info=dropInfo; const id=dragTaskId;
   finishDrag();
   if(info&&!info.done&&info.cellKey) moveTaskTo(id,info.cellKey,info.targetId,info.after);

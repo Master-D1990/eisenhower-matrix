@@ -151,6 +151,9 @@ window.google={accounts:{oauth2:{
   revoke:()=>{window.__drive.revoked=true;}
 }}};
 window.confirm=()=>{window.__drive.confirms++;return true;};
+// questions now come as the in-page dialog: count them and answer OK
+{const sm=HTMLDialogElement.prototype.showModal;HTMLDialogElement.prototype.showModal=function(){
+  if(this.id==='askDlg'){window.__drive.confirms++;setTimeout(()=>this.querySelector('#askOk').click(),0);}return sm.call(this);};}
 (()=>{const real=window.fetch.bind(window);
 const j=(o,s)=>new Response(JSON.stringify(o),{status:s||200,headers:{'Content-Type':'application/json'}});
 const meta=f=>({id:f.id,name:f.name,version:f.version,modifiedTime:f.modifiedTime});
@@ -400,6 +403,48 @@ async function main() {
     check(r.shown === 'visible' && r.over, 'bin shown while dragging: ' + JSON.stringify(r));
     check(r.gone && !r.archived && r.asked === 0 && !r.dragging, 'deleted, not archived, no question: ' + JSON.stringify(r));
     check(r.back, 'undo restores it');
+    noErrors(p);
+  });
+
+  await test('delete in the task detail and in the archive works even when the browser blocks dialogs', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(async()=>{
+      window.confirm=()=>false; leaveExample();
+      const id=state.tasks[0].id; openDetail(id); document.querySelector('#detailDelete').click();
+      const gone=!state.tasks.some(x=>x.id===id), closed=document.querySelector('#detailDrawer').hidden;
+      undo(); const back=state.tasks.some(x=>x.id===id);
+      archiveTask(id); openArchive(); document.querySelector('[data-archive-delete="'+id+'"]').click();
+      const archGone=!state.archive.some(x=>x.id===id);
+      return {gone, closed, back, archGone};
+    })()`);
+    check(r.gone && r.closed && r.back && r.archGone, JSON.stringify(r));
+    noErrors(p);
+  });
+
+  await test('questions come in the page, never as browser popups; deleting offers undo', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(async()=>{
+      let popups=0; window.confirm=window.alert=()=>{popups++;return false;};
+      const tick=()=>new Promise(r=>setTimeout(r,50)), dlg=document.querySelector('#askDlg');
+      leaveExample(); addTask('keep me',[0,0]); dirty=true;
+      // Escape cancels: the matrix stays
+      let pr=openExample(); await tick(); const shown=dlg.open, text=document.querySelector('#askText').textContent;
+      dlg.dispatchEvent(new Event('cancel')); dlg.close(); await pr; await tick();
+      const kept=state.tasks.some(x=>x.title==='keep me');
+      // OK twice (unsaved changes, then load the example): the example replaces it
+      pr=openExample(); await tick(); document.querySelector('#askOk').click(); await tick(); document.querySelector('#askOk').click(); await pr;
+      const replaced=!state.tasks.some(x=>x.title==='keep me');
+      // label, archive: gone at once, undo brings them back
+      leaveExample(); const lab=state.labels[0].id; deleteLabel(lab); const labGone=!state.labels.some(x=>x.id===lab); undo();
+      const labBack=state.labels.some(x=>x.id===lab);
+      archiveTask(state.tasks[0].id); const n=state.archive.length; openArchive(); document.querySelector('#archiveClear').click(); const archGone=state.archive.length===0; undo();
+      const archBack=n>0 && state.archive.length===n && document.querySelectorAll('#archiveList .archive-item').length===n;
+      return {popups, shown, text, kept, replaced, labGone, labBack, archGone, archBack};
+    })()`);
+    check(r.popups === 0, 'no browser popup: ' + r.popups);
+    check(r.shown && r.text.length > 10 && r.kept, 'in-page question, Escape keeps the matrix: ' + JSON.stringify(r));
+    check(r.replaced, 'OK goes on');
+    check(r.labGone && r.labBack && r.archGone && r.archBack, 'label and archive deleted at once, undo restores: ' + JSON.stringify(r));
     noErrors(p);
   });
 
