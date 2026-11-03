@@ -372,6 +372,8 @@ body.inbox-closed #inbox{cursor:pointer}
 .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--ring);border-color:var(--accent)}
 .field-row{display:flex;gap:6px;align-items:center}
 .field-row input{flex:1;min-width:0}
+.detail-done{flex:0 0 auto;width:34px;height:34px;padding:0;border:1.5px solid var(--g);border-radius:7px;background:var(--panel);color:var(--g);font-size:17px;font-weight:800;line-height:1;cursor:pointer}
+.detail-done:hover,.detail-done:focus-visible{background:var(--g);color:#fff}
 .created-line{font-size:11.5px;color:var(--muted);margin:2px 0 16px}
 .drawer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:13px;border-top:1px solid var(--line)}
 .drawer-actions .spacer{flex:1}
@@ -820,7 +822,9 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <button class="drawer-close" id="detailClose" data-i18n-title="closeT" aria-label="Close">✕</button>
   </div>
   <div class="drawer-body">
-    <label class="field"><span data-i18n="taskTitle"></span><input id="dTitle" type="text" maxlength="500"></label>
+    <div class="field"><span data-i18n="taskTitle"></span>
+      <div class="field-row"><button type="button" class="detail-done" id="detailDone" data-i18n-title="doneT" data-i18n-aria="doneT">✓</button><input id="dTitle" type="text" maxlength="500" data-i18n-aria="taskTitle"></div>
+    </div>
     <label class="field"><span data-i18n="description"></span><textarea id="dDesc" maxlength="20000" rows="8"></textarea></label>
     <label class="field"><span data-i18n="due"></span>
       <span class="field-row"><input id="dDue" type="date"><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
@@ -836,7 +840,6 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <div class="field"><span data-i18n="labels"></span><div class="label-chips" id="dLabels"></div><div id="dLabelNewWrap"><button type="button" class="btn small" id="dLabelAdd" data-i18n="newLabel"></button></div></div>
     <div class="created-line" id="dCreated"></div>
     <div class="drawer-actions">
-      <button class="btn primary" id="detailDone" data-i18n="done"></button>
       <button class="btn mobile-only" id="detailMove" data-i18n="moveTo"></button>
       <span class="spacer"></span>
       <button class="btn danger" id="detailDelete" data-i18n="delete"></button>
@@ -1103,6 +1106,7 @@ de:{
   mobileIntro:'Tippe auf ein Feld, um die Aufgaben zu sehen. Zum Verschieben eine Karte gedrückt halten.',
   mobileMenu:'Menü', rowsShort:'Zeilen', colsShort:'Spalten', themeLabel:'Farbschema', languageLabel:'Sprache',
   themeAuto:'Automatisch', themeLight:'Hell', themeDark:'Dunkel',
+  doneT:'Als erledigt markieren (ins Archiv)',
   newTask:'Neue Aufgabe', moved:'Verschoben', archived:'Erledigt und archiviert', restored:'Wiederhergestellt', deleted:'Gelöscht',
   moveTo:'Verschieben', undoAction:'Rückgängig',
   mobileEmptyCell:'Noch keine Aufgaben in diesem Feld. Tippe auf +, um eine anzulegen.',
@@ -1220,6 +1224,7 @@ en:{
   mobileIntro:'Tap a cell to see its tasks. Long-press a card to move it.',
   mobileMenu:'Menu', rowsShort:'Rows', colsShort:'Columns', themeLabel:'Colour scheme', languageLabel:'Language',
   themeAuto:'Automatic', themeLight:'Light', themeDark:'Dark',
+  doneT:'Mark as done (to the archive)',
   newTask:'New task', moved:'Moved', archived:'Done and archived', restored:'Restored', deleted:'Deleted',
   moveTo:'Move', undoAction:'Undo',
   mobileEmptyCell:'No tasks in this cell yet. Tap + to add one.',
@@ -3922,7 +3927,7 @@ function archiveTask(id){
   },{archive:true,detail:true});
   if(ui.detailId===id) closeDetail();
   if(gain>0&&coinsOn()){coinFloat(gain,rect);pulseCoins();}
-  toast(t('archived'));
+  toast(t('archived'),{label:t('undoAction'),fn:undo});
 }
 function restoreArchive(id){
   const idx=state.archive.findIndex(x=>x.id===id); if(idx<0) return;

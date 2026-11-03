@@ -259,6 +259,23 @@ async function main() {
     noErrors(p);
   });
 
+  await test('task detail: done check next to the title, undo from the message', async () => {
+    for (const phone of [false, true]) {
+      const p = await open(browser, base, phone ? { width: 390, height: 844, mobile: true } : {});
+      const id = await p.ev(`(addTask('finish me',[0,0]), state.tasks.find(t=>t.title==='finish me').id)`);
+      await p.ev(`openDetail('${id}')`); await sleep(150);
+      const r = await p.ev(`(()=>{const b=document.querySelector('#detailDone').getBoundingClientRect(),i=document.querySelector('#dTitle').getBoundingClientRect();
+        return {left:b.right<=i.left+1, row:Math.abs((b.top+b.bottom)/2-(i.top+i.bottom)/2)<3, visible:b.width>0,
+          noFooterDone:!document.querySelector('.drawer-actions #detailDone')};})()`);
+      check(r.left && r.row && r.visible && r.noFooterDone, `${phone ? 'phone' : 'desktop'}: check left of the title, not in the footer ` + JSON.stringify(r));
+      await p.ev(`document.querySelector('#detailDone').click()`); await sleep(150);
+      check(await p.ev(`!findTask('${id}') && state.archive.some(a=>a.id==='${id}')`), 'archived');
+      await p.ev(`document.querySelector('#toast .toast-act').click()`); await sleep(150);
+      check(await p.ev(`!!findTask('${id}')`), 'undo in the message restores the task');
+      noErrors(p); await p.close(); current = null;
+    }
+  });
+
   await test('view settings: field names, task font, axis buttons, label filter', async () => {
     const p = await open(browser, base);
     check(await p.ev(`document.querySelectorAll('.ax-origin-btn,.ax-flip-btn').length`) === 0, 'axis buttons hidden by default');
