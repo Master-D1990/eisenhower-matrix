@@ -503,6 +503,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .help-list{padding-left:20px;margin:0;font-size:13.5px}
 .help-list li{margin-bottom:7px}
 .help-list a{color:var(--accent)}
+.help-list .help-drive{display:block;margin:6px 0 3px;white-space:normal;text-align:left}
+.help-sub{display:block;color:var(--muted);font-size:12.5px}
 kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--soft);white-space:nowrap}
 .offline{display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
 .offline p{margin:0;font-size:12.5px;color:var(--muted)}
@@ -1116,12 +1118,15 @@ de:{
   csvOpen:'offen', csvDoneStatus:'erledigt',
   cellName:'Zellenname', rowLabel:'Zeilenbeschriftung', colLabel:'Spaltenbeschriftung', axisY:'Achse vertikal', axisX:'Achse horizontal',
   printTitle:'Eisenhower-Matrix', printDate:'Stand',
+  helpSaveLive:'<b>Speichern</b>: <button type="button" class="btn primary help-drive">☁ Synchronisation mit Google Drive einrichten</button><span class="help-sub">Speichert automatisch, alle Geräte bleiben aktuell.</span>',
+  helpSaveOn:'<b>Speichern</b>: ✓ Mit Google Drive synchronisiert, alle Geräte bleiben aktuell.',
+  helpSaveOff:'<b>Speichern</b>: Datei → Speichern. Der Browserspeicher allein ist keine Sicherung.',
   helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
     <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
-    <li><b>Speichern</b>: Am einfachsten mit Datei → <a href="#" class="help-drive">«Mit Google Drive verbinden»</a>: speichert automatisch und hält alle Geräte aktuell. Sonst in Chrome und Edge eine Datei wählen und «Automatisch speichern» einschalten, in Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung. Die Datei in Drive öffnest du über das Tool, nicht per Doppelklick in Drive.</li>
+    <li class="help-save"></li>
     <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
     <li><b>Tasten</b>: <kbd>N</kbd> neue Aufgabe, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen.</li>
-    <li><b>Datenschutz</b>: Das Tool sendet keine Daten, alles bleibt auf deinem Gerät (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Hosting durch GitHub</a>). Ohne Gewähr.</li>`
+    <li><b>Datenschutz</b>: Deine Daten bleiben auf deinem Gerät und, wenn verbunden, in deinem Google Drive (<a href="privacy.html" target="_blank" rel="noopener">Details</a>). Ohne Gewähr.</li>`
 },
 en:{
   appTitle:'Eisenhower Matrix+', untitled:'Untitled',
@@ -1230,12 +1235,15 @@ en:{
   csvOpen:'open', csvDoneStatus:'done',
   cellName:'Cell name', rowLabel:'Row label', colLabel:'Column label', axisY:'Vertical axis', axisX:'Horizontal axis',
   printTitle:'Eisenhower matrix', printDate:'As of',
+  helpSaveLive:'<b>Saving</b>: <button type="button" class="btn primary help-drive">☁ Set up sync with Google Drive</button><span class="help-sub">Saves automatically, all devices stay up to date.</span>',
+  helpSaveOn:'<b>Saving</b>: ✓ Synced with Google Drive, all devices stay up to date.',
+  helpSaveOff:'<b>Saving</b>: File → Save. The browser cache alone is not a backup.',
   helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
     <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
-    <li><b>Saving</b>: Easiest with File → <a href="#" class="help-drive">“Connect Google Drive”</a>: saves automatically and keeps all devices up to date. Otherwise choose a file in Chrome and Edge and switch on “Auto-save”, or click “Save” regularly in Firefox and Safari. The browser cache alone is not a backup. Open the file through the tool, not by double-clicking it in Drive.</li>
+    <li class="help-save"></li>
     <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
     <li><b>Keys</b>: <kbd>N</kbd> new task, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> axes.</li>
-    <li><b>Privacy</b>: The tool sends no data, everything stays on your device (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">hosted by GitHub</a>). No warranty.</li>`
+    <li><b>Privacy</b>: Your data stays on your device and, if connected, in your Google Drive (<a href="privacy.html#en" target="_blank" rel="noopener">details</a>). No warranty.</li>`
 }};
 const t=(k,...a)=>{const v=L[LANG][k]??L.de[k];return typeof v==='function'?v(...a):v;};
 
@@ -4073,12 +4081,12 @@ function choosePickTarget(key){
 }
 
 /* ---------- help and menu actions ---------- */
-/* the help links straight to the Google Drive connection; plain text when Drive is not offered or already connected */
+/* the help offers the Google Drive sync as a button; plain text when Drive is not offered or already connected */
 function renderHelp(){
   const hl=$('#helpList'); if(!hl) return;
   hl.innerHTML=t('helpListHtml');
   const live=driveAvailable()&&!gdriveMode;
-  hl.querySelectorAll('.help-drive').forEach(a=>{if(!live)a.replaceWith(...a.childNodes);});
+  const save=hl.querySelector('.help-save'); if(save) save.innerHTML=t(live?'helpSaveLive':gdriveMode?'helpSaveOn':'helpSaveOff');
   if(live) loadGis().catch(()=>{});   // ready before the click, so the Google popup is not blocked
 }
 function openHelp(){
