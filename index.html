@@ -1118,7 +1118,7 @@ de:{
   printTitle:'Eisenhower-Matrix', printDate:'Stand',
   helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
     <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
-    <li><b>Speichern</b>: Am einfachsten mit Datei → «Mit Google Drive verbinden»: speichert automatisch und hält alle Geräte aktuell. Sonst in Chrome und Edge eine Datei wählen und «Automatisch speichern» einschalten, in Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung. Die Datei in Drive öffnest du über das Tool, nicht per Doppelklick in Drive.</li>
+    <li><b>Speichern</b>: Am einfachsten mit Datei → <a href="#" class="help-drive">«Mit Google Drive verbinden»</a>: speichert automatisch und hält alle Geräte aktuell. Sonst in Chrome und Edge eine Datei wählen und «Automatisch speichern» einschalten, in Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung. Die Datei in Drive öffnest du über das Tool, nicht per Doppelklick in Drive.</li>
     <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
     <li><b>Tasten</b>: <kbd>N</kbd> neue Aufgabe, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen.</li>
     <li><b>Datenschutz</b>: Das Tool sendet keine Daten, alles bleibt auf deinem Gerät (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Hosting durch GitHub</a>). Ohne Gewähr.</li>`
@@ -1232,7 +1232,7 @@ en:{
   printTitle:'Eisenhower matrix', printDate:'As of',
   helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
     <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
-    <li><b>Saving</b>: Easiest with File → “Connect Google Drive”: saves automatically and keeps all devices up to date. Otherwise choose a file in Chrome and Edge and switch on “Auto-save”, or click “Save” regularly in Firefox and Safari. The browser cache alone is not a backup. Open the file through the tool, not by double-clicking it in Drive.</li>
+    <li><b>Saving</b>: Easiest with File → <a href="#" class="help-drive">“Connect Google Drive”</a>: saves automatically and keeps all devices up to date. Otherwise choose a file in Chrome and Edge and switch on “Auto-save”, or click “Save” regularly in Firefox and Safari. The browser cache alone is not a backup. Open the file through the tool, not by double-clicking it in Drive.</li>
     <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
     <li><b>Keys</b>: <kbd>N</kbd> new task, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> axes.</li>
     <li><b>Privacy</b>: The tool sends no data, everything stays on your device (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">hosted by GitHub</a>). No warranty.</li>`
@@ -2858,7 +2858,7 @@ function applyStatic(){
   $$('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder);});
   $$('[data-i18n-aria]').forEach(el=>{el.setAttribute('aria-label',t(el.dataset.i18nAria));});
   $$('#setLangSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.lang===LANG);b.setAttribute('aria-pressed',String(b.dataset.lang===LANG));});
-  const hl=$('#helpList'); if(hl) hl.innerHTML=t('helpListHtml');
+  renderHelp();
   const ob=$('#offlineBox'); if(ob) ob.hidden=location.protocol==='file:';
   const dd=$('#detailDrawer'); if(dd) dd.setAttribute('aria-label',t('detailsLabel'));
   const ad=$('#archiveDrawer'); if(ad) ad.setAttribute('aria-label',t('archive'));
@@ -4073,8 +4073,16 @@ function choosePickTarget(key){
 }
 
 /* ---------- help and menu actions ---------- */
+/* the help links straight to the Google Drive connection; plain text when Drive is not offered or already connected */
+function renderHelp(){
+  const hl=$('#helpList'); if(!hl) return;
+  hl.innerHTML=t('helpListHtml');
+  const live=driveAvailable()&&!gdriveMode;
+  hl.querySelectorAll('.help-drive').forEach(a=>{if(!live)a.replaceWith(...a.childNodes);});
+  if(live) loadGis().catch(()=>{});   // ready before the click, so the Google popup is not blocked
+}
 function openHelp(){
-  const hl=$('#helpList'); if(hl) hl.innerHTML=t('helpListHtml');
+  renderHelp();
   const d=$('#helpDlg'); if(!d.open) d.showModal();
 }
 function closeHelp(){const d=$('#helpDlg');if(d.open)d.close();}
@@ -4883,7 +4891,10 @@ $('#helpClose').addEventListener('click',closeHelp);
 $('#helpOk').addEventListener('click',closeHelp);
 $('#loadExample').addEventListener('click',openExample);
 $('#dlTool').addEventListener('click',downloadTool);
-$('#helpDlg').addEventListener('click',e=>{if(e.target.id==='helpDlg')closeHelp();});
+$('#helpDlg').addEventListener('click',e=>{
+  if(e.target.id==='helpDlg'){closeHelp();return;}
+  if(e.target.closest('.help-drive')){e.preventDefault();closeHelp();connectDrive();}
+});
 $('#helpDlg').addEventListener('close',()=>{try{localStorage.setItem('em-seen','1');}catch(e){}});
 
 /* menus */

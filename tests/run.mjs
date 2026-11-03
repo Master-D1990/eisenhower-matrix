@@ -264,6 +264,17 @@ async function main() {
     noErrors(p);
   });
 
+  await test('help links to the Google Drive connection', async () => {
+    const p = await open(browser, base, { init: DRIVE_MOCK });
+    await p.ev(`openHelp()`);
+    check(await p.ev(`!!document.querySelector('#helpList a.help-drive')`), 'link in the help');
+    await p.ev(`document.querySelector('#helpList a.help-drive').click()`); await sleep(600);
+    check(await p.ev(`gdriveMode && !document.querySelector('#helpDlg').open`), 'connected from the help, help closed');
+    await p.ev(`openHelp()`);
+    check(await p.ev(`!document.querySelector('#helpList a.help-drive') && document.querySelector('#helpList').textContent.includes('Mit Google Drive verbinden')`), 'plain text once connected');
+    noErrors(p);
+  });
+
   await test('merge: two devices worked offline', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
