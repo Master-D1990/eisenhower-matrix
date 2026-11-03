@@ -377,6 +377,20 @@ body.inbox-closed #inbox{cursor:pointer}
 .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--ring);border-color:var(--accent)}
 .field-row{display:flex;gap:6px;align-items:center}
 .field-row input{flex:1;min-width:0}
+#dRepeat{width:100%}
+.repeat-custom{margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:7px;color:var(--text);font-size:13px}
+.rc-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rc-row input[type=number]{width:64px}
+.field .repeat-custom select,.field .repeat-custom input[type=date]{width:auto;flex:0 1 auto;min-width:0}
+.rc-row input,.rc-row select{border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text);padding:5px 6px;font-size:13px}
+.rc-days button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--field);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;padding:0}
+.rc-days button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.rc-check{display:flex;align-items:center;gap:6px;margin-top:7px;color:var(--text);font-size:13px;font-weight:400;cursor:pointer}
+.repeat-sleep{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;padding:6px 8px;border-radius:6px;background:var(--accent-soft);color:var(--text);font-size:12.5px}
+.repeat-ic{color:var(--muted);font-weight:700}
+.task-card.sleeping{opacity:.55;border-style:dashed}
+.planned-chip{display:block;margin:4px auto 2px;border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:2px 10px;font-size:11.5px;cursor:pointer}
+.planned-chip:hover{color:var(--text);border-color:var(--muted)}
 .detail-done{flex:0 0 auto;width:34px;height:34px;padding:0;border:1.5px solid var(--g);border-radius:7px;background:var(--panel);color:var(--g);font-size:17px;font-weight:800;line-height:1;cursor:pointer}
 .detail-done:hover,.detail-done:focus-visible{background:var(--g);color:#fff}
 .created-line{font-size:11.5px;color:var(--muted);margin:2px 0 16px}
@@ -841,6 +855,18 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <label class="field"><span data-i18n="due"></span>
       <span class="field-row"><input id="dDue" type="date"><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
     </label>
+    <div class="field" id="dRepeatField"><span data-i18n="repeat"></span>
+      <select id="dRepeat" data-i18n-aria="repeat"></select>
+      <div class="repeat-custom" id="dRepeatCustom" hidden>
+        <div class="rc-row"><span data-i18n="repeatEvery"></span><input id="rcN" type="number" min="1" max="99" inputmode="numeric"><select id="rcF"></select></div>
+        <div class="rc-row rc-days" id="rcDays"></div>
+        <div class="rc-row" id="rcMonthRow"><select id="rcMonthBy"></select></div>
+        <div class="rc-row"><span data-i18n="repeatEnd"></span><select id="rcEnd"></select><input id="rcUntil" type="date" hidden><input id="rcLeft" type="number" min="1" max="999" inputmode="numeric" hidden><span id="rcLeftUnit" data-i18n="repeatTimes" hidden></span></div>
+        <label class="rc-check"><input type="checkbox" id="rcFromDone"><span data-i18n="repeatFromDone"></span></label>
+      </div>
+      <label class="rc-check" id="dRepeatStackRow" hidden><input type="checkbox" id="dRepeatStack"><span data-i18n="repeatStack"></span></label>
+      <div class="repeat-sleep" id="dSleep" hidden><span id="dSleepText"></span><button type="button" class="btn small" id="dSleepWake" data-i18n="repeatWake"></button></div>
+    </div>
     <div class="field" id="dCoinsField" hidden>
       <span data-i18n="coinsValue"></span>
       <div class="coin-edit">
@@ -997,6 +1023,7 @@ const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&
 const sameGrid=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((row,i)=>sameArray(row,b[i]));
 const FORMAT='eisenhower-matrix', VERSION=1;
 const MAX_TITLE=500, MAX_DESC=20000, MAX_LABEL=200, MAX_AXIS=200, MAX_ID=64;
+const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, STACK_CATCHUP_DAYS=7;
 const MAX_LABELS=50, MAX_LABEL_NAME=40, LABEL_COLOR=/^#[0-9a-f]{6}$/i;
 const MAX_TASK_COINS=9999, MAX_COIN_BALANCE=999999999, MAX_REWARD_PRICE=999999, MAX_REWARD_NAME=60, MAX_COIN_LOG=2000, MAX_COIN_TEXT=300;
 /* colour-blind-friendly palette (Okabe-Ito inspired), readable on light and dark */
@@ -1123,6 +1150,20 @@ de:{
   mobileMenu:'Menü', rowsShort:'Zeilen', colsShort:'Spalten', themeLabel:'Farbschema', languageLabel:'Sprache',
   themeAuto:'Automatisch', themeLight:'Hell', themeDark:'Dunkel',
   doneT:'Als erledigt markieren (ins Archiv)',
+  repeat:'Wiederholen', rNever:'Nie', rDaily:'Täglich', rWeekdays:'Jeden Werktag (Mo bis Fr)', rWeekly:'Wöchentlich', rMonthly:'Monatlich', rYearly:'Jährlich',
+  rEveryDays:n=>'Alle '+n+' Tage', rEveryWeeks:n=>'Alle '+n+' Wochen', rEveryMonths:n=>'Alle '+n+' Monate', rEveryYears:n=>'Alle '+n+' Jahre',
+  rOn:'am', rNth:(k,w)=>(k===-1?'letzten':['ersten','zweiten','dritten','vierten'][k-1])+' '+w, rDayN:n=>n+'.',
+  rUntil:d=>'bis '+d, rLeft:n=>'noch '+n+' Mal', rFromDoneShort:'ab Erledigen', rCustom:'Benutzerdefiniert',
+  repeatEvery:'Alle', rUnitDays:'Tage', rUnitWeeks:'Wochen', rUnitMonths:'Monate', rUnitYears:'Jahre',
+  repeatEnd:'Ende', rEndNever:'nie', rEndUntil:'am', rEndCount:'nach', repeatTimes:'Mal',
+  repeatFromDone:'Ab Erledigen zählen (statt ab Frist)',
+  repeatStack:'Aufstocken: an jedem fälligen Tag ein neuer Eintrag, auch wenn der alte noch offen ist',
+  repeatSleeps:d=>'Geplant, erscheint am '+d, repeatWake:'Jetzt anzeigen',
+  repeatSkipped:n=>n===1?'1 ältere Wiederholung übersprungen':n+' ältere Wiederholungen übersprungen',
+  archivedNext:d=>'Erledigt. Nächste Wiederholung am '+d,
+  plannedShow:n=>'+'+n+' geplant', plannedHide:'Geplante ausblenden', plannedT:'Wiederholungen, die erst später erscheinen',
+  weekdays:['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'], weekdaysShort:['Mo','Di','Mi','Do','Fr','Sa','So'],
+  months:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
   newTask:'Neue Aufgabe', moved:'Verschoben', archived:'Erledigt und archiviert', restored:'Wiederhergestellt', deleted:'Gelöscht',
   moveTo:'Verschieben', undoAction:'Rückgängig',
   mobileEmptyCell:'Noch keine Aufgaben in diesem Feld. Tippe auf +, um eine anzulegen.',
@@ -1244,6 +1285,20 @@ en:{
   mobileMenu:'Menu', rowsShort:'Rows', colsShort:'Columns', themeLabel:'Colour scheme', languageLabel:'Language',
   themeAuto:'Automatic', themeLight:'Light', themeDark:'Dark',
   doneT:'Mark as done (to the archive)',
+  repeat:'Repeat', rNever:'Does not repeat', rDaily:'Daily', rWeekdays:'Every weekday (Mon to Fri)', rWeekly:'Weekly', rMonthly:'Monthly', rYearly:'Annually',
+  rEveryDays:n=>'Every '+n+' days', rEveryWeeks:n=>'Every '+n+' weeks', rEveryMonths:n=>'Every '+n+' months', rEveryYears:n=>'Every '+n+' years',
+  rOn:'on', rNth:(k,w)=>'the '+(k===-1?'last':['first','second','third','fourth'][k-1])+' '+w, rDayN:n=>'day '+n,
+  rUntil:d=>'until '+d, rLeft:n=>n+' more times', rFromDoneShort:'from completion', rCustom:'Custom',
+  repeatEvery:'Every', rUnitDays:'days', rUnitWeeks:'weeks', rUnitMonths:'months', rUnitYears:'years',
+  repeatEnd:'Ends', rEndNever:'never', rEndUntil:'on', rEndCount:'after', repeatTimes:'times',
+  repeatFromDone:'Count from completion (instead of the due date)',
+  repeatStack:'Stack up: a new entry on every due day, even if the old one is still open',
+  repeatSleeps:d=>'Planned, appears on '+d, repeatWake:'Show now',
+  repeatSkipped:n=>n===1?'1 older repetition skipped':n+' older repetitions skipped',
+  archivedNext:d=>'Done. Next repetition on '+d,
+  plannedShow:n=>'+'+n+' planned', plannedHide:'Hide planned', plannedT:'Repetitions that appear later',
+  weekdays:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], weekdaysShort:['Mo','Tu','We','Th','Fr','Sa','Su'],
+  months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   newTask:'New task', moved:'Moved', archived:'Done and archived', restored:'Restored', deleted:'Deleted',
   moveTo:'Move', undoAction:'Undo',
   mobileEmptyCell:'No tasks in this cell yet. Tap + to add one.',
@@ -1418,7 +1473,7 @@ function sampleState(lang=LANG){
 let state=blankState();
 let dirty=false, fileHandle=null, autoWrite=false, stateRev=0;
 let undoStack=[], redoStack=[], editSnap=null, editActive=false;
-const ui={search:'',mobileCell:null,detailId:null,archiveOpen:false,archiveQuery:'',inboxOpen:true,pickTask:null,longPressGuard:0,coinHistoryLimit:100,editReward:null};
+const ui={showPlanned:false,repeatCustom:false,search:'',mobileCell:null,detailId:null,archiveOpen:false,archiveQuery:'',inboxOpen:true,pickTask:null,longPressGuard:0,coinHistoryLimit:100,editReward:null};
 let fileTimer=null,writingFile=false,writeAgain=false,lastSaveError=false;
 /* Google Drive connection state; the access token stays in memory only */
 let gdrive=null;                 // remembered {fileId,name,version}
@@ -1481,6 +1536,16 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     out.mod=reqStr(x.mod,path+'.mod',40,false);
     if(!isValidISODate(out.mod)) throw new Error(t('invalidReason',path+'.mod'));
   }
+  if(x.repeat!==undefined&&x.repeat!==null) out.repeat=cleanRepeat(x.repeat,path+'.repeat');
+  if(x.series!==undefined&&x.series!==null){
+    out.series=reqStr(x.series,path+'.series',MAX_ID,false);
+    if(!/^[A-Za-z0-9_-]+$/.test(out.series)) throw new Error(t('invalidReason',path+'.series'));
+  }
+  if(x.sleep!==undefined&&x.sleep!==null){
+    if(!isValidDateStr(x.sleep)) throw new Error(t('invalidReason',path+'.sleep'));
+    out.sleep=x.sleep;
+  }
+  if(x.spawned===true) out.spawned=true;
   if(x.labels!==undefined){
     if(!Array.isArray(x.labels)) throw new Error(t('invalidReason',path+'.labels'));
     out.labels=[...new Set(x.labels.filter(l=>typeof l==='string'&&labelIds.has(l)))];
@@ -1492,6 +1557,27 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     if(!out.at&&out.fromCell) out.at=cellCenter(out.fromCell[0],out.fromCell[1],rows,cols);
   }
   if(!out.at&&out.cell) out.at=cellCenter(out.cell[0],out.cell[1],rows,cols);
+  return out;
+}
+/* repeat: {f:'d'|'w'|'m'|'y', n:every, days:[0=Mon..6], md:day of month, nth:1..4|-1 with wd, mo:month,
+   until:date, left:occurrences left incl. this one, fromDone:count from completion, stack:new entry on every due day} */
+function cleanRepeat(x,path){
+  const bad=()=>{throw new Error(t('invalidReason',path));};
+  if(!x||typeof x!=='object'||Array.isArray(x)||!['d','w','m','y'].includes(x.f)) bad();
+  const n=x.n===undefined?1:x.n; if(!Number.isInteger(n)||n<1||n>MAX_REPEAT_EVERY) bad();
+  const out={f:x.f,n};
+  if(x.days!==undefined){
+    if(!Array.isArray(x.days)||x.days.some(d=>!Number.isInteger(d)||d<0||d>6)) bad();
+    const ds=[...new Set(x.days)].sort((a,b)=>a-b); if(ds.length) out.days=ds;
+  }
+  if(x.md!==undefined){if(!Number.isInteger(x.md)||x.md<1||x.md>31) bad(); out.md=x.md;}
+  if(x.nth!==undefined){if(![-1,1,2,3,4].includes(x.nth)) bad(); out.nth=x.nth;}
+  if(x.wd!==undefined){if(!Number.isInteger(x.wd)||x.wd<0||x.wd>6) bad(); out.wd=x.wd;}
+  if(x.mo!==undefined){if(!Number.isInteger(x.mo)||x.mo<1||x.mo>12) bad(); out.mo=x.mo;}
+  if(x.until!==undefined&&x.until!==null){if(!isValidDateStr(x.until)) bad(); out.until=x.until;}
+  if(x.left!==undefined&&x.left!==null){if(!Number.isInteger(x.left)||x.left<1||x.left>MAX_REPEAT_LEFT) bad(); out.left=x.left;}
+  if(x.fromDone===true) out.fromDone=true;
+  if(x.stack===true) out.stack=true;
   return out;
 }
 function cleanCoins(raw){
@@ -1628,7 +1714,16 @@ function leaveExample(){ if(exampleMode) setExampleMode(false); }
 function labelById(id){return state.labels.find(l=>l.id===id);}
 function taskLabelObjects(task){return (task&&Array.isArray(task.labels)?task.labels:[]).map(labelById).filter(Boolean);}
 function labelNames(task){return taskLabelObjects(task).map(l=>l.name);}
-function isTaskVisible(task){const ls=taskLabelObjects(task); if(ls.length) return ls.some(l=>!filter.hidden.has(l.id)); return filter.none;}
+function labelVisible(task){const ls=taskLabelObjects(task); if(ls.length) return ls.some(l=>!filter.hidden.has(l.id)); return filter.none;}
+/* sleeping repeats stay hidden until their day, unless "show planned" is on */
+function isTaskVisible(task){return labelVisible(task)&&(ui.showPlanned||isAwake(task));}
+function plannedCount(r,c){return tasksIn(r,c).filter(x=>!isAwake(x)&&labelVisible(x)).length;}
+function plannedChip(n){
+  const b=document.createElement('button'); b.type='button'; b.className='planned-chip'; b.dataset.togglePlanned='1';
+  b.textContent=ui.showPlanned?t('plannedHide'):t('plannedShow',n);
+  b.title=t('plannedT');
+  return b;
+}
 function visibleTasksIn(r,c){return tasksIn(r,c).filter(isTaskVisible);}
 function inkFor(hex){
   const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
@@ -2775,6 +2870,110 @@ function ensureInboxOpen(){
   try{localStorage.setItem('em-inbox','1');}catch(e){}
 }
 function findTask(id){return state.tasks.find(x=>x.id===id);}
+
+/* ---------- recurring tasks ----------
+   Default: the next entry is created when the task is ticked off; it sleeps (hidden) until its day.
+   With "stack" a new entry appears on every due day even if the old one is still open
+   (after a long pause only the last week is caught up, at least the latest entry). The next entry gets the id
+   series_YYYYMMDD, so two devices ticking off the same task create the same entry, not two. */
+function localDateStr(dt=new Date()){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
+function dParse(s){const [y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d));}
+function dStr(dt){return dt.toISOString().slice(0,10);}
+function dAdd(s,n){const dt=dParse(s);dt.setUTCDate(dt.getUTCDate()+n);return dStr(dt);}
+function isoDow(s){return (dParse(s).getUTCDay()+6)%7;}   // 0 = Monday
+function monthLen(y,m0){return new Date(Date.UTC(y,m0+1,0)).getUTCDate();}
+function nthWeekday(y,m0,nth,wd){
+  const dow=d=>(new Date(Date.UTC(y,m0,d)).getUTCDay()+6)%7;
+  if(nth===-1){for(let d=monthLen(y,m0);d>0;d--) if(dow(d)===wd) return d;}
+  for(let d=1;d<=7;d++) if(dow(d)===wd) return d+7*(nth-1);
+  return 1;
+}
+function nextOccurrence(anchor,r){
+  const n=r.n||1;
+  if(r.f==='d') return dAdd(anchor,n);
+  if(r.f==='w'){
+    const days=r.days&&r.days.length?r.days:[isoDow(anchor)];
+    const w0=dParse(dAdd(anchor,-isoDow(anchor))).getTime();
+    for(let i=1;i<=7*n+7;i++){
+      const s=dAdd(anchor,i), wk=Math.round((dParse(dAdd(s,-isoDow(s))).getTime()-w0)/604800000);
+      if(wk%n===0&&days.includes(isoDow(s))) return s;
+    }
+    return dAdd(anchor,7*n);
+  }
+  const a=dParse(anchor);
+  if(r.f==='m'){
+    let m0=a.getUTCMonth()+n, y=a.getUTCFullYear()+Math.floor(m0/12); m0%=12;
+    const d=r.nth?nthWeekday(y,m0,r.nth,r.wd!=null?r.wd:isoDow(anchor)):Math.min(r.md||a.getUTCDate(),monthLen(y,m0));
+    return dStr(new Date(Date.UTC(y,m0,d)));
+  }
+  const y=a.getUTCFullYear()+n, m0=r.mo?r.mo-1:a.getUTCMonth();
+  return dStr(new Date(Date.UTC(y,m0,Math.min(r.md||a.getUTCDate(),monthLen(y,m0)))));
+}
+function isAwake(task){return !task.sleep||task.sleep<=localDateStr();}
+function makeNextInstance(task,next,{leftDrop=1}={}){
+  const series=task.series||task.id;
+  const id=(series.slice(0,MAX_ID-9)+'_'+next.replace(/-/g,''));
+  if(findTask(id)||state.archive.some(x=>x.id===id)) return null;
+  const r={...task.repeat};
+  if(r.left!==undefined) r.left=Math.max(1,r.left-leftDrop);
+  const nt={id,title:task.title,desc:task.desc,due:next,cell:task.cell?task.cell.slice():null,
+    at:Array.isArray(task.at)?task.at.slice():null,created:isoNow(),labels:(task.labels||[]).slice(),coins:task.coins,repeat:r,series};
+  if(next>localDateStr()) nt.sleep=next;
+  return nt;
+}
+/* next entry when a task is ticked off; null = the series is over */
+function nextOnDone(task){
+  const r=task.repeat; if(!r||task.spawned) return null;
+  if(r.left!==undefined&&r.left<=1) return null;
+  const today=localDateStr();
+  let cur=r.fromDone?today:(task.due||today);
+  for(let g=0;g<5000;g++){
+    const nx=nextOccurrence(cur,r);
+    if(r.until&&nx>r.until) return null;
+    if(r.fromDone||nx>today) return nx;
+    cur=nx;
+  }
+  return null;
+}
+/* stacking: create the entries whose day has come; returns how many older ones were skipped */
+function spawnStacked(){
+  if(exampleMode||!state.tasks.some(x=>x.repeat&&x.repeat.stack&&!x.spawned)) return 0;
+  const today=localDateStr();
+  let changed=false, skippedAll=0;
+  for(let i=0;i<state.tasks.length;i++){
+    const task=state.tasks[i], r=task.repeat;
+    if(!r||!r.stack||task.spawned) continue;
+    const dates=[]; let cur=task.due||today, left=r.left;
+    for(let g=0;g<5000;g++){
+      if(left!==undefined&&left<=1) break;
+      const nx=nextOccurrence(cur,r);
+      if(nx>today||(r.until&&nx>r.until)) break;
+      dates.push(nx); cur=nx; if(left!==undefined) left--;
+    }
+    if(!dates.length) continue;
+    const from=dAdd(today,-(STACK_CATCHUP_DAYS-1));
+    let keep=dates.filter(d=>d>=from); if(!keep.length) keep=dates.slice(-1);
+    const skipped=dates.length-keep.length;
+    skippedAll+=skipped;
+    task.spawned=true; changed=true;
+    let src=task; const add=[];
+    keep.forEach((d,k)=>{
+      const nt=makeNextInstance(src,d,{leftDrop:k===0?1+skipped:1}); if(!nt) return;
+      if(k<keep.length-1) nt.spawned=true;
+      add.push(nt); src=nt;
+    });
+    state.tasks.splice(i+1,0,...add); i+=add.length;
+  }
+  if(changed) markChanged();
+  return skippedAll;
+}
+function checkRepeats(){
+  const skipped=spawnStacked();
+  if(skipped>0) toast(t('repeatSkipped',skipped));
+}
+let repeatDay=localDateStr();
+setInterval(()=>{const d=localDateStr();if(d!==repeatDay){repeatDay=d;checkRepeats();renderAllDynamic();}},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;const d=localDateStr();if(d!==repeatDay){repeatDay=d;checkRepeats();renderAllDynamic();}});
 function validCoord(c){return Array.isArray(c)&&c.length===2&&c[0]>=0&&c[0]<state.rows&&c[1]>=0&&c[1]<state.cols;}
 function archiveOrigin(item){
   if(validCoord(item.fromCell)){const [r,c]=item.fromCell;return cellLabel(r,c);}
@@ -3234,8 +3433,10 @@ function taskCard(task){
   const meta=document.createElement('span'); meta.className='task-meta';
   if(task.desc.trim()){const dm=document.createElement('span');dm.className='descmark';dm.textContent='≡';dm.title=t('description');meta.append(dm);}
   if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
+  if(task.repeat){const ri=document.createElement('span');ri.className='repeat-ic';ri.textContent='↻';ri.title=t('repeat')+': '+repeatSummary(task.repeat,task.due||localDateStr());meta.append(ri);}
   if(info){const due=document.createElement('span');due.className='due '+info.cls;due.textContent=info.label;due.title=info.title;meta.append(due);}
   el.append(meta);
+  if(!isAwake(task)){el.classList.add('sleeping');el.title=t('repeatSleeps',dueInfo(task.sleep).full)+'\n'+el.title;}
   const done=document.createElement('button'); done.className='task-done'; done.type='button'; done.dataset.done=task.id; done.textContent='✓'; done.title=t('done'); done.setAttribute('aria-label',t('done')); el.append(done);
   const q=ui.search.trim().toLowerCase();
   if(q&&!((task.title||'')+'\n'+(task.desc||'')).toLowerCase().includes(q)) el.classList.add('filtered');
@@ -3360,6 +3561,7 @@ function cellElement(r,c,cellRow=1,cellCol=1){
   const tasks=visibleTasksIn(r,c);
   if(!tasks.length){const empty=document.createElement('div');empty.className='empty-cell';empty.textContent=t('emptyCell');list.append(empty);}
   else tasks.forEach(task=>list.append(taskCard(task)));
+  const pn=plannedCount(r,c); if(pn) list.append(plannedChip(pn));
   scroll.append(list); cell.append(scroll);
   const fade=document.createElement('div'); fade.className='cell-fade'; cell.append(fade);
   return cell;
@@ -3372,6 +3574,7 @@ function renderInbox(){
   const tasks=visibleTasksIn(null,null);
   if(!tasks.length){const empty=document.createElement('div');empty.className='empty-cell';empty.textContent=t('inboxEmpty');list.append(empty);}
   else tasks.forEach(task=>list.append(taskCard(task)));
+  const pn=plannedCount(null,null); if(pn) list.append(plannedChip(pn));
   body.append(list);
   $('#inboxCount').textContent=String(tasks.length);
   box.classList.toggle('has-more',false);
@@ -3434,6 +3637,7 @@ function renderMobileList(){
   const wrap=document.createElement('div'); wrap.className='cell-list'; wrap.dataset.cellkey=target?target.r+','+target.c:'inbox';
   if(!tasks.length){const empty=document.createElement('div');empty.className='mobile-empty';empty.textContent=target?t('mobileEmptyCell'):t('mobileEmptyInbox');wrap.append(empty);}
   else tasks.forEach(task=>wrap.append(taskCard(task)));
+  const pn=target?plannedCount(target.r,target.c):plannedCount(null,null); if(pn) wrap.append(plannedChip(pn));
   list.append(wrap);
 }
 function renderMobilePad(){
@@ -3602,6 +3806,7 @@ function openDetail(id,{focusTitle=false}={}){
   const task=findTask(id); if(!task) return;
   if(!$('#archiveDrawer').hidden) closeArchive();
   if(ui.detailId&&ui.detailId!==id&&colorState.open&&colorState.anchor&&colorState.anchor.closest('#detailDrawer')) closeColorPop(false);
+  if(ui.detailId!==id) ui.repeatCustom=false;
   ui.detailId=id;
   syncDetailMode();
   renderDetailValues(task);
@@ -3628,12 +3833,130 @@ function renderDetailCoins(task){
   }
   const inp=$('#dCoins'); if(inp&&document.activeElement!==inp) inp.value=String(val);
 }
+/* ---------- repeat in the task detail (options like Google Calendar) ---------- */
+function repeatAnchor(task){return task.due||localDateStr();}
+function nthOf(s){const d=dParse(s).getUTCDate(),L=monthLen(dParse(s).getUTCFullYear(),dParse(s).getUTCMonth());return d+7>L?-1:Math.ceil(d/7);}
+function repeatPreset(key,anchor){
+  const a=dParse(anchor);
+  switch(key){
+    case 'd': return {f:'d',n:1};
+    case 'wd': return {f:'w',n:1,days:[0,1,2,3,4]};
+    case 'w': return {f:'w',n:1,days:[isoDow(anchor)]};
+    case 'm': return {f:'m',n:1,md:a.getUTCDate()};
+    case 'mn': return {f:'m',n:1,nth:nthOf(anchor),wd:isoDow(anchor)};
+    case 'y': return {f:'y',n:1,md:a.getUTCDate(),mo:a.getUTCMonth()+1};
+  }
+  return null;
+}
+const REPEAT_PRESETS=['d','wd','w','m','mn','y'];
+function repeatCore(r){const c={...r};delete c.stack;return JSON.stringify(c);}
+function matchRepeatPreset(r,anchor){
+  if(!r) return 'none';
+  for(const k of REPEAT_PRESETS) if(repeatCore(r)===JSON.stringify(repeatPreset(k,anchor))) return k;
+  return 'custom';
+}
+function repeatSummary(r,anchor){
+  const de=LANG==='de', n=r.n||1, W=t('weekdays'), Ws=t('weekdaysShort');
+  let s;
+  if(r.f==='d') s=n===1?t('rDaily'):t('rEveryDays',n);
+  else if(r.f==='w'){
+    const days=r.days&&r.days.length?r.days:[isoDow(anchor)];
+    if(n===1&&days.join()==='0,1,2,3,4') s=t('rWeekdays');
+    else s=(n===1?t('rWeekly'):t('rEveryWeeks',n))+' '+t('rOn')+' '+(days.length===1?W[days[0]]:days.map(d=>Ws[d]).join(', '));
+  }else if(r.f==='m'){
+    const on=r.nth?t('rNth',r.nth,W[r.wd!=null?r.wd:isoDow(anchor)]):(de?(r.md||dParse(anchor).getUTCDate())+'.':t('rDayN',r.md||dParse(anchor).getUTCDate()));
+    s=(n===1?t('rMonthly'):t('rEveryMonths',n))+' '+t('rOn')+' '+on;
+  }else{
+    const a=dParse(anchor), md=r.md||a.getUTCDate(), mo=(r.mo||a.getUTCMonth()+1)-1;
+    s=(n===1?t('rYearly'):t('rEveryYears',n))+' '+t('rOn')+' '+(de?md+'. '+t('months')[mo]:t('months')[mo]+' '+md);
+  }
+  if(r.until) s+=', '+t('rUntil',dueInfo(r.until).short);
+  if(r.left!==undefined) s+=', '+t('rLeft',r.left);
+  if(r.fromDone) s+=', '+t('rFromDoneShort');
+  return s;
+}
+function renderDetailRepeat(task){
+  const sel=$('#dRepeat'); if(!sel) return;
+  const anchor=repeatAnchor(task), r=task.repeat||null, cur=matchRepeatPreset(r,anchor);
+  sel.replaceChildren();
+  const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.append(o);};
+  opt('none',t('rNever'));
+  for(const k of REPEAT_PRESETS) opt(k,repeatSummary(repeatPreset(k,anchor),anchor));
+  opt('custom',cur==='custom'?t('rCustom')+': '+repeatSummary(r,anchor):t('rCustom')+' …');
+  sel.value=cur;
+  const showCustom=!!r&&(cur==='custom'||ui.repeatCustom);
+  $('#dRepeatCustom').hidden=!showCustom;
+  $('#dRepeatStackRow').hidden=!r;
+  $('#dRepeatStack').checked=!!(r&&r.stack);
+  if(showCustom) renderRepeatCustom(r,anchor);
+  const sl=$('#dSleep');
+  if(sl){sl.hidden=isAwake(task); if(!isAwake(task)) $('#dSleepText').textContent=t('repeatSleeps',dueInfo(task.sleep).full);}
+}
+function renderRepeatCustom(r,anchor){
+  const ae=document.activeElement;
+  const n=$('#rcN'); if(ae!==n) n.value=String(r.n||1);
+  const f=$('#rcF'); f.replaceChildren();
+  [['d','rUnitDays'],['w','rUnitWeeks'],['m','rUnitMonths'],['y','rUnitYears']].forEach(([v,k])=>{const o=document.createElement('option');o.value=v;o.textContent=t(k);f.append(o);});
+  f.value=r.f;
+  const days=$('#rcDays'); days.hidden=r.f!=='w'; days.replaceChildren();
+  const on=r.days&&r.days.length?r.days:[isoDow(anchor)];
+  t('weekdaysShort').forEach((w,i)=>{const b=document.createElement('button');b.type='button';b.textContent=w;b.dataset.rcDay=String(i);b.title=t('weekdays')[i];if(on.includes(i))b.classList.add('on');b.setAttribute('aria-pressed',String(on.includes(i)));days.append(b);});
+  const mr=$('#rcMonthRow'); mr.hidden=r.f!=='m';
+  const mb=$('#rcMonthBy'); mb.replaceChildren();
+  const a=dParse(anchor);
+  [['md',t('rOn')+' '+(LANG==='de'?a.getUTCDate()+'.':t('rDayN',a.getUTCDate()))],['nth',t('rOn')+' '+t('rNth',nthOf(anchor),t('weekdays')[isoDow(anchor)])]].forEach(([v,txt])=>{const o=document.createElement('option');o.value=v;o.textContent=txt;mb.append(o);});
+  mb.value=r.nth?'nth':'md';
+  const end=$('#rcEnd'); end.replaceChildren();
+  [['never','rEndNever'],['until','rEndUntil'],['count','rEndCount']].forEach(([v,k])=>{const o=document.createElement('option');o.value=v;o.textContent=t(k);end.append(o);});
+  end.value=r.until?'until':r.left!==undefined?'count':'never';
+  const u=$('#rcUntil'); u.hidden=end.value!=='until'; if(ae!==u) u.value=r.until||'';
+  const l=$('#rcLeft'); l.hidden=end.value!=='count'; if(ae!==l) l.value=String(r.left||10);
+  $('#rcLeftUnit').hidden=end.value!=='count';
+  $('#rcFromDone').checked=!!r.fromDone;
+}
+/* build the repeat from the custom panel */
+function repeatFromCustom(task){
+  const anchor=repeatAnchor(task), a=dParse(anchor);
+  const f=$('#rcF').value, n=clamp(Math.round(Number($('#rcN').value))||1,1,MAX_REPEAT_EVERY);
+  const r={f,n};
+  if(f==='w'){const ds=$$('#rcDays button.on').map(b=>Number(b.dataset.rcDay));r.days=ds.length?ds:[isoDow(anchor)];}
+  if(f==='m'){if($('#rcMonthBy').value==='nth'){r.nth=nthOf(anchor);r.wd=isoDow(anchor);}else r.md=a.getUTCDate();}
+  if(f==='y'){r.md=a.getUTCDate();r.mo=a.getUTCMonth()+1;}
+  const end=$('#rcEnd').value;
+  if(end==='until'){const u=$('#rcUntil').value;r.until=isValidDateStr(u)?u:dAdd(anchor,30);}
+  if(end==='count') r.left=clamp(Math.round(Number($('#rcLeft').value))||10,1,MAX_REPEAT_LEFT);
+  if($('#rcFromDone').checked) r.fromDone=true;
+  if(task.repeat&&task.repeat.stack) r.stack=true;
+  return r;
+}
+function setTaskRepeat(task,r){
+  leaveExample();
+  commit(()=>{
+    if(r){task.repeat=r; if(!task.due) task.due=localDateStr();}   // a repeat needs a date to count from
+    else{delete task.repeat; delete task.spawned;}
+  },{detail:true});
+}
+function onRepeatSelect(){
+  const task=detailTask(); if(!task) return;
+  const v=$('#dRepeat').value, anchor=repeatAnchor(task);
+  if(v==='none'){ui.repeatCustom=false;setTaskRepeat(task,null);return;}
+  if(v==='custom'){
+    ui.repeatCustom=true;
+    if(!task.repeat) setTaskRepeat(task,repeatPreset('w',anchor)); else refreshDetail(true);
+    return;
+  }
+  ui.repeatCustom=false;
+  const r=repeatPreset(v,anchor); if(task.repeat&&task.repeat.stack) r.stack=true;
+  setTaskRepeat(task,r);
+}
+function onRepeatCustomChange(){const task=detailTask(); if(task&&task.repeat) setTaskRepeat(task,repeatFromCustom(task));}
 function renderDetailValues(task){
   $('#detailHead').textContent=task.cell?cellLabel(task.cell[0],task.cell[1]):t('inboxOption');
   $('#dTitle').value=task.title; $('#dDesc').value=task.desc; $('#dDue').value=task.due||'';
   fillDetailCellSelect(task);
   renderDetailLabels(task);
   renderDetailCoins(task);
+  renderDetailRepeat(task);
   $('#dCreated').textContent=t('createdLine',fmtDate(task.created,true));
 }
 function refreshDetail(force=false){
@@ -3641,7 +3964,7 @@ function refreshDetail(force=false){
   const task=findTask(ui.detailId);
   if(!task){closeDetail();return;}
   const ae=document.activeElement;
-  if(!force&&ae&&['dTitle','dDesc','dDue'].includes(ae.id)) return;
+  if(!force&&ae&&['dTitle','dDesc','dDue','rcN','rcLeft','rcUntil'].includes(ae.id)) return;
   renderDetailValues(task);
   scheduleDetailPosition();
 }
@@ -4008,15 +4331,18 @@ function archiveTask(id){
   const rect=card?card.getBoundingClientRect():null;
   const gain=Number.isInteger(task.coins)&&task.coins>0?task.coins:0;
   leaveExample();
+  const nextDate=nextOnDone(task);
+  let nextTask=null;
   commit(()=>{
     const i=state.tasks.findIndex(x=>x.id===id); if(i<0) return;
     state.tasks.splice(i,1);
+    if(nextDate){nextTask=makeNextInstance(task,nextDate);if(nextTask) state.tasks.splice(i,0,nextTask);}
     state.archive.push({id:task.id,title:task.title,desc:task.desc,due:task.due,created:task.created,doneAt:isoNow(),fromCell:task.cell?[task.cell[0],task.cell[1]]:null,at:Array.isArray(task.at)?task.at.slice():null,labels:Array.isArray(task.labels)?task.labels.slice():[],coins:gain});
     if(gain>0){const c=coinsState();c.balance=Math.min(MAX_COIN_BALANCE,c.balance+gain);pushCoinLog(gain,task.title,task.id);}
   },{archive:true,detail:true});
   if(ui.detailId===id) closeDetail();
   if(gain>0&&coinsOn()){coinFloat(gain,rect);pulseCoins();}
-  toast(t('archived'),{label:t('undoAction'),fn:undo});
+  toast(nextTask?t('archivedNext',dueInfo(nextTask.due).short):t('archived'),{label:t('undoAction'),fn:undo});
 }
 function restoreArchive(id){
   const idx=state.archive.findIndex(x=>x.id===id); if(idx<0) return;
@@ -4085,7 +4411,11 @@ function setDetailLive(field,value){
 function setDetailDue(value){
   const task=detailTask(); if(!task) return;
   leaveExample();
-  commit(()=>{task.due=value||null;});
+  commit(()=>{
+    task.due=value||null;
+    // a sleeping repeat follows its date: earlier date wakes it earlier, no date wakes it now
+    if(task.sleep){if(value&&value>localDateStr()) task.sleep=value; else delete task.sleep;}
+  });
 }
 function setDetailCell(value){
   const task=detailTask(); if(!task) return;
@@ -4773,6 +5103,7 @@ $('#inboxBody').addEventListener('dblclick',e=>{/* cards only, no labels */});
 
 /* task clicks, done and long press */
 document.addEventListener('click',e=>{
+  if(e.target.closest('[data-toggle-planned]')){e.preventDefault();ui.showPlanned=!ui.showPlanned;renderAllDynamic();return;}
   const done=e.target.closest('[data-done]');
   if(done){e.preventDefault();archiveTask(done.dataset.done);return;}
   const card=e.target.closest('.task-card');
@@ -4783,6 +5114,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{
   if(narrow()||!ui.detailId) return;
+  if(!e.target.isConnected) return;   // the clicked control was re-rendered inside the popup
   const d=$('#detailDrawer'); if(d.hidden||!d.classList.contains('pop')) return;
   if(e.target.closest('#detailDrawer,#colorPop,.task-card')) return;
   closeDetail();
@@ -4950,6 +5282,12 @@ $('#detailDelete').addEventListener('click',()=>{if(ui.detailId)deleteTask(ui.de
 $('#dTitle').addEventListener('input',e=>setDetailLive('title',e.target.value));
 $('#dDesc').addEventListener('input',e=>setDetailLive('desc',e.target.value));
 $('#dDue').addEventListener('change',e=>setDetailDue(e.target.value));
+$('#dRepeat').addEventListener('change',onRepeatSelect);
+['#rcN','#rcF','#rcMonthBy','#rcEnd','#rcUntil','#rcLeft','#rcFromDone'].forEach(sel=>$(sel).addEventListener('change',onRepeatCustomChange));
+['#rcN','#rcLeft'].forEach(sel=>$(sel).addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();e.target.blur();}}));
+$('#rcDays').addEventListener('click',e=>{const b=e.target.closest('[data-rc-day]');if(!b)return;b.classList.toggle('on');if(!$$('#rcDays button.on').length)b.classList.add('on');onRepeatCustomChange();});
+$('#dRepeatStack').addEventListener('change',e=>{const task=detailTask();if(!task||!task.repeat)return;const r={...task.repeat};if(e.target.checked)r.stack=true;else delete r.stack;setTaskRepeat(task,r);checkRepeats();});
+$('#dSleepWake').addEventListener('click',()=>{const task=detailTask();if(!task||!task.sleep)return;commit(()=>{delete task.sleep;},{detail:true});});
 $('#dDueClear').addEventListener('click',()=>{$('#dDue').value='';setDetailDue('');});
 $('#dCoinQuick').addEventListener('click',e=>{
   const b=e.target.closest('[data-coin-quick]');
@@ -5187,6 +5525,7 @@ function init(){
   loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
+  checkRepeats();
   gdrive=driveAvailable()?loadDriveConn():null;
   gdriveMode=false; gdriveContinue=false; gdriveStatusState='saved';
   if(driveAvailable()&&gdrive){

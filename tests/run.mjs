@@ -295,6 +295,130 @@ async function main() {
     noErrors(p);
   });
 
+  await test('repeat: next dates like Google Calendar', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`({
+      daily: nextOccurrence('2026-11-03',{f:'d',n:1}),
+      every3: nextOccurrence('2026-11-03',{f:'d',n:3}),
+      weekdayFri: nextOccurrence('2026-11-06',{f:'w',n:1,days:[0,1,2,3,4]}),
+      biweekly: [nextOccurrence('2026-11-04',{f:'w',n:2,days:[0,2]}), nextOccurrence('2026-11-02',{f:'w',n:2,days:[0,2]})],
+      monthEnd: [nextOccurrence('2026-01-31',{f:'m',n:1,md:31}), nextOccurrence('2026-02-28',{f:'m',n:1,md:31})],
+      lastFri: nextOccurrence('2026-11-27',{f:'m',n:1,nth:-1,wd:4}),
+      firstMon: nextOccurrence('2026-11-02',{f:'m',n:1,nth:1,wd:0}),
+      leap: nextOccurrence('2028-02-29',{f:'y',n:1,md:29,mo:2})
+    })`);
+    check(r.daily === '2026-11-04' && r.every3 === '2026-11-06', 'days ' + JSON.stringify(r));
+    check(r.weekdayFri === '2026-11-09', 'weekday after Friday is Monday: ' + r.weekdayFri);
+    check(r.biweekly[0] === '2026-11-16' && r.biweekly[1] === '2026-11-04', 'every 2 weeks Mon+Wed: ' + r.biweekly);
+    check(r.monthEnd[0] === '2026-02-28' && r.monthEnd[1] === '2026-03-31', 'monthly on the 31st keeps the 31st: ' + r.monthEnd);
+    check(r.lastFri === '2026-12-25' && r.firstMon === '2026-12-07', 'nth weekday: ' + r.lastFri + ' ' + r.firstMon);
+    check(r.leap === '2029-02-28', 'yearly 29 Feb: ' + r.leap);
+  });
+
+  await test('repeat: tick off creates the next entry, it sleeps until its day', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{
+      const today=localDateStr();
+      addTask('weekly',[0,0]); const t=state.tasks.find(x=>x.title==='weekly'); t.due=today; t.repeat={f:'w',n:1,days:[isoDow(today)]}; renderAllDynamic();
+      const id=t.id; archiveTask(id);
+      const nt=state.tasks.find(x=>x.title==='weekly');
+      const visible=!!document.querySelector('#board .task-card[data-task="'+(nt&&nt.id)+'"]');
+      const chip=document.querySelector('#board .planned-chip'); const chipText=chip&&chip.textContent;
+      chip&&chip.click();
+      const shown=!!document.querySelector('#board .task-card.sleeping[data-task="'+(nt&&nt.id)+'"]');
+      const toast=document.querySelector('#toast').textContent;
+      undo();
+      return {due:nt&&nt.due, want:dAdd(today,7), sleep:nt&&nt.sleep, id:nt&&nt.id, series:id, visible, chipText, shown, toast,
+        afterUndo:state.tasks.filter(x=>x.title==='weekly').length, archived:state.archive.some(x=>x.id===id)};
+    })()`);
+    check(r.due === r.want && r.sleep === r.want, 'next entry one week later, sleeping: ' + JSON.stringify(r));
+    check(r.id === r.series + '_' + r.want.replace(/-/g, ''), 'deterministic id');
+    check(!r.visible && r.chipText === '+1 geplant' && r.shown, 'hidden, chip shows it: ' + JSON.stringify(r));
+    check(r.toast.includes('Nächste Wiederholung'), 'toast names the next date: ' + r.toast);
+    check(r.afterUndo === 1 && !r.archived, 'undo restores the original only');
+    noErrors(p);
+  });
+
+  await test('repeat: late, from completion, end by count or date', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{
+      const today=localDateStr(), mk=(title,rep,due)=>{addTask(title,[0,0]);const t=state.tasks.find(x=>x.title===title);t.repeat=rep;t.due=due;return t.id;};
+      const next=title=>{const t=state.tasks.find(x=>x.title===title);archiveTask(t.id);const n=state.tasks.find(x=>x.title===title);return n?n.due:null;};
+      mk('late daily',{f:'d',n:1},dAdd(today,-10));
+      mk('water',{f:'d',n:3,fromDone:true},dAdd(today,-20));
+      mk('last one',{f:'d',n:1,left:1},today);
+      mk('two left',{f:'d',n:1,left:2},today);
+      mk('until',{f:'w',n:1,until:dAdd(today,3)},today);
+      const twoLeft=next('two left'), twoLeftRep=state.tasks.find(x=>x.title==='two left').repeat.left;
+      return {late:next('late daily'), water:next('water'), last:next('last one'), twoLeft, twoLeftRep, until:next('until'), today};
+    })()`);
+    check(r.late === await p.ev(`dAdd(localDateStr(),1)`), 'overdue daily continues tomorrow: ' + r.late);
+    check(r.water === await p.ev(`dAdd(localDateStr(),3)`), 'from completion: 3 days after today: ' + r.water);
+    check(r.last === null, 'left=1: series over');
+    check(r.twoLeftRep === 1, 'left counts down');
+    check(r.until === null, 'until reached: series over');
+    noErrors(p);
+  });
+
+  await test('repeat: stacking catches up at most one week, never twice', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{
+      const today=localDateStr();
+      addTask('hours',[0,0]); const a=state.tasks.find(x=>x.title==='hours'); a.due=dAdd(today,-30); a.repeat={f:'d',n:1,stack:true};
+      addTask('report',[0,0]); const b=state.tasks.find(x=>x.title==='report'); b.due=dAdd(today,-35); b.repeat={f:'w',n:1,stack:true};
+      leaveExample(); const skipped=spawnStacked(); const again=spawnStacked();
+      const hours=state.tasks.filter(x=>x.title==='hours').map(x=>x.due), report=state.tasks.filter(x=>x.title==='report').map(x=>x.due);
+      return {skipped, again, hours, report, today, from:dAdd(today,-6)};
+    })()`);
+    check(r.hours.length === 8 && r.hours[1] === r.from && r.hours[7] === r.today, 'daily: original + the last 7 days: ' + JSON.stringify(r.hours));
+    check(r.report.length === 2 && r.report[1] >= r.from, 'weekly: original + 1: ' + JSON.stringify(r.report));
+    check(r.skipped === 23 + 4 && r.again === 0, 'skipped counted, second run adds nothing: ' + r.skipped + ' ' + r.again);
+    noErrors(p);
+  });
+
+  await test('repeat: two devices tick off the same task, merged without a duplicate', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{
+      const today=localDateStr(); addTask('shared',[0,0]); const t=state.tasks.find(x=>x.title==='shared'); t.due=today; t.repeat={f:'d',n:1};
+      const C=o=>JSON.parse(JSON.stringify(o)), base=C(state);
+      archiveTask(t.id); const L=C(state);
+      state=C(base); archiveTask(t.id); const R=C(state);
+      const m=mergeStates(base,L,R).state;
+      return {open:m.tasks.filter(x=>x.title==='shared').length, archived:m.archive.filter(x=>x.title==='shared').length,
+        file:(()=>{try{parseFileText(JSON.stringify(m));return true;}catch(e){return e.message;}})()};
+    })()`);
+    check(r.open === 1 && r.archived === 1 && r.file === true, 'one open, one archived: ' + JSON.stringify(r));
+    let bad = false; try { await p.ev(`parseFileText(JSON.stringify({...state,tasks:[{...state.tasks[0],repeat:{f:'x'}}]}))`); } catch (e) { bad = true; }
+    check(bad, 'invalid repeat in a file is rejected');
+    noErrors(p);
+  });
+
+  await test('repeat: set in the task detail, presets and custom', async () => {
+    for (const phone of [false, true]) {
+      const p = await open(browser, base, phone ? { width: 390, height: 844, mobile: true } : {});
+      const id = await p.ev(`(addTask('gym',[0,0]), state.tasks.find(t=>t.title==='gym').id)`);
+      await p.ev(`openDetail('${id}')`); await sleep(100);
+      const sel = v => p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='${v}';s.dispatchEvent(new Event('change'));})()`);
+      await sel('wd');
+      const r1 = await p.ev(`({rep:JSON.stringify(findTask('${id}').repeat), due:findTask('${id}').due, today:localDateStr(),
+        ic:!!document.querySelector('.task-card[data-task="${id}"] .repeat-ic'), stackRow:!document.querySelector('#dRepeatStackRow').hidden})`);
+      check(r1.rep === '{"f":"w","n":1,"days":[0,1,2,3,4]}' && r1.due === r1.today && r1.ic && r1.stackRow, 'weekday preset: ' + JSON.stringify(r1));
+      await sel('custom'); await sleep(50);
+      check(await p.ev(`!document.querySelector('#dRepeatCustom').hidden`), 'custom panel opens');
+      await p.ev(`(()=>{const n=document.querySelector('#rcN');n.value='2';n.dispatchEvent(new Event('change'));
+        document.querySelector('#rcDays [data-rc-day="5"]').click();
+        const e=document.querySelector('#rcEnd');e.value='count';e.dispatchEvent(new Event('change'));})()`);
+      const r2 = await p.ev(`JSON.stringify(findTask('${id}').repeat)`);
+      check(r2 === '{"f":"w","n":2,"days":[0,1,2,3,4,5],"left":10}', 'custom every 2 weeks + Sat, 10 times: ' + r2);
+      check((await p.ev(`document.querySelector('#dRepeat').selectedOptions[0].textContent`)).startsWith('Benutzerdefiniert: Alle 2 Wochen'), 'summary in the select');
+      await p.ev(`document.querySelector('#dRepeatStack').click()`);
+      check(await p.ev(`findTask('${id}').repeat.stack===true`), 'stack switch');
+      await sel('none');
+      check(await p.ev(`findTask('${id}').repeat===undefined`), 'repeat removed');
+      noErrors(p); await p.close(); current = null;
+    }
+  });
+
   await test('view settings: field names, task font, axis buttons, label filter', async () => {
     const p = await open(browser, base);
     check(await p.ev(`document.querySelectorAll('.ax-origin-btn,.ax-flip-btn').length`) === 0, 'axis buttons hidden by default');
