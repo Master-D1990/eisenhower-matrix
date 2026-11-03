@@ -426,6 +426,7 @@ body.inbox-closed #inbox{cursor:pointer}
 .set-custom label{display:inline-flex;align-items:center;gap:4px}
 .set-custom select{max-width:58px}
 .set-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13.5px}
+#setCoinQuick{flex:1;min-width:0;max-width:200px;margin-left:auto;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text);padding:5px 7px;font-size:13.5px}
 label.set-row{justify-content:space-between;cursor:pointer}
 .set-row input[type=checkbox]{order:2;margin:0;flex:0 0 auto;-webkit-appearance:none;appearance:none;position:relative;width:1.86em;height:1em;border-radius:.5em;background:var(--empty);cursor:pointer;transition:background .2s;font-size:inherit}
 .set-row input[type=checkbox]::after{content:"";position:absolute;left:.14em;top:.14em;width:.72em;height:.72em;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .2s}
@@ -917,6 +918,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <section class="set-section" data-section="coins">
       <h3 data-i18n="setCoins"></h3>
       <label class="set-row"><input type="checkbox" id="setUseCoins"><span data-i18n="useCoins"></span></label>
+      <label class="set-row" id="setCoinQuickRow" hidden><span data-i18n="coinQuick"></span><input id="setCoinQuick" type="text" inputmode="numeric" autocomplete="off" placeholder="1, 5, 10, 25"></label>
       <p class="set-hint" id="setCoinsHint" data-i18n="setCoinsHint" hidden></p>
     </section>
     <section class="set-section" data-section="display">
@@ -1046,7 +1048,7 @@ de:{
   settings:'Einstellungen', settingsT:'Einstellungen öffnen',
   setMatrix:'Matrix', setAxes:'Achsen', setDisplay:'Darstellung', setCustom:'Eigene:',
   setShowAxes:'Achsen anzeigen', setUseInbox:'Ablage verwenden', setUseInboxHint:'Zuerst die Tasks in der Ablage einordnen oder erledigen.', setManageLabels:'Labels verwalten …', setNewLabel:'+ Neues Label',
-  setCoins:'Goldmünzen', useCoins:'Goldmünzen verwenden', setCoinsHint:'Münzen und Belohnungen werden in der Datei gespeichert und mit allen geteilt, die diese Datei öffnen.',
+  setCoins:'Goldmünzen', useCoins:'Goldmünzen verwenden', coinQuick:'Schnellwahl', coinQuickSet:v=>'Schnellwahl: '+v, setCoinsHint:'Münzen und Belohnungen werden in der Datei gespeichert und mit allen geteilt, die diese Datei öffnen.',
   coinsValue:'🪙 Wert', coinsValueSet:n=>'Wert auf '+n+' Münzen gesetzt',
   account:'Konto', coinsWithdraw:'Abbuchen', coinsAmount:'Betrag', coinsPurpose:'Zweck', coinsWithdrawBtn:'Abbuchen',
   coinsWithdrawDefault:'Abbuchung', coinsNotEnough:n=>'Nicht genug Münzen. Verfügbar sind '+n+' 🪙.',
@@ -1167,7 +1169,7 @@ en:{
   settings:'Settings', settingsT:'Open settings',
   setMatrix:'Matrix', setAxes:'Axes', setDisplay:'Appearance', setCustom:'Custom:',
   setShowAxes:'Show axes', setUseInbox:'Use the inbox', setUseInboxHint:'First sort or finish the tasks in the inbox.', setManageLabels:'Manage labels …', setNewLabel:'+ New label',
-  setCoins:'Gold coins', useCoins:'Use gold coins', setCoinsHint:'Coins and rewards are stored in the file and shared with everyone who opens it.',
+  setCoins:'Gold coins', useCoins:'Use gold coins', coinQuick:'Quick values', coinQuickSet:v=>'Quick values: '+v, setCoinsHint:'Coins and rewards are stored in the file and shared with everyone who opens it.',
   coinsValue:'🪙 Value', coinsValueSet:n=>'Value set to '+n+' coins',
   account:'Account', coinsWithdraw:'Withdraw', coinsAmount:'Amount', coinsPurpose:'Purpose', coinsWithdrawBtn:'Withdraw',
   coinsWithdrawDefault:'Withdrawal', coinsNotEnough:n=>'Not enough coins. You have '+n+' 🪙.',
@@ -1536,6 +1538,10 @@ function cleanCoins(raw){
       }
       return {id,at,amount:x.amount,text,taskId};
     });
+  }
+  if(raw.quick!==undefined){
+    if(!Array.isArray(raw.quick)||raw.quick.length>MAX_COIN_QUICK||raw.quick.some(v=>!Number.isInteger(v)||v<1||v>MAX_TASK_COINS)) throw new Error(t('invalidReason','coins.quick'));
+    out.quick=[...new Set(raw.quick)];
   }
   return out;
 }
@@ -1952,9 +1958,11 @@ function mergeStates(base,local,remote){
     for(const x of lc.log||[]) if(!remoteIds.has(x.id)) balance+=Number(x.amount)||0;
   }
   balance=clamp(Math.round(balance),0,MAX_COIN_BALANCE);
+  const qj=c=>c&&c.quick?JSON.stringify(c.quick):undefined;
+  const quickJ=bc?three(qj(bc),qj(lc),qj(rc),true):(qj(rc)===undefined?qj(lc):qj(rc));
 
   const raw={format:FORMAT,version:VERSION,title,rows:r.rows,cols:r.cols,swapped:r.swapped,flipX,flipY,axisY,axisX,
-    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:{enabled,balance,rewards,log},savedAt:isoNow()};
+    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:Object.assign({enabled,balance,rewards,log},quickJ?{quick:JSON.parse(quickJ)}:{}),savedAt:isoNow()};
   return {state:validateState(raw),conflicts};
 }
 
@@ -3032,6 +3040,22 @@ function coinsState(){
   return state.coins;
 }
 function coinsOn(){return !!(state.coins&&state.coins.enabled);}
+const DEFAULT_COIN_QUICK=[1,5,10,25], MAX_COIN_QUICK=8;
+function coinQuickValues(){const q=state.coins&&state.coins.quick;return Array.isArray(q)&&q.length?q:DEFAULT_COIN_QUICK;}
+/* "1, 5, 10" -> [1,5,10]: whole numbers 1..max, no duplicates, sorted, at most 8; empty -> default */
+function parseCoinQuick(text){
+  const nums=String(text).split(/[^0-9]+/).filter(Boolean).map(Number).filter(n=>n>=1&&n<=MAX_TASK_COINS);
+  return [...new Set(nums)].sort((a,b)=>a-b).slice(0,MAX_COIN_QUICK);
+}
+function setCoinQuick(text){
+  const q=parseCoinQuick(text), c=coinsState();
+  const next=q.length&&JSON.stringify(q)!==JSON.stringify(DEFAULT_COIN_QUICK)?q:null;
+  if(JSON.stringify(next)!==JSON.stringify(c.quick||null)){
+    commit(()=>{if(next)c.quick=next;else delete c.quick;},{detail:true});
+    toast(t('coinQuickSet',coinQuickValues().join(', ')));
+  }
+  renderSettingsCoins();
+}
 function normalizeCoins(v){const n=Math.round(Number(v));return Number.isFinite(n)?clamp(n,0,MAX_TASK_COINS):0;}
 function pushCoinLog(amount,text,taskId=null){
   const c=coinsState();
@@ -3086,6 +3110,8 @@ function setCoinsEnabled(v){
 function renderSettingsCoins(){
   const cb=$('#setUseCoins'); if(cb) cb.checked=coinsOn();
   const hint=$('#setCoinsHint'); if(hint) hint.hidden=!coinsOn();
+  const qr=$('#setCoinQuickRow'); if(qr) qr.hidden=!coinsOn();
+  const qi=$('#setCoinQuick'); if(qi&&document.activeElement!==qi) qi.value=coinQuickValues().join(', ');
 }
 function accountOpen(){const d=$('#accountDlg');return !!(d&&d.open);}
 function openAccount(){
@@ -3593,7 +3619,7 @@ function renderDetailCoins(task){
   const quick=$('#dCoinQuick');
   if(quick){
     quick.replaceChildren();
-    [0,1,5,10,25].forEach(v=>{
+    [0,...coinQuickValues()].forEach(v=>{
       const b=document.createElement('button'); b.type='button'; b.className='btn small'+(v===val?' on':'');
       b.dataset.coinQuick=String(v); b.textContent=String(v);
       b.setAttribute('aria-pressed',String(v===val));
@@ -4611,6 +4637,8 @@ $('#accountClose').addEventListener('click',closeAccount);
 $('#accountDlg').addEventListener('click',e=>{if(e.target.id==='accountDlg')closeAccount();});
 $('#accountDlg').addEventListener('close',()=>{ui.editReward=null;clearAccMsg();});
 $('#setUseCoins').addEventListener('change',e=>{setCoinsEnabled(e.target.checked);renderSettingsCoins();});
+$('#setCoinQuick').addEventListener('change',e=>setCoinQuick(e.target.value));
+$('#setCoinQuick').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();e.target.blur();}});
 $('#accWithdrawBtn').addEventListener('click',withdrawCoins);
 ['#accAmount','#accPurpose'].forEach(sel=>{
   $(sel).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();withdrawCoins();}else e.stopPropagation();});

@@ -276,6 +276,25 @@ async function main() {
     }
   });
 
+  await test('coins: own quick values in the settings, kept in the file and merged', async () => {
+    const p = await open(browser, base);
+    await p.ev(`addTask('q',[0,0]); setCoinsEnabled(true); openSettings&&openSettings()`); await sleep(100);
+    await p.ev(`(()=>{const i=document.querySelector('#setCoinQuick');i.value='50, 3, 3, abc, 0, 20000';i.dispatchEvent(new Event('change'));})()`);
+    check(await p.ev(`JSON.stringify(state.coins.quick)`) === '[3,50]', 'parsed, sorted, invalid dropped');
+    await p.ev(`openDetail(state.tasks.find(t=>t.title==='q').id)`); await sleep(100);
+    check(await p.ev(`[...document.querySelectorAll('#dCoinQuick button')].map(b=>b.textContent).join()`) === '0,3,50', 'detail shows the own values');
+    await p.ev(`document.querySelector('#dCoinQuick [data-coin-quick="50"]').click()`);
+    check(await p.ev(`state.tasks.find(t=>t.title==='q').coins`) === 50, 'quick value sets the coins');
+    check(await p.ev(`JSON.stringify(parseFileText(driveText()).coins.quick)`) === '[3,50]', 'kept in the file');
+    let bad = false; try { await p.ev(`parseFileText(JSON.stringify({...state,coins:{...state.coins,quick:[0]}}))`); } catch (e) { bad = true; }
+    check(bad, 'invalid quick values in a file are rejected');
+    const m = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),l=C(b),r=C(b);l.coins.quick=[2,4];return JSON.stringify(mergeStates(b,l,r).state.coins.quick);})()`);
+    check(m === '[2,4]', 'local change of the quick values survives a merge: ' + m);
+    await p.ev(`(()=>{const i=document.querySelector('#setCoinQuick');i.value='';i.dispatchEvent(new Event('change'));})()`);
+    check(await p.ev(`state.coins.quick===undefined && document.querySelector('#setCoinQuick').value==='1, 5, 10, 25'`), 'empty field restores the default');
+    noErrors(p);
+  });
+
   await test('view settings: field names, task font, axis buttons, label filter', async () => {
     const p = await open(browser, base);
     check(await p.ev(`document.querySelectorAll('.ax-origin-btn,.ax-flip-btn').length`) === 0, 'axis buttons hidden by default');
