@@ -450,7 +450,7 @@ async function main() {
     // after a restart within the token lifetime: continues by itself
     await p.reload(); await sleep(600);
     check(await p.ev(`gdriveMode&&state.tasks.some(t=>t.title==='offline task')`), 'continued with Drive without a click');
-    check(await p.ev(`document.querySelector('#continueBar').hidden`), 'no continue bar while signed in');
+    check(await p.ev(`document.querySelector('#continueBar').hidden && document.querySelector('#syncAlert').hidden`), 'no bar while signed in');
     // lasting connection (token helper configured): an expired token renews itself, no click at all
     if (await p.ev(`!!GDRIVE_TOKEN_URL`)) {
       check(await p.ev(`!!localStorage.getItem('em-gdrive-refresh')`), 'lasting connection stored');
@@ -459,16 +459,50 @@ async function main() {
       check(await p.ev(`gdriveMode && document.querySelector('#continueBar').hidden`), 'expired token renewed without a click');
       await p.ev(`localStorage.removeItem('em-gdrive-refresh')`);
     } else console.log('      (token helper not configured: lasting-connection check skipped)');
-    // token expired: one click on the continue bar
+    // token expired: the red bar says so, one click reconnects
     await p.ev(`localStorage.setItem('em-gdrive-token',JSON.stringify({t:'old',exp:Date.now()-1000}))`);
     await p.reload(); await p.ev(`setLang('de')`);
-    check(await p.ev(`!document.querySelector('#continueBar').hidden && !gdriveMode`), 'continue bar after the token expired');
-    await p.ev(`document.querySelector('#continueBtn').click()`); await sleep(600);
+    check(await p.ev(`!document.querySelector('#syncAlert').hidden && !gdriveMode && document.querySelector('#syncAlertText').textContent.includes('getrennt')`), 'red bar after the token expired');
+    await p.ev(`document.querySelector('#syncAlertAct').click()`); await sleep(600);
+    check(await p.ev(`document.querySelector('#syncAlert').hidden`), 'red bar gone after reconnecting');
     const c = await p.ev(`JSON.stringify({mode:gdriveMode,has:state.tasks.some(t=>t.title==='offline task')})`);
     check(JSON.parse(c).mode && JSON.parse(c).has, 'continued with Drive after one click: ' + c);
     // disconnect forgets the stored sign-in
     await p.ev(`disconnectDrive()`);
     check(await p.ev(`localStorage.getItem('em-gdrive-token')===null && localStorage.getItem('em-gdrive-refresh')===null && !gdriveMode`), 'disconnect clears the stored sign-in');
+    noErrors(p);
+  });
+
+  await test('missing sync is shown plainly: red bar until it works again', async () => {
+    const p = await open(browser, base, { init: DRIVE_MOCK });
+    await p.ev(`connectDrive()`); await sleep(400);
+    await p.ev(`SYNC_ALERT_MS=1500`);
+    const bar = () => p.ev(`(()=>{const b=document.querySelector('#syncAlert');return b.hidden?null:b.dataset.kind+': '+document.querySelector('#syncAlertText').textContent;})()`);
+    check(await bar() === null, 'no bar while synced');
+    // typing for a long time is no false alarm: the connection is still checked
+    await p.ev(`openDetail(state.tasks[0].id); document.querySelector('#dTitle').focus()`);
+    for (let i = 0; i < 3; i++) { await p.ev(`drivePull()`); await sleep(700); }
+    await p.ev(`renderSyncAlert()`);
+    check(await bar() === null, 'no bar while typing and Drive is reachable');
+    await p.ev(`document.activeElement.blur(); closeDetail()`);
+    // offline: after the limit the bar shows since when, and goes away when Drive is back
+    await p.ev(`__drive.offline=true`);
+    for (let i = 0; i < 3; i++) { await p.ev(`drivePull()`); await sleep(700); }
+    await p.ev(`addTask('while offline',[0,0])`); await sleep(1500); await p.ev(`renderSyncAlert()`);
+    const b1 = await bar();
+    check(b1 && b1.startsWith('stale') && /Seit \d\d:\d\d/.test(b1), 'stale bar with time: ' + b1);
+    await p.ev(`refreshHeader()`);
+    check(!(await p.ev(`document.querySelector('#fileStatus').classList.contains('ok')`)), 'status in the header is not green while not synced');
+    await p.ev(`__drive.offline=false`); await p.ev(`document.querySelector('#syncAlertAct').click()`); await sleep(800);
+    check(await bar() === null, 'bar gone after trying again');
+    check(await p.ev(`JSON.parse(__drive.files[0].content).tasks.some(t=>t.title==='while offline')`), 'offline change uploaded');
+    // access revoked at Google: bar at once, disconnect makes it local on purpose
+    await p.ev(`clearGdriveToken(); localStorage.removeItem('em-gdrive-refresh'); gdriveStatusState='auth'; refreshHeader()`);
+    check((await bar() || '').startsWith('lost'), 'lost bar when signed out');
+    await p.ev(`document.querySelector('#syncAlertOff').click()`); await sleep(200);
+    check(await bar() === null && !(await p.ev(`gdriveMode`)), 'disconnect hides the bar for good');
+    await p.reload(); await sleep(400);
+    check(await bar() === null, 'no bar after reload once disconnected');
     noErrors(p);
   });
 

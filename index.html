@@ -163,6 +163,11 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 
 /* Desktop board */
 #main{flex:1;display:flex;min-height:0;min-width:0;position:relative}
+.sync-alert{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 12px;background:var(--r);color:#fff;font-weight:600;flex:0 0 auto}
+.sync-alert[hidden]{display:none}
+.sync-alert-text{flex:1 1 220px;min-width:0}
+.sync-alert .btn{background:#fff;color:var(--r);border-color:#fff;font-weight:700}
+.sync-alert .btn+.btn{background:transparent;color:#fff}
 #board{flex:1;min-width:0;min-height:0}
 .matrix-grid{display:grid;gap:7px;padding:10px 10px 8px 8px;height:100%;min-height:0;min-width:0;position:relative}
 /* chart axes: [title | arrow | levels | cells] normally, mirrored when flipX / flipY.
@@ -673,6 +678,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
 @media print{
+  .sync-alert{display:none!important}
   @page{size:A4 landscape;margin:8mm}
   :root{--bg:#fff;--panel:#fff;--line:#c9cdd4;--text:#1d2330;--muted:#555f6e;--accent:#2f6fed;--field:#fff;--hover:#fff;--soft:#f4f5f7;--faint:#777;--accent-soft:#eef3ff;--ring:#b9c9e8;--empty:#d9dde3;color-scheme:light}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -774,6 +780,11 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   </span>
   </span>
 </header>
+<div class="sync-alert" id="syncAlert" role="alert" hidden>
+  <span class="sync-alert-text" id="syncAlertText"></span>
+  <button class="btn" type="button" id="syncAlertAct"></button>
+  <button class="btn" type="button" id="syncAlertOff" data-i18n="syncOff"></button>
+</div>
 
 <div id="printHead"><div id="printHeadTitle"></div><div id="printHeadMeta"></div></div>
 
@@ -1067,6 +1078,9 @@ de:{
   localNewer:'Der lokale Stand ist neuer als die Datei. Lokalen Stand behalten? Abbrechen lädt die Datei.',
   gdrive:'Google Drive', gdriveConnect:'Mit Google Drive verbinden', gdriveDisconnect:'Google Drive trennen',
   gdriveContinue:'Mit Google Drive weiterarbeiten',
+  syncLost:'Google Drive getrennt: Änderungen werden nicht synchronisiert.',
+  syncStale:time=>'Seit '+time+' nicht mit Google Drive synchronisiert. Änderungen sind nur auf diesem Gerät.',
+  syncReconnect:'Neu verbinden', syncRetry:'Erneut versuchen', syncOff:'Trennen',
   gdriveConnected:n=>'Mit Google Drive verbunden: '+n,
   gdriveDisconnected:'Google Drive getrennt',
   gdriveLoading:'Google wird geladen, bitte nochmals klicken',
@@ -1185,6 +1199,9 @@ en:{
   localNewer:'The local version is newer than the file. Keep the local version? Cancel loads the file.',
   gdrive:'Google Drive', gdriveConnect:'Connect Google Drive', gdriveDisconnect:'Disconnect Google Drive',
   gdriveContinue:'Continue with Google Drive',
+  syncLost:'Google Drive disconnected: changes are not synced.',
+  syncStale:time=>'Not synced with Google Drive since '+time+'. Changes are only on this device.',
+  syncReconnect:'Reconnect', syncRetry:'Try again', syncOff:'Disconnect',
   gdriveConnected:n=>'Connected to Google Drive: '+n,
   gdriveDisconnected:'Google Drive disconnected',
   gdriveLoading:'Loading Google, please click again',
@@ -1409,6 +1426,9 @@ let gdriveTokenClient=null, gdrivePending=null, gisPromise=null;
 let gdriveSaveTimer=null, gdriveRetryTimer=null, gdriveSaving=false, gdriveAgain=false;
 let gdriveStatusState='saved';   // saved | saving | offline | auth
 let gdriveContinue=false;        // continue bar refers to Drive
+/* a missing sync is as bad as lost data: show it plainly */
+let SYNC_ALERT_MS=120000;          // no contact with Drive for this long while visible -> red bar
+let gdriveLastOk=Date.now(), gdriveVisibleAt=Date.now(), gdriveResuming=false;
 let inlineAddInput=null, exampleMode=false;
 let autoSavePref=true;
 try{const v=localStorage.getItem('em-autosave');if(v==='0')autoSavePref=false;else if(v==='1')autoSavePref=true;}catch(e){}
@@ -2122,7 +2142,7 @@ function setDriveStatus(s){gdriveStatusState=s;refreshHeader();}
 function activateDriveMode(){
   fileHandle=null; autoWrite=false;
   pendingHandle=null; hideContinueBar(); gdriveContinue=false; idbClearHandle();
-  gdriveMode=true; gdriveStatusState='saved';
+  gdriveMode=true; gdriveStatusState='saved'; gdriveLastOk=Date.now();
   refreshHeader(); refreshDriveUi();
 }
 function refreshDriveUi(){
@@ -2211,7 +2231,7 @@ async function driveSave(){
     saveDriveConn({fileId:gdrive.fileId,name:(upd&&upd.name)||gdrive.name,version:(upd&&upd.version)||gdrive.version});
     if(stateRev===rev){dirty=false;setLocalAt(Date.now());saveLocal();}
     else gdriveAgain=true;
-    gdriveStatusState='saved';
+    gdriveStatusState='saved'; gdriveLastOk=Date.now();
     if(mergedConflicts!==null) mergedToast(mergedConflicts);
   }catch(e){
     if(e&&e.status===401){clearGdriveToken();gdriveStatusState='auth';}
@@ -2234,12 +2254,13 @@ const GDRIVE_PULL_MS=15000;
 async function drivePull(){
   if(!gdriveMode||!gdrive||gdriveSaving||gdriveSaveTimer||dirty||!hasDriveAuth()) return;
   if(document.visibilityState!=='visible'||gdriveStatusState!=='saved') return;
-  if(userBusy()) return;   // try again at the next tick
+  const busy=userBusy();   // typing or dragging: only check the connection, take over at a later tick
   gdriveSaving=true;
   const rev=stateRev;
   try{
     const meta=await driveMeta(gdrive.fileId);
-    if(meta&&meta.version&&meta.version!==gdrive.version){
+    gdriveLastOk=Date.now();
+    if(!busy&&meta&&meta.version&&meta.version!==gdrive.version){
       const text=await driveRead(gdrive.fileId);
       if(stateRev!==rev||dirty){gdriveAgain=true;return;}   // edited meanwhile: the next save merges
       const next=parseFileText(text);                         // nothing local pending: remote = merge result
@@ -2259,7 +2280,41 @@ async function drivePull(){
   }
 }
 setInterval(drivePull,GDRIVE_PULL_MS);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')drivePull();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){gdriveVisibleAt=Date.now();drivePull();}});
+/* red bar when the matrix is not synced: signed out, connection not resumed, or no contact for a while */
+function syncProblem(){
+  if(!driveAvailable()) return null;
+  if(gdriveMode){
+    if(gdriveStatusState==='auth') return 'lost';
+    if(Date.now()-Math.max(gdriveLastOk,gdriveVisibleAt)>SYNC_ALERT_MS) return 'stale';
+    return null;
+  }
+  if(gdrive&&!gdriveResuming) return 'paused';   // a connection is stored but not active
+  return null;
+}
+function renderSyncAlert(){
+  const bar=$('#syncAlert'); if(!bar) return;
+  const k=syncProblem();
+  bar.hidden=!k; bar.dataset.kind=k||''; if(!k) return;
+  const time=new Date(gdriveLastOk).toLocaleTimeString(LANG==='de'?'de-CH':'en-GB',{hour:'2-digit',minute:'2-digit'});
+  const txt=k==='stale'?t('syncStale',time):t('syncLost');
+  const act=k==='stale'?t('syncRetry'):t('syncReconnect');
+  if($('#syncAlertText').textContent!==txt) $('#syncAlertText').textContent=txt;
+  if($('#syncAlertAct').textContent!==act) $('#syncAlertAct').textContent=act;
+  $('#syncAlertOff').textContent=t('syncOff');
+}
+// the status in the header follows when the state changes between ticks
+setInterval(()=>{const b=$('#syncAlert');if(b&&(syncProblem()||'')!==b.dataset.kind)refreshHeader();else renderSyncAlert();},5000);
+function syncAlertAction(){
+  const k=syncProblem();
+  if(k==='paused'){continueDrive();return;}
+  if(k==='lost'){
+    if(!gisLoaded()){loadGis().catch(()=>{});toast(t('gdriveLoading'));return;}
+    getToken(true).then(()=>driveSave()).catch(()=>toast(t('gdriveAuthFail')));
+    return;
+  }
+  if(k==='stale') driveSave();
+}
 /* ask the browser to keep the site data (Safari otherwise may clear it after 7 days without a visit) */
 function keepStorage(){try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}}
 async function connectDrive(){
@@ -2927,6 +2982,7 @@ function updateStatus(){
     const name=gdrive?gdrive.name:GDRIVE_FILE_NAME;
     let st=gdriveStatusState;
     if(st==='saved'&&dirty) st='saving';
+    if(st==='saved'&&syncProblem()==='stale') st='offline';
     const map={saved:t('gdriveSaved'),saving:t('gdriveSaving'),offline:t('gdriveOffline'),auth:t('gdriveReconnect')};
     text=t('gdrive')+': '+(map[st]||map.saved);
     cls=st==='saved'?'ok':'warn';
@@ -2957,6 +3013,7 @@ function updateStatus(){
   if(!$('#savePop').hidden) renderSavePop();
 }
 function refreshHeader(force=false){
+  renderSyncAlert();
   const pi=$('#ptitle'); if(pi&&(force||document.activeElement!==pi)) pi.value=state.title;
   const ac=$('#archiveCount'); if(ac) ac.textContent=String(state.archive.length);
   const ic=$('#inboxCount'); if(ic) ic.textContent=String(visibleTasksIn(null,null).length);
@@ -4629,6 +4686,8 @@ $('#setLabelsList').addEventListener('click',e=>{
 $('#setLabelsList').addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-set-label-name]')){e.preventDefault();e.stopPropagation();startLabelRename(e.target);}
 });
+$('#syncAlertAct').addEventListener('click',syncAlertAction);
+$('#syncAlertOff').addEventListener('click',()=>{disconnectDrive();renderSyncAlert();});
 $('#continueBtn').addEventListener('click',()=>{if(gdriveContinue)continueDrive();else continueWithStored();});
 $('#continueDismiss').addEventListener('click',()=>{pendingHandle=null;gdriveContinue=false;hideContinueBar();});
 $('#archiveBtn').addEventListener('click',openArchive);
@@ -5104,9 +5163,12 @@ function init(){
   gdriveMode=false; gdriveContinue=false; gdriveStatusState='saved';
   if(driveAvailable()&&gdrive){
     loadGis().catch(()=>{});
-    showDriveContinueBar();
     loadGdriveToken();
-    if(hasDriveAuth()) continueDrive();   // still signed in (or lasting connection): continue without a click
+    if(hasDriveAuth()){   // still signed in (or lasting connection): continue without a click
+      gdriveResuming=true;
+      continueDrive().finally(()=>{gdriveResuming=false;renderSyncAlert();});
+    }
+    renderSyncAlert();    // otherwise the red bar offers to reconnect
   }else{
     restoreStoredHandle();
   }
