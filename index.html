@@ -90,6 +90,8 @@ a{color:var(--accent)}
 .save-pop .sp-time{font-size:11.5px;color:var(--muted)}
 .save-pop .sp-auto{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0;margin:1px 0}
 .save-pop .btn{font-size:12.5px;padding:5px 8px}
+.store-pop .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:7px 10px;white-space:normal}
+.store-pop .btn small{font-size:11px;font-weight:400;opacity:.85}
 .btn{border:1px solid var(--line);background:var(--field);border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap;color:var(--text)}
 a.btn{color:var(--text);text-decoration:none;display:inline-block}
 .btn:hover{background:var(--hover)}
@@ -713,6 +715,11 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <button class="btn" type="button" data-save-action="open-other" data-i18n="openOther"></button>
       <button class="btn" type="button" id="savePopDisconnect" data-save-action="gdrive-disconnect" data-i18n="gdriveDisconnect" hidden></button>
     </span>
+    <span class="save-pop store-pop" id="storePop" hidden>
+      <span class="sp-file" data-i18n="storeWhere"></span>
+      <button class="btn primary" type="button" data-store-action="gdrive"><span data-i18n="gdriveConnect"></span><small data-i18n="storeGdriveHint"></small></button>
+      <button class="btn" type="button" data-store-action="file"><span id="storeFileLabel"></span><small id="storeFileHint"></small></button>
+    </span>
   </span>
   <span class="continue-bar" id="continueBar" hidden>
     <button class="btn" id="continueBtn" type="button"></button>
@@ -1042,7 +1049,7 @@ de:{
   confirmDeleteLabel:n=>'Label «'+n+'» löschen? Es wird aus allen Aufgaben entfernt, die Aufgaben bleiben erhalten.',
   autoSave:'Automatisch speichern', autoSaveT:'Änderungen sofort in die Datei schreiben',
   autoShort:'Auto', autoOnlyChrome:'Nur in Chrome und Edge möglich',
-  statusNoFilePick:'Nur im Browser · Datei wählen', statusNoFileSave:'Nur im Browser · Speichern',
+  statusNoFilePick:'Nur im Browser · Datei wählen', statusNoFileSave:'Nur im Browser · Speichern', statusNoStore:'Noch nicht gespeichert', storeWhere:'Wo soll deine Matrix liegen?', storeGdriveHint:'Empfohlen: speichert automatisch und ist auf allen Geräten aktuell', storeFilePick:'Datei auf diesem Gerät wählen', storeFilePickHint:'Speichert automatisch in eine Datei, nur auf diesem Gerät', storeFileSave:'Als Datei speichern', storeFileSaveHint:'Lädt eine Datei herunter, ab und zu wiederholen',
   statusAutoSaved:'Automatisch gespeichert', statusSaved:'In Datei gespeichert',
   statusUnsaved:'Ungespeicherte Änderungen', statusError:'Nicht gespeichert · erneut versuchen',
   lastSaved:'Zuletzt gespeichert', notYet:'noch nicht', savedShort:'Gespeichert',
@@ -1111,7 +1118,7 @@ de:{
   printTitle:'Eisenhower-Matrix', printDate:'Stand',
   helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
     <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
-    <li><b>Speichern</b>: Am einfachsten mit Datei → «Mit Google Drive verbinden»: speichert automatisch und hält alle Geräte aktuell. Sonst in Chrome und Edge eine Datei wählen und «Automatisch speichern» einschalten, in Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung.</li>
+    <li><b>Speichern</b>: Am einfachsten mit Datei → «Mit Google Drive verbinden»: speichert automatisch und hält alle Geräte aktuell. Sonst in Chrome und Edge eine Datei wählen und «Automatisch speichern» einschalten, in Firefox und Safari regelmässig «Speichern». Der Browserspeicher allein ist keine Sicherung. Die Datei in Drive öffnest du über das Tool, nicht per Doppelklick in Drive.</li>
     <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
     <li><b>Tasten</b>: <kbd>N</kbd> neue Aufgabe, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen.</li>
     <li><b>Datenschutz</b>: Das Tool sendet keine Daten, alles bleibt auf deinem Gerät (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">Hosting durch GitHub</a>). Ohne Gewähr.</li>`
@@ -1156,7 +1163,7 @@ en:{
   confirmDeleteLabel:n=>'Delete label «'+n+'»? It is removed from all tasks, the tasks stay.',
   autoSave:'Auto-save', autoSaveT:'Write changes into the file immediately',
   autoShort:'Auto', autoOnlyChrome:'Only possible in Chrome and Edge',
-  statusNoFilePick:'Browser only · Choose file', statusNoFileSave:'Browser only · Save',
+  statusNoFilePick:'Browser only · Choose file', statusNoFileSave:'Browser only · Save', statusNoStore:'Not saved yet', storeWhere:'Where should your matrix live?', storeGdriveHint:'Recommended: saves automatically and stays up to date on all devices', storeFilePick:'Choose a file on this device', storeFilePickHint:'Saves automatically to a file, this device only', storeFileSave:'Save as a file', storeFileSaveHint:'Downloads a file, repeat now and then',
   statusAutoSaved:'Auto-saved', statusSaved:'Saved to file',
   statusUnsaved:'Unsaved changes', statusError:'Not saved · retry',
   lastSaved:'Last saved', notYet:'not yet', savedShort:'Saved',
@@ -1225,7 +1232,7 @@ en:{
   printTitle:'Eisenhower matrix', printDate:'As of',
   helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
     <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
-    <li><b>Saving</b>: Easiest with File → “Connect Google Drive”: saves automatically and keeps all devices up to date. Otherwise choose a file in Chrome and Edge and switch on “Auto-save”, or click “Save” regularly in Firefox and Safari. The browser cache alone is not a backup.</li>
+    <li><b>Saving</b>: Easiest with File → “Connect Google Drive”: saves automatically and keeps all devices up to date. Otherwise choose a file in Chrome and Edge and switch on “Auto-save”, or click “Save” regularly in Firefox and Safari. The browser cache alone is not a backup. Open the file through the tool, not by double-clicking it in Drive.</li>
     <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
     <li><b>Keys</b>: <kbd>N</kbd> new task, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> axes.</li>
     <li><b>Privacy</b>: The tool sends no data, everything stays on your device (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">hosted by GitHub</a>). No warranty.</li>`
@@ -2913,6 +2920,8 @@ function updateStatus(){
   }else if(fileHandle&&!autoWrite){
     text='✓ '+t('statusSaved'); cls='ok';
     title=(fileHandle.name?fileHandle.name+' · ':'')+t('lastSaved')+': '+lastSavedAtText();
+  }else if(driveAvailable()){
+    text='⚠ '+t('statusNoStore'); cls='warn'; title=t('saveNoteBrowser');
   }else if(sup){
     text='⚠ '+t('statusNoFilePick'); cls='warn'; title=t('saveNoteBrowser');
   }else{
@@ -4478,10 +4487,27 @@ function onStatusClick(){
     return;
   }
   if(lastSaveError&&fileHandle){retrySave();return;}
+  if(!fileHandle&&driveAvailable()){toggleStorePop();return;}
   if(!fileHandle){saveFile({enableAuto:autoSaveSupported()});return;}
   if(!autoWrite&&dirty){saveFile();return;}
   toggleSavePop();
 }
+/* nothing saved yet: offer Google Drive first, a file second */
+function toggleStorePop(force){
+  const pop=$('#storePop'); if(!pop) return;
+  if(force===false||(force===undefined&&!pop.hidden)){pop.hidden=true;return;}
+  loadGis().catch(()=>{});   // ready before the click, so the Google popup is not blocked
+  const sup=autoSaveSupported();
+  $('#storeFileLabel').textContent=t(sup?'storeFilePick':'storeFileSave');
+  $('#storeFileHint').textContent=t(sup?'storeFilePickHint':'storeFileSaveHint');
+  pop.hidden=false;
+}
+$('#storePop').addEventListener('click',e=>{
+  const b=e.target.closest('[data-store-action]'); if(!b) return;
+  toggleStorePop(false);
+  if(b.dataset.storeAction==='gdrive') connectDrive();
+  else saveFile({enableAuto:autoSaveSupported()});
+});
 $('#fileStatus').addEventListener('click',onStatusClick);
 $('#autoSwitch').addEventListener('click',()=>toggleAutoSave());
 $('#autoSwitchPop').addEventListener('click',()=>toggleAutoSave());
@@ -4897,7 +4923,7 @@ $('#labelsMenuList').addEventListener('keydown',e=>{
 document.addEventListener('click',e=>{
   if(colorState.open&&!e.target.closest('#colorPop')&&!e.target.closest('[data-label-color],[data-new-label-color],[data-set-label-color],#setNewLabelColor')) closeColorPop();
   if(!e.target.closest('.menu,#colorPop'))closeMenus();
-  if(!e.target.closest('#saveGroup'))toggleSavePop(false);
+  if(!e.target.closest('#saveGroup')){toggleSavePop(false);toggleStorePop(false);}
 });
 
 /* focus snapshots and global keyboard */
@@ -4917,6 +4943,7 @@ document.addEventListener('keydown',e=>{
     }
     if(colorState.open){closeColorPop();return;}
     if(!$('#savePop').hidden){toggleSavePop(false);return;}
+    if(!$('#storePop').hidden){toggleStorePop(false);return;}
     if(!$('#movePicker').hidden){closeMovePicker();return;}
     if(!$('#detailDrawer').hidden){closeDetail();return;}
     if(!$('#archiveDrawer').hidden){closeArchive();return;}

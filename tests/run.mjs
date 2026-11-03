@@ -253,6 +253,17 @@ async function main() {
     noErrors(p);
   });
 
+  await test('nothing saved yet: the status offers Google Drive first', async () => {
+    const p = await open(browser, base, { init: DRIVE_MOCK });
+    check((await p.ev(`document.querySelector('#fileStatus').textContent`)).includes('Noch nicht gespeichert'), 'status says nothing is saved yet');
+    await p.ev(`document.querySelector('#fileStatus').click()`);
+    check(await p.ev(`!document.querySelector('#storePop').hidden`), 'choice opens');
+    check(await p.ev(`document.querySelector('#storePop [data-store-action]').dataset.storeAction`) === 'gdrive', 'Google Drive is the first choice');
+    await p.ev(`document.querySelector('[data-store-action=gdrive]').click()`); await sleep(500);
+    check(await p.ev(`gdriveMode && document.querySelector('#storePop').hidden`), 'connected from the choice');
+    noErrors(p);
+  });
+
   await test('merge: two devices worked offline', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
