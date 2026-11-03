@@ -341,6 +341,17 @@ async function main() {
     check(t.includes('from the other device') && t.includes('second here'), 'both devices merged in Drive: ' + t.join(', '));
     check(await p.ev(`state.tasks.some(t=>t.id==='other')`), 'merged state shown here');
     check(await p.ev(`__drive.confirms`) === 0, 'no question asked');
+    // Drive raises the version without a content change: nothing is taken over, undo keeps working
+    await p.ev(`addTask('undo me',[2,2])`); await sleep(1500);
+    await p.ev(`__drive.files[0].version=String(++__drive.ver)`);
+    await p.ev(`drivePull()`); await sleep(300);
+    check(await p.ev(`undoStack.length>0 && !document.querySelector('#undo').disabled`), 'history kept after a version-only change (pull)');
+    await p.ev(`__drive.files[0].version=String(++__drive.ver)`);
+    await p.ev(`addTask('undo me too',[2,2])`); await sleep(1500);
+    check(await p.ev(`undoStack.length>1`), 'history kept after a version-only change (save)');
+    await p.ev(`document.querySelector('#undo').click()`); await p.ev(`document.querySelector('#undo').click()`); await sleep(1500);
+    check(!(await p.ev(`state.tasks.some(t=>/^undo me/.test(t.title))`)), 'undo button removes both tasks');
+    check(!(await p.ev(`JSON.parse(__drive.files[0].content).tasks.some(t=>/^undo me/.test(t.title))`)), 'undo reaches Drive');
     // the other device saves while this one only looks: pulled without writing back
     await p.ev(`(()=>{const f=__drive.files[0],s=JSON.parse(f.content);s.tasks.push({...s.tasks[0],id:'other2',title:'pulled',mod:new Date().toISOString()});f.content=JSON.stringify(s);f.version=String(++__drive.ver);})()`);
     const v0 = await p.ev(`__drive.ver`);

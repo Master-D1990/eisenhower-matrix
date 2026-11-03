@@ -2103,6 +2103,8 @@ async function driveUpdate(id,text){
 }
 function driveText(){return JSON.stringify({...state,savedAt:isoNow()});}
 function matrixComparable(st){const c={...st};c.savedAt=null;return JSON.stringify(c);}
+/* Drive raises a file's version also without a content change: only a different matrix counts as a change */
+function sameAsState(st){try{return matrixComparable(parseFileText(driveText()))===matrixComparable(st);}catch(e){return false;}}
 function setDriveStatus(s){gdriveStatusState=s;refreshHeader();}
 function activateDriveMode(){
   fileHandle=null; autoWrite=false;
@@ -2181,7 +2183,7 @@ async function driveSave(){
         /* invalid remote file: keep the local version (no confirm in autosave) */
         console.warn('drive merge failed',e);
       }
-      if(merged){
+      if(merged&&!sameAsState(merged.state)){
         applyRemoteState(merged.state,{dirty:true});
         gdriveMode=true;
         mergedConflicts=merged.conflicts;
@@ -2228,11 +2230,11 @@ async function drivePull(){
       const text=await driveRead(gdrive.fileId);
       if(stateRev!==rev||dirty){gdriveAgain=true;return;}   // edited meanwhile: the next save merges
       const next=parseFileText(text);                         // nothing local pending: remote = merge result
-      applyRemoteState(next,{dirty:false});
-      gdriveMode=true;
+      const changed=!sameAsState(next);
+      if(changed){ applyRemoteState(next,{dirty:false}); gdriveMode=true; }   // only then the history is reset
       saveDriveBase(text);
       saveDriveConn({fileId:gdrive.fileId,name:meta.name||gdrive.name,version:meta.version});
-      toast(t('gdriveUpdated'));
+      if(changed) toast(t('gdriveUpdated'));
     }
   }catch(e){
     if(e&&e.status===401){clearGdriveToken();gdriveStatusState='auth';}
