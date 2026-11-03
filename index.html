@@ -377,6 +377,16 @@ body.inbox-closed #inbox{cursor:pointer}
 .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--ring);border-color:var(--accent)}
 .field-row{display:flex;gap:6px;align-items:center}
 .field-row input{flex:1;min-width:0}
+.date-field{position:relative;display:flex;align-items:center;gap:4px;flex:1;min-width:0}
+.date-field[hidden]{display:none}
+.date-field .date-text{flex:1;min-width:0}
+.date-field .date-text.invalid{outline:2px solid var(--r);border-color:var(--r)}
+.date-pick{flex:0 0 auto;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--field);cursor:pointer;font-size:15px;line-height:1}
+.date-pick:hover{border-color:var(--accent)}
+.date-native{position:absolute;right:0;bottom:0;width:34px;height:1px;opacity:0;pointer-events:none;border:0;padding:0;margin:0}
+.repeat-custom .date-field{flex:0 1 auto}
+.repeat-custom .date-text{width:8.5em;flex:0 1 auto}
+.set-datefmt select{margin-left:auto;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text);padding:4px 6px;font-size:13px}
 #dRepeat{width:100%}
 .repeat-custom{margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:7px;color:var(--text);font-size:13px}
 .rc-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -853,7 +863,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     </div>
     <label class="field"><span data-i18n="description"></span><textarea id="dDesc" maxlength="20000" rows="8"></textarea></label>
     <label class="field"><span data-i18n="due"></span>
-      <span class="field-row"><input id="dDue" type="date"><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
+      <span class="field-row"><span class="date-field"><input type="text" class="date-text" id="dDueText" inputmode="numeric" autocomplete="off" data-i18n-aria="due"><button type="button" class="date-pick" data-date-pick="dDue" data-i18n-title="datePickT" data-i18n-aria="datePickT">📅</button><input id="dDue" type="date" class="date-native" tabindex="-1" aria-hidden="true"></span><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
     </label>
     <div class="field" id="dRepeatField"><span data-i18n="repeat"></span>
       <select id="dRepeat" data-i18n-aria="repeat"></select>
@@ -861,7 +871,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
         <div class="rc-row"><span data-i18n="repeatEvery"></span><input id="rcN" type="number" min="1" max="99" inputmode="numeric"><select id="rcF"></select></div>
         <div class="rc-row rc-days" id="rcDays"></div>
         <div class="rc-row" id="rcMonthRow"><select id="rcMonthBy"></select></div>
-        <div class="rc-row"><span data-i18n="repeatEnd"></span><select id="rcEnd"></select><input id="rcUntil" type="date" hidden><input id="rcLeft" type="number" min="1" max="999" inputmode="numeric" hidden><span id="rcLeftUnit" data-i18n="repeatTimes" hidden></span></div>
+        <div class="rc-row"><span data-i18n="repeatEnd"></span><select id="rcEnd"></select><span class="date-field" id="rcUntilWrap" hidden><input type="text" class="date-text" id="rcUntilText" inputmode="numeric" autocomplete="off" data-i18n-aria="rEndUntil"><button type="button" class="date-pick" data-date-pick="rcUntil" data-i18n-title="datePickT" data-i18n-aria="datePickT">📅</button><input id="rcUntil" type="date" class="date-native" tabindex="-1" aria-hidden="true"></span><input id="rcLeft" type="number" min="1" max="999" inputmode="numeric" hidden><span id="rcLeftUnit" data-i18n="repeatTimes" hidden></span></div>
         <label class="rc-check"><input type="checkbox" id="rcFromDone"><span data-i18n="repeatFromDone"></span></label>
       </div>
       <label class="rc-check" id="dRepeatStackRow" hidden><input type="checkbox" id="dRepeatStack"><span data-i18n="repeatStack"></span></label>
@@ -952,6 +962,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <div class="set-row"><span class="seg" id="setThemeSeg"><button type="button" data-th="auto"></button><button type="button" data-th="light"></button><button type="button" data-th="dark"></button></span></div>
       <div class="set-row"><span class="seg" id="setLangSeg"><button type="button" data-lang="de">DE</button><button type="button" data-lang="en">EN</button></span></div>
       <div class="set-row set-tint"><span data-i18n="tintLabel"></span><input type="range" id="setTint" min="0" max="100" step="1" data-i18n-aria="tintLabel"><output id="setTintOut"></output><button type="button" class="linkbtn" id="setTintReset" data-i18n="resetShort"></button></div>
+      <label class="set-row set-datefmt"><span data-i18n="dateFmtLabel"></span><select id="setDateFmt"></select></label>
       <div class="set-row set-tint"><span data-i18n="taskFontLabel"></span><input type="range" id="setTaskFont" min="80" max="160" step="5" data-i18n-aria="taskFontLabel"><output id="setTaskFontOut"></output><button type="button" class="linkbtn" id="setTaskFontReset" data-i18n="resetShort"></button></div>
     </section>
   </div>
@@ -1150,6 +1161,7 @@ de:{
   mobileMenu:'Menü', rowsShort:'Zeilen', colsShort:'Spalten', themeLabel:'Farbschema', languageLabel:'Sprache',
   themeAuto:'Automatisch', themeLight:'Hell', themeDark:'Dunkel',
   doneT:'Als erledigt markieren (ins Archiv)',
+  dateFmtLabel:'Datumsformat', dateFmtAuto:'Automatisch', datePickT:'Im Kalender wählen',
   repeat:'Wiederholen', rNever:'Nie', rDaily:'Täglich', rWeekdays:'Jeden Werktag (Mo bis Fr)', rWeekly:'Wöchentlich', rMonthly:'Monatlich', rYearly:'Jährlich',
   rEveryDays:n=>'Alle '+n+' Tage', rEveryWeeks:n=>'Alle '+n+' Wochen', rEveryMonths:n=>'Alle '+n+' Monate', rEveryYears:n=>'Alle '+n+' Jahre',
   rOn:'am', rNth:(k,w)=>(k===-1?'letzten':['ersten','zweiten','dritten','vierten'][k-1])+' '+w, rDayN:n=>n+'.',
@@ -1285,6 +1297,7 @@ en:{
   mobileMenu:'Menu', rowsShort:'Rows', colsShort:'Columns', themeLabel:'Colour scheme', languageLabel:'Language',
   themeAuto:'Automatic', themeLight:'Light', themeDark:'Dark',
   doneT:'Mark as done (to the archive)',
+  dateFmtLabel:'Date format', dateFmtAuto:'Automatic', datePickT:'Pick in the calendar',
   repeat:'Repeat', rNever:'Does not repeat', rDaily:'Daily', rWeekdays:'Every weekday (Mon to Fri)', rWeekly:'Weekly', rMonthly:'Monthly', rYearly:'Annually',
   rEveryDays:n=>'Every '+n+' days', rEveryWeeks:n=>'Every '+n+' weeks', rEveryMonths:n=>'Every '+n+' months', rEveryYears:n=>'Every '+n+' years',
   rOn:'on', rNth:(k,w)=>'the '+(k===-1?'last':['first','second','third','fourth'][k-1])+' '+w, rDayN:n=>'day '+n,
@@ -3101,11 +3114,74 @@ function renderSettingsDisplay(){
   $$('#setLangSeg button').forEach(b=>{const on=b.dataset.lang===LANG;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
   applyTint();
 }
+/* ---------- date format: text field in the chosen format + the browser calendar on a button ----------
+   The browser's own date field follows the browser language (an English browser shows mm/dd/yyyy),
+   so the fields show the format of the matrix language or the one chosen in the settings. */
+let dateFmt='auto';   // auto | dmy | mdy | ymd (per device)
+function loadDateFmt(){try{const v=localStorage.getItem('em-datefmt');if(['auto','dmy','mdy','ymd'].includes(v))dateFmt=v;}catch(e){}}
+function effDateFmt(){if(dateFmt!=='auto')return dateFmt;if(LANG==='de')return 'dmy';return /^en-US/i.test(navigator.language||'')?'mdy':'dmy';}
+function dateSep(f){return f==='ymd'?'-':f==='dmy'&&LANG==='de'?'.':'/';}
+function fmtDateField(iso){
+  if(!iso||!isValidDateStr(iso)) return '';
+  const [y,m,d]=iso.split('-'), f=effDateFmt(), sp=dateSep(f);
+  return f==='ymd'?iso:f==='mdy'?m+sp+d+sp+y:d+sp+m+sp+y;
+}
+function datePattern(){const f=effDateFmt(),sp=dateSep(f),[D,M,Y]=LANG==='de'?['TT','MM','JJJJ']:['DD','MM','YYYY'];return f==='ymd'?Y+sp+M+sp+D:f==='mdy'?M+sp+D+sp+Y:D+sp+M+sp+Y;}
+/* typed text -> YYYY-MM-DD, '' for empty, null when it is no date; the year may be left out or short */
+function parseDateField(txt){
+  txt=String(txt||'').trim(); if(!txt) return '';
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(txt)){const [y,m,d]=txt.split('-').map(Number);const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');return isValidDateStr(iso)?iso:null;}
+  const p=txt.split(/[^0-9]+/).filter(Boolean).map(Number); if(p.length<2||p.length>3) return null;
+  const f=effDateFmt(); let y,m,d;
+  if(f==='ymd'){if(p.length<3)return null;[y,m,d]=p;}
+  else if(f==='mdy'){[m,d,y]=p;} else {[d,m,y]=p;}
+  if(y===undefined) y=new Date().getFullYear(); else if(y<100) y+=2000;
+  const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  return isValidDateStr(iso)?iso:null;
+}
+function syncDateText(id){
+  const nat=document.getElementById(id), txt=document.getElementById(id+'Text'); if(!nat||!txt) return;
+  if(document.activeElement!==txt){txt.value=fmtDateField(nat.value);txt.classList.remove('invalid');}
+  txt.placeholder=datePattern();
+}
+function wireDateField(id){
+  const nat=document.getElementById(id), txt=document.getElementById(id+'Text'); if(!nat||!txt) return;
+  const commitText=()=>{
+    const v=parseDateField(txt.value);
+    if(v===null){txt.classList.add('invalid');return;}
+    txt.classList.remove('invalid');
+    txt.value=fmtDateField(v);
+    if(v!==nat.value){nat.value=v;nat.dispatchEvent(new Event('change'));}
+  };
+  txt.addEventListener('change',commitText);
+  txt.addEventListener('blur',()=>{if(txt.classList.contains('invalid')){txt.value=fmtDateField(nat.value);txt.classList.remove('invalid');}});
+  txt.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();commitText();if(!txt.classList.contains('invalid'))txt.blur();}});
+  nat.addEventListener('change',()=>{txt.value=fmtDateField(nat.value);txt.classList.remove('invalid');});
+}
+function openDatePicker(id){
+  const nat=document.getElementById(id); if(!nat) return;
+  try{ if(nat.showPicker){nat.showPicker();return;} }catch(e){}
+  nat.focus(); try{nat.click();}catch(e){}
+}
+function setDateFmt(v){
+  dateFmt=['auto','dmy','mdy','ymd'].includes(v)?v:'auto';
+  try{localStorage.setItem('em-datefmt',dateFmt);}catch(e){}
+  syncDateText('dDue'); syncDateText('rcUntil'); renderSettingsDateFmt();
+}
+function renderSettingsDateFmt(){
+  const sel=$('#setDateFmt'); if(!sel) return;
+  sel.replaceChildren();
+  const auto=t('dateFmtAuto')+' ('+(()=>{const k=dateFmt;dateFmt='auto';const p=datePattern();dateFmt=k;return p;})()+')';
+  [['auto',auto],['dmy',LANG==='de'?'TT.MM.JJJJ':'DD/MM/YYYY'],['mdy',LANG==='de'?'MM/TT/JJJJ':'MM/DD/YYYY'],['ymd',LANG==='de'?'JJJJ-MM-TT':'YYYY-MM-DD']]
+    .forEach(([v,txt])=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.append(o);});
+  sel.value=dateFmt;
+}
 function renderSettings(){
   renderSettingsMatrix();
   renderSettingsLabels();
   renderSettingsCoins();
   renderSettingsDisplay();
+  renderSettingsDateFmt();
 }
 function scrollSettingsTo(section){
   const body=$('#settingsBody'); if(!body||!section) return;
@@ -3909,7 +3985,7 @@ function renderRepeatCustom(r,anchor){
   const end=$('#rcEnd'); end.replaceChildren();
   [['never','rEndNever'],['until','rEndUntil'],['count','rEndCount']].forEach(([v,k])=>{const o=document.createElement('option');o.value=v;o.textContent=t(k);end.append(o);});
   end.value=r.until?'until':r.left!==undefined?'count':'never';
-  const u=$('#rcUntil'); u.hidden=end.value!=='until'; if(ae!==u) u.value=r.until||'';
+  const u=$('#rcUntil'); $('#rcUntilWrap').hidden=end.value!=='until'; if(ae!==u) u.value=r.until||''; syncDateText('rcUntil');
   const l=$('#rcLeft'); l.hidden=end.value!=='count'; if(ae!==l) l.value=String(r.left||10);
   $('#rcLeftUnit').hidden=end.value!=='count';
   $('#rcFromDone').checked=!!r.fromDone;
@@ -3952,7 +4028,7 @@ function onRepeatSelect(){
 function onRepeatCustomChange(){const task=detailTask(); if(task&&task.repeat) setTaskRepeat(task,repeatFromCustom(task));}
 function renderDetailValues(task){
   $('#detailHead').textContent=task.cell?cellLabel(task.cell[0],task.cell[1]):t('inboxOption');
-  $('#dTitle').value=task.title; $('#dDesc').value=task.desc; $('#dDue').value=task.due||'';
+  $('#dTitle').value=task.title; $('#dDesc').value=task.desc; $('#dDue').value=task.due||''; syncDateText('dDue');
   fillDetailCellSelect(task);
   renderDetailLabels(task);
   renderDetailCoins(task);
@@ -3964,7 +4040,7 @@ function refreshDetail(force=false){
   const task=findTask(ui.detailId);
   if(!task){closeDetail();return;}
   const ae=document.activeElement;
-  if(!force&&ae&&['dTitle','dDesc','dDue','rcN','rcLeft','rcUntil'].includes(ae.id)) return;
+  if(!force&&ae&&['dTitle','dDesc','dDue','dDueText','rcN','rcLeft','rcUntil','rcUntilText'].includes(ae.id)) return;
   renderDetailValues(task);
   scheduleDetailPosition();
 }
@@ -5288,7 +5364,10 @@ $('#dRepeat').addEventListener('change',onRepeatSelect);
 $('#rcDays').addEventListener('click',e=>{const b=e.target.closest('[data-rc-day]');if(!b)return;b.classList.toggle('on');if(!$$('#rcDays button.on').length)b.classList.add('on');onRepeatCustomChange();});
 $('#dRepeatStack').addEventListener('change',e=>{const task=detailTask();if(!task||!task.repeat)return;const r={...task.repeat};if(e.target.checked)r.stack=true;else delete r.stack;setTaskRepeat(task,r);checkRepeats();});
 $('#dSleepWake').addEventListener('click',()=>{const task=detailTask();if(!task||!task.sleep)return;commit(()=>{delete task.sleep;},{detail:true});});
-$('#dDueClear').addEventListener('click',()=>{$('#dDue').value='';setDetailDue('');});
+$('#dDueClear').addEventListener('click',()=>{$('#dDue').value='';syncDateText('dDue');setDetailDue('');});
+wireDateField('dDue'); wireDateField('rcUntil');
+document.addEventListener('click',e=>{const b=e.target.closest('[data-date-pick]');if(b){e.preventDefault();openDatePicker(b.dataset.datePick);}});
+$('#setDateFmt').addEventListener('change',e=>setDateFmt(e.target.value));
 $('#dCoinQuick').addEventListener('click',e=>{
   const b=e.target.closest('[data-coin-quick]');
   if(b&&ui.detailId) setTaskCoins(ui.detailId,b.dataset.coinQuick);
@@ -5522,7 +5601,7 @@ function init(){
   if(!Array.isArray(state.labels)) state.labels=[];
   ui.mobileCell=null; ui.detailId=null; ui.archiveOpen=false; ui.search=''; ui.archiveQuery='';
   ui.inboxOpen=initialInboxOpen();
-  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint();
+  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint(); loadDateFmt();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
   checkRepeats();

@@ -419,6 +419,31 @@ async function main() {
     }
   });
 
+  await test('date fields follow the matrix language or the chosen format, typing works', async () => {
+    const p = await open(browser, base);
+    const id = await p.ev(`(addTask('date',[0,0]), state.tasks.find(t=>t.title==='date').id)`);
+    await p.ev(`(findTask('${id}').due='2026-11-03', openDetail('${id}'))`); await sleep(100);
+    const txt = () => p.ev(`document.querySelector('#dDueText').value`);
+    check(await txt() === '03.11.2026', 'German: dd.mm.yyyy, not the browser format: ' + await txt());
+    const type = v => p.ev(`(()=>{const i=document.querySelector('#dDueText');i.focus();i.value='${v}';i.dispatchEvent(new Event('change'));i.blur();})()`);
+    await type('5.12.');
+    check(await p.ev(`findTask('${id}').due`) === new Date().getFullYear() + '-12-05', 'typed without year');
+    await type('31.2.2026');
+    check(await p.ev(`findTask('${id}').due`) === new Date().getFullYear() + '-12-05', 'invalid date ignored');
+    check(await txt() === '05.12.' + new Date().getFullYear(), 'invalid text reverted on blur: ' + await txt());
+    await p.ev(`setDateFmt('mdy')`);
+    check(await txt() === '12/05/' + new Date().getFullYear(), 'chosen format mm/dd/yyyy');
+    await type('1/2/27');
+    check(await p.ev(`findTask('${id}').due`) === '2027-01-02', 'typed in the chosen format');
+    await p.ev(`setDateFmt('ymd')`);
+    check(await txt() === '2027-01-02', 'ISO format');
+    await p.ev(`setDateFmt('auto'); setLang('en')`); await sleep(50);
+    const us = await p.ev(`/^en-US/i.test(navigator.language||'')`);
+    check(await txt() === (us ? '01/02/2027' : '02/01/2027'), 'English matrix: browser region decides between mm/dd and dd/mm: ' + await txt());
+    await p.ev(`document.querySelector('[data-date-pick="dDue"]').click()`);
+    noErrors(p);
+  });
+
   await test('view settings: field names, task font, axis buttons, label filter', async () => {
     const p = await open(browser, base);
     check(await p.ev(`document.querySelectorAll('.ax-origin-btn,.ax-flip-btn').length`) === 0, 'axis buttons hidden by default');
