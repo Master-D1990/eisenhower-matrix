@@ -7,7 +7,7 @@ No installation, no account, no data upload.
 
 [English](#english) · [Deutsch](#deutsch) · [For developers](#for-developers)
 
-![Eisenhower Matrix+ with a 3×3 matrix, coloured axes and the inbox](docs/eisenhower-matrix-example.png)
+![Eisenhower Matrix+ on the desktop (dark mode) and on a phone: a 3×3 matrix with due dates, labels and gold coins, synced with Google Drive](docs/eisenhower-matrix-desktop-phone.png)
 
 ---
 
