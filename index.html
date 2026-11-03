@@ -266,7 +266,7 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .cell .task-meta{font-size:clamp(calc(10px*var(--tfs,1)),calc(2.4cqw*var(--tfs,1)),calc(12.5px*var(--tfs,1)))}
 .descmark{font-size:0;line-height:0;flex:0 0 auto}.descmark::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--faint)}
 .due{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--panel)}
-.coins-badge{color:var(--coin-ink);border:1px solid var(--coin-line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--coin-bg);font-weight:700;flex:0 0 auto}
+.coins-badge{color:var(--coin-ink);line-height:calc(15px*var(--tfs,1));white-space:nowrap;font-weight:700;flex:0 0 auto}
 .coin-float{position:fixed;z-index:260;transform:translate(-50%,-50%);color:var(--coin-ink);font-weight:800;font-size:17px;text-shadow:0 1px 2px var(--panel),0 0 6px var(--panel);pointer-events:none;animation:coinRise .7s ease-out forwards}
 @keyframes coinRise{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}18%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 42px)) scale(1.08)}}
 .due.soon{color:#6b4300;background:#ffedc2;border-color:#ecc66d}
@@ -713,7 +713,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
 <header id="bar">
   <span class="hbar hbar-main">
   <input id="ptitle" type="text" maxlength="500" data-i18n-title="titleT" spellcheck="false">
-  <button class="btn coins-pill mobile-only" id="mobileCoinsBtn" type="button" hidden>🪙 0</button>
+  <button class="btn coins-pill mobile-only" id="mobileCoinsBtn" type="button" hidden>0 🪙</button>
   <span class="save-group" id="saveGroup">
     <button class="auto-switch" id="autoSwitch" type="button" role="switch" aria-checked="false"><span class="sw"></span><span data-i18n="autoSave"></span></button>
     <button id="fileStatus" type="button"></button>
@@ -771,7 +771,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <button class="btn" id="labelsMenuBtn" aria-haspopup="true"><span data-i18n="labels"></span><span class="filter-dot" id="labelsActive" hidden></span></button>
     <span class="menu-list right" id="labelsMenuList" role="menu" hidden></span>
   </span>
-  <button class="btn desktop-only coins-btn" id="coinsBtn" type="button" hidden>🪙 0</button>
+  <button class="btn desktop-only coins-btn" id="coinsBtn" type="button" hidden>0 🪙</button>
   <button class="btn desktop-only" id="archiveBtn" data-i18n-title="archiveT"><span data-i18n="archive"></span><span id="archiveCount">0</span></button>
   <button class="btn desktop-only" id="helpBtn" data-i18n="helpBtn" data-i18n-title="helpBtnT"></button>
   <span class="menu" id="mobileMenu">
@@ -932,7 +932,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
 <dialog id="accountDlg" class="settings-dlg" data-i18n-aria="account" aria-label="Account">
   <div class="dlg-head"><h2><span aria-hidden="true">🪙</span> <span data-i18n="account"></span></h2><button class="dlg-close" id="accountClose" data-i18n-title="closeT" aria-label="Close">✕</button></div>
   <div class="settings-body" id="accountBody">
-    <div class="acc-balance" id="accBalance">🪙 0</div>
+    <div class="acc-balance" id="accBalance">0 🪙</div>
     <section class="set-section" data-section="withdraw">
       <h3 data-i18n="coinsWithdraw"></h3>
       <div class="acc-form">
@@ -3043,7 +3043,7 @@ function renderCoinsHeader(){
   const apply=(el,txt)=>{
     if(!el) return;
     el.hidden=!on;
-    el.textContent='🪙 '+txt;
+    el.textContent=txt+' 🪙';
     el.title=t('account')+' · '+txt+' 🪙';
     el.setAttribute('aria-label',t('account')+': '+txt+' 🪙');
   };
@@ -3101,7 +3101,7 @@ function clearAccMsg(){showAccMsg('');}
 function renderAccount(){
   if(!accountOpen()) return;
   const c=coinsState();
-  const bal=$('#accBalance'); if(bal) bal.textContent='🪙 '+c.balance;
+  const bal=$('#accBalance'); if(bal) bal.textContent=c.balance+' 🪙';
   const rw=$('#accRewards');
   if(rw){
     rw.replaceChildren();
@@ -3207,7 +3207,7 @@ function taskCard(task){
   const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title||t('untitled'); el.append(title);
   const meta=document.createElement('span'); meta.className='task-meta';
   if(task.desc.trim()){const dm=document.createElement('span');dm.className='descmark';dm.textContent='≡';dm.title=t('description');meta.append(dm);}
-  if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent='🪙'+task.coins;cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
+  if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
   if(info){const due=document.createElement('span');due.className='due '+info.cls;due.textContent=info.label;due.title=info.title;meta.append(due);}
   el.append(meta);
   const done=document.createElement('button'); done.className='task-done'; done.type='button'; done.dataset.done=task.id; done.textContent='✓'; done.title=t('done'); done.setAttribute('aria-label',t('done')); el.append(done);
@@ -3720,7 +3720,7 @@ function buildMobileMenu(){
   add(t('noLabelTasks'),'label:none',filter.none);
   add(t('showAllLabels'),'label:showall'); add(t('hideAllLabels'),'label:hideall');
   sep();
-  if(coinsOn()) add(t('account')+' · 🪙 '+coinsState().balance,'account');
+  if(coinsOn()) add(t('account')+' · '+coinsState().balance+' 🪙','account');
   add(t('archive'),'archive'); add(t('settings'),'settings'); add(t('helpBtn'),'help');
 }
 function setupMenu(root,isMobile=false){
