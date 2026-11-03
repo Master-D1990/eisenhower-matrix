@@ -1034,7 +1034,7 @@ const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&
 const sameGrid=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((row,i)=>sameArray(row,b[i]));
 const FORMAT='eisenhower-matrix', VERSION=1;
 const MAX_TITLE=500, MAX_DESC=20000, MAX_LABEL=200, MAX_AXIS=200, MAX_ID=64;
-const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, STACK_CATCHUP_DAYS=7;
+const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, STACK_MAX_OPEN=5;
 const MAX_LABELS=50, MAX_LABEL_NAME=40, LABEL_COLOR=/^#[0-9a-f]{6}$/i;
 const MAX_TASK_COINS=9999, MAX_COIN_BALANCE=999999999, MAX_REWARD_PRICE=999999, MAX_REWARD_NAME=60, MAX_COIN_LOG=2000, MAX_COIN_TEXT=300;
 /* colour-blind-friendly palette (Okabe-Ito inspired), readable on light and dark */
@@ -1169,7 +1169,7 @@ de:{
   repeatEvery:'Alle', rUnitDays:'Tage', rUnitWeeks:'Wochen', rUnitMonths:'Monate', rUnitYears:'Jahre',
   repeatEnd:'Ende', rEndNever:'nie', rEndUntil:'am', rEndCount:'nach', repeatTimes:'Mal',
   repeatFromDone:'Ab Erledigen zählen (statt ab Frist)',
-  repeatStack:'Aufstocken: an jedem fälligen Tag ein neuer Eintrag, auch wenn der alte noch offen ist',
+  repeatStack:'Aufstocken: an jedem fälligen Tag ein neuer Eintrag, auch wenn der alte noch offen ist (höchstens 5 offen, die ältesten fallen weg)',
   repeatSleeps:d=>'Geplant, erscheint am '+d, repeatWake:'Jetzt anzeigen',
   repeatSkipped:n=>n===1?'1 ältere Wiederholung übersprungen':n+' ältere Wiederholungen übersprungen',
   archivedNext:d=>'Erledigt. Nächste Wiederholung am '+d,
@@ -1305,7 +1305,7 @@ en:{
   repeatEvery:'Every', rUnitDays:'days', rUnitWeeks:'weeks', rUnitMonths:'months', rUnitYears:'years',
   repeatEnd:'Ends', rEndNever:'never', rEndUntil:'on', rEndCount:'after', repeatTimes:'times',
   repeatFromDone:'Count from completion (instead of the due date)',
-  repeatStack:'Stack up: a new entry on every due day, even if the old one is still open',
+  repeatStack:'Stack up: a new entry on every due day, even if the old one is still open (at most 5 open, the oldest give way)',
   repeatSleeps:d=>'Planned, appears on '+d, repeatWake:'Show now',
   repeatSkipped:n=>n===1?'1 older repetition skipped':n+' older repetitions skipped',
   archivedNext:d=>'Done. Next repetition on '+d,
@@ -2887,7 +2887,7 @@ function findTask(id){return state.tasks.find(x=>x.id===id);}
 /* ---------- recurring tasks ----------
    Default: the next entry is created when the task is ticked off; it sleeps (hidden) until its day.
    With "stack" a new entry appears on every due day even if the old one is still open
-   (after a long pause only the last week is caught up, at least the latest entry). The next entry gets the id
+   (at most STACK_MAX_OPEN open entries per series: the oldest open ones give way to new ones). The next entry gets the id
    series_YYYYMMDD, so two devices ticking off the same task create the same entry, not two. */
 function localDateStr(dt=new Date()){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
 function dParse(s){const [y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d));}
@@ -2948,7 +2948,8 @@ function nextOnDone(task){
   }
   return null;
 }
-/* stacking: create the entries whose day has come; returns how many older ones were skipped */
+/* stacking: create the entries whose day has come and keep only the newest STACK_MAX_OPEN open entries of the series;
+   returns how many older ones were skipped or removed */
 function spawnStacked(){
   if(exampleMode||!state.tasks.some(x=>x.repeat&&x.repeat.stack&&!x.spawned)) return 0;
   const today=localDateStr();
@@ -2964,8 +2965,7 @@ function spawnStacked(){
       dates.push(nx); cur=nx; if(left!==undefined) left--;
     }
     if(!dates.length) continue;
-    const from=dAdd(today,-(STACK_CATCHUP_DAYS-1));
-    let keep=dates.filter(d=>d>=from); if(!keep.length) keep=dates.slice(-1);
+    const keep=dates.slice(-STACK_MAX_OPEN);
     const skipped=dates.length-keep.length;
     skippedAll+=skipped;
     task.spawned=true; changed=true;
@@ -2976,6 +2976,14 @@ function spawnStacked(){
       add.push(nt); src=nt;
     });
     state.tasks.splice(i+1,0,...add); i+=add.length;
+    /* the open entries of this series beyond the newest STACK_MAX_OPEN give way (ids are per day, so devices agree) */
+    const series=task.series||task.id;
+    const open=state.tasks.filter(x=>(x.series||x.id)===series).sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+    const drop=new Set(open.slice(STACK_MAX_OPEN).map(x=>x.id));
+    if(drop.size){
+      i-=state.tasks.slice(0,i+1).filter(x=>drop.has(x.id)).length;
+      state.tasks=state.tasks.filter(x=>!drop.has(x.id)); skippedAll+=drop.size;
+    }
   }
   if(changed) markChanged();
   return skippedAll;

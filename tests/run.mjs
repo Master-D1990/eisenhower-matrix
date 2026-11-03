@@ -360,19 +360,26 @@ async function main() {
     noErrors(p);
   });
 
-  await test('repeat: stacking catches up at most one week, never twice', async () => {
+  await test('repeat: stacking keeps at most five open entries, never twice', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
       const today=localDateStr();
       addTask('hours',[0,0]); const a=state.tasks.find(x=>x.title==='hours'); a.due=dAdd(today,-30); a.repeat={f:'d',n:1,stack:true};
       addTask('report',[0,0]); const b=state.tasks.find(x=>x.title==='report'); b.due=dAdd(today,-35); b.repeat={f:'w',n:1,stack:true};
       leaveExample(); const skipped=spawnStacked(); const again=spawnStacked();
-      const hours=state.tasks.filter(x=>x.title==='hours').map(x=>x.due), report=state.tasks.filter(x=>x.title==='report').map(x=>x.due);
-      return {skipped, again, hours, report, today, from:dAdd(today,-6)};
+      const dues=title=>state.tasks.filter(x=>x.title===title).map(x=>x.due);
+      const hours=dues('hours'), report=dues('report');
+      /* a day passes: the new entry comes, the oldest open one gives way */
+      const hs=state.tasks.filter(x=>x.title==='hours'), head=hs[4], prev=hs[3];
+      state.tasks=state.tasks.filter(x=>x!==head); delete prev.spawned;
+      const old=makeNextInstance(hs[0],dAdd(today,-5)); old.spawned=true; state.tasks.splice(state.tasks.indexOf(hs[0]),0,old);
+      const nextDay=spawnStacked(), hours2=dues('hours');
+      return {skipped, again, hours, report, nextDay, hours2, today, from:dAdd(today,-4)};
     })()`);
-    check(r.hours.length === 8 && r.hours[1] === r.from && r.hours[7] === r.today, 'daily: original + the last 7 days: ' + JSON.stringify(r.hours));
-    check(r.report.length === 2 && r.report[1] >= r.from, 'weekly: original + 1: ' + JSON.stringify(r.report));
-    check(r.skipped === 23 + 4 && r.again === 0, 'skipped counted, second run adds nothing: ' + r.skipped + ' ' + r.again);
+    check(r.hours.length === 5 && r.hours[0] === r.from && r.hours[4] === r.today, 'daily: the last 5 days: ' + JSON.stringify(r.hours));
+    check(r.report.length === 5 && r.report[4] === r.today, 'weekly: the last 5 weeks: ' + JSON.stringify(r.report));
+    check(r.skipped === 25 + 1 + 1 && r.again === 0, 'skipped counted, second run adds nothing: ' + r.skipped + ' ' + r.again);
+    check(r.nextDay === 1 && r.hours2.length === 5 && r.hours2[0] === r.from && r.hours2[4] === r.today, 'next day: still 5, oldest gone: ' + JSON.stringify(r.hours2));
     noErrors(p);
   });
 
