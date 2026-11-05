@@ -623,34 +623,32 @@ async function main() {
     check(await p.ev(`[...document.querySelectorAll('#board .task-card')].filter(e=>e.offsetParent).length`) === 0, 'all hidden');
     await p.ev(`showAllLabels()`);
     check(await p.ev(`[...document.querySelectorAll('#board .task-card')].filter(e=>e.offsetParent).length`) > 0, 'all shown');
-    // focus label: its tasks first in every cell, stored order untouched
-    const fr = await p.ev(`(()=>{
-      const id=state.labels[0].id;
-      const cell=[0,0]; const mk=(title,labels)=>({...state.tasks[0],id:'f'+title,title,cell,labels,repeat:null,series:undefined,sleep:undefined});
-      state.tasks=state.tasks.filter(x=>!(x.cell&&x.cell[0]===0&&x.cell[1]===0)).concat([mk('a',[]),mk('b',[id]),mk('c',[]),mk('d',[id])]);
+    // sort once by label or by coins: stored, drag & drop keeps working, one undo step
+    const so = await p.ev(`(()=>{
+      const id=state.labels[0].id, cell=[0,0];
+      const mk=(title,labels,coins,ask)=>({...state.tasks[0],id:'f'+title,title,cell,labels,coins,coinsAsk:!!ask,repeat:null,series:undefined,sleep:undefined});
+      state.tasks=state.tasks.filter(x=>!(x.cell&&x.cell[0]===0&&x.cell[1]===0)).concat([mk('a',[],2),mk('b',[id],1),mk('c',[],8),mk('d',[id],5,true)]);
       renderBoard();
-      const titles=()=>[...document.querySelectorAll('#board .cell[data-r="0"][data-c="0"] .task-card .task-title')].map(e=>e.textContent).join('');
-      const before=titles(); setFocusLabel(id); const on=titles();
-      const stored=state.tasks.filter(x=>x.cell&&x.cell[0]===0&&x.cell[1]===0).map(x=>x.title).join('');
-      const mark=!!document.querySelector('#labelsMenuBtn .focus-mark');
-      const saved=JSON.parse(localStorage.getItem('em-filter')).focus===id;
-      setFocusLabel(id); return {before,on,off:titles(),stored,mark,saved};
+      const shown=()=>[...document.querySelectorAll('#board .cell[data-r="0"][data-c="0"] .task-card .task-title')].map(e=>e.textContent).join('');
+      const stored=()=>state.tasks.filter(x=>x.cell&&x.cell[0]===0&&x.cell[1]===0).map(x=>x.title).join('');
+      const others=()=>state.tasks.filter(x=>!(x.cell&&x.cell[0]===0&&x.cell[1]===0)).map(x=>x.id).join();
+      const o0=others();
+      document.querySelector('#labelsMenuBtn').click();
+      document.querySelector('#labelsMenuList [data-label-focus="'+id+'"]').click();
+      const label=shown()+'/'+stored(), menuClosed=document.querySelector('#labelsMenuList').hidden;
+      moveTaskTo('fa','0,0','fb',false); const dragged=shown();
+      undo(); undo(); const back=shown();
+      setCoinsEnabled(true); sortByCoins(); const coins=shown();
+      labelToTop(id); const both=shown();
+      const again=labelToTop(id)===undefined&&shown()===both;
+      setCoinsEnabled(false); document.querySelector('#labelsMenuBtn').click();
+      const noCoinItem=!document.querySelector('#labelsMenuList [data-label-sort]'); closeMenus(); setCoinsEnabled(true);
+      return {label,menuClosed,dragged,back,coins,both,again,noCoinItem,othersKept:others()===o0};
     })()`);
-    check(fr.before === 'abcd' && fr.on === 'bdac' && fr.off === 'abcd', 'focus label sorts its tasks to the top: ' + JSON.stringify(fr));
-    check(fr.stored === 'abcd' && fr.mark && fr.saved, 'focus is view only, marked and remembered: ' + JSON.stringify(fr));
-    const cs = await p.ev(`(()=>{
-      const id=state.labels[0].id, set=(title,coins,ask)=>Object.assign(state.tasks.find(x=>x.title===title),{coins,coinsAsk:!!ask});
-      set('a',2); set('b',1); set('c',8); set('d',5,true);
-      const titles=()=>[...document.querySelectorAll('#board .cell[data-r="0"][data-c="0"] .task-card .task-title')].map(e=>e.textContent).join('');
-      setCoinsEnabled(true); setTaskSort('coins'); const coins=titles();
-      setFocusLabel(id); const both=titles(); setFocusLabel(id);
-      document.querySelector('#labelsMenuBtn').click(); const item=!!document.querySelector('#labelsMenuList [data-label-sort="coins"]');
-      setCoinsEnabled(false); const off=titles(); const mark=!!document.querySelector('#labelsMenuBtn .focus-mark');
-      closeMenus(); document.querySelector('#labelsMenuBtn').click(); const hidden=!document.querySelector('#labelsMenuList [data-label-sort]');
-      closeMenus(); setCoinsEnabled(true); setTaskSort('own'); return {coins,both,item,off,mark,hidden,own:titles()};
-    })()`);
-    check(cs.coins === 'cabd' && cs.both === 'bdca', 'coins sort high first, "?" counts as none, combines with the focus label: ' + JSON.stringify(cs));
-    check(cs.item && cs.off === 'abcd' && !cs.mark && cs.hidden && cs.own === 'abcd', 'coins off: no coin sort, not offered: ' + JSON.stringify(cs));
+    check(so.label === 'bdac/bdac' && so.menuClosed, 'by label: its tasks on top, stored: ' + JSON.stringify(so));
+    check(so.dragged === 'abdc' && so.back === 'abcd', 'drag & drop works after sorting, undo takes it back: ' + JSON.stringify(so));
+    check(so.coins === 'cabd' && so.both === 'bdca' && so.again, 'by coins, "?" counts as none; label after coins keeps the coin order: ' + JSON.stringify(so));
+    check(so.noCoinItem && so.othersKept, 'coins off: no coin sort offered; other cells untouched: ' + JSON.stringify(so));
     noErrors(p);
   });
 
