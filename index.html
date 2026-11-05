@@ -309,6 +309,11 @@ body.dragging #dropBar{transform:translate(-50%,0);pointer-events:auto;visibilit
 .menu-list .label-swatch{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);cursor:pointer;padding:0;flex:0 0 auto;min-width:18px}
 .label-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
 .menu-list .label-del{border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;width:22px;height:22px;min-width:22px;padding:0;font-size:15px;line-height:1;flex:0 0 auto}
+.menu-list .label-focus{border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;width:24px;height:22px;min-width:24px;padding:0;font-size:14px;line-height:1;flex:0 0 auto}
+.menu-list .label-focus:hover{background:var(--hover);color:var(--text)}
+.menu-list .label-focus.on{background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-color:var(--accent);color:var(--accent);font-weight:700}
+#labelsMenuBtn .focus-mark{margin-left:6px;font-weight:700;white-space:nowrap}
+#labelsMenuBtn .focus-mark .filter-label-dot{margin-right:3px;vertical-align:middle}
 .menu-list .label-del:hover{background:color-mix(in srgb,var(--r) 14%,var(--panel));color:var(--r)}
 .label-edit{flex:1;min-width:0;border:1px solid var(--accent);border-radius:4px;background:var(--field);padding:1px 4px;outline:none;font:inherit;font-size:13px}
 .label-new{display:flex;gap:5px;padding:5px 7px}
@@ -1116,7 +1121,7 @@ de:{
   origin:'Herkunft', inboxOption:'Ablage', noDesc:'(keine Beschreibung)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label-Name', noLabels:'Noch keine Labels',
   labelVisible:'Label anzeigen oder ausblenden', labelColor:'Farbe ändern (Klick wechselt die Farbe)', labelRename:'Klicken zum Umbenennen', labelDelete:'Label löschen',
-  showAllLabels:'Alle zeigen', hideAllLabels:'Alle ausblenden', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
+  focusLabelT:'Tasks mit diesem Label in jedem Feld nach oben holen', focusOnT:n=>'Oben: '+n, focusOff:'Nicht mehr oben halten', focusMenu:'Nach oben holen', sortMenu:'Sortieren', sortOwn:'Eigene Reihenfolge', sortCoins:'Nach Münzen', sortCoinsT:'Sortiert nach Münzen', showAllLabels:'Alle zeigen', hideAllLabels:'Alle ausblenden', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
   settings:'Einstellungen', settingsT:'Einstellungen öffnen',
   setMatrix:'Matrix', setAxes:'Achsen', setDisplay:'Darstellung', setCustom:'Eigene:',
   setShowAxes:'Achsen anzeigen', setUseInbox:'Ablage verwenden', setUseInboxHint:'Zuerst die Tasks in der Ablage einordnen oder erledigen.', setManageLabels:'Labels verwalten …', setNewLabel:'+ Neues Label',
@@ -1250,7 +1255,7 @@ en:{
   origin:'Origin', inboxOption:'Inbox', noDesc:'(no description)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label name', noLabels:'No labels yet',
   labelVisible:'Show or hide the label', labelColor:'Change colour (click cycles the colour)', labelRename:'Click to rename', labelDelete:'Delete label',
-  showAllLabels:'Show all', hideAllLabels:'Hide all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
+  focusLabelT:'Bring tasks with this label to the top of every cell', focusOnT:n=>'On top: '+n, focusOff:'Stop keeping on top', focusMenu:'Bring to top', sortMenu:'Sort', sortOwn:'Own order', sortCoins:'By coins', sortCoinsT:'Sorted by coins', showAllLabels:'Show all', hideAllLabels:'Hide all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
   settings:'Settings', settingsT:'Open settings',
   setMatrix:'Matrix', setAxes:'Axes', setDisplay:'Appearance', setCustom:'Custom:',
   setShowAxes:'Show axes', setUseInbox:'Use the inbox', setUseInboxHint:'First sort or finish the tasks in the inbox.', setManageLabels:'Manage labels …', setNewLabel:'+ New label',
@@ -1771,7 +1776,7 @@ function plannedChip(n){
   b.title=t('plannedT');
   return b;
 }
-function visibleTasksIn(r,c){return tasksIn(r,c).filter(isTaskVisible);}
+function visibleTasksIn(r,c){return focusSort(tasksIn(r,c).filter(isTaskVisible));}
 function inkFor(hex){
   const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
   return (0.2126*r+0.7152*g+0.0722*b)/255>0.62?'#111':'#fff';
@@ -1872,7 +1877,7 @@ function labelChipEl(label,selected=false,tag='span'){
   return chip;
 }
 function loadFilter(){
-  filter={hidden:new Set(),none:true};
+  filter={hidden:new Set(),none:true,focus:null,sort:null};
   try{
     const raw=JSON.parse(localStorage.getItem('em-filter')||'null');
     if(raw&&Array.isArray(raw.hidden)){
@@ -1880,13 +1885,38 @@ function loadFilter(){
       raw.hidden.forEach(id=>{if(ids.has(id))filter.hidden.add(id);});
     }
     if(raw&&raw.none===false) filter.none=false;
+    if(raw&&raw.sort==='coins') filter.sort='coins';
+    if(raw&&typeof raw.focus==='string'&&state.labels.some(l=>l.id===raw.focus)) filter.focus=raw.focus;
   }catch(e){}
 }
-function saveFilter(){try{localStorage.setItem('em-filter',JSON.stringify({hidden:[...filter.hidden],none:filter.none}));}catch(e){}}
+function saveFilter(){try{localStorage.setItem('em-filter',JSON.stringify({hidden:[...filter.hidden],none:filter.none,focus:filter.focus,sort:filter.sort}));}catch(e){}}
 function updateFilterDot(){
   const active=filter.hidden.size>0||!filter.none;
   const dot=$('#labelsActive'); if(dot) dot.hidden=!active;
   const b=$('#labelsMenuBtn'); if(b) b.classList.toggle('filter-active',active);
+  if(b){
+    let m=b.querySelector('.focus-mark'); const fl=focusLabel(), byCoins=coinSortOn();
+    if(!fl&&!byCoins){if(m)m.remove();b.removeAttribute('title');}
+    else{
+      if(!m){m=document.createElement('span');m.className='focus-mark';b.append(m);}
+      m.replaceChildren();
+      if(fl){const dot=document.createElement('span');dot.className='filter-label-dot';dot.style.background=displayLabelColor(fl.color);m.append(dot,document.createTextNode('↑'));}
+      if(byCoins) m.append(document.createTextNode((fl?' ':'')+'🪙'));
+      b.title=[fl?t('focusOnT',fl.name):'',byCoins?t('sortCoinsT'):''].filter(Boolean).join('\n');
+    }
+  }
+}
+function focusLabel(){return filter&&filter.focus?labelById(filter.focus)||null:null;}
+function setFocusLabel(id){filter.focus=filter.focus===id?null:id;applyFilterChange();renderLabelsMenu();}
+function coinSortOn(){return filter&&filter.sort==='coins'&&coinsOn();}
+function setTaskSort(v){filter.sort=v==='coins'?'coins':null;applyFilterChange();renderLabelsMenu();}
+const taskCoinValue=x=>Number.isInteger(x.coins)&&x.coins>0&&!x.coinsAsk?x.coins:0;
+/* view only: tasks with the focus label first, then by coins (high first);
+   ties keep the own order, the stored order stays untouched */
+function focusSort(tasks){
+  const f=focusLabel(), byCoins=coinSortOn(); if(!f&&!byCoins) return tasks;
+  const top=x=>f&&Array.isArray(x.labels)&&x.labels.includes(f.id)?0:1;
+  return tasks.map((x,i)=>({x,i})).sort((a,b)=>top(a.x)-top(b.x)||(byCoins?taskCoinValue(b.x)-taskCoinValue(a.x):0)||a.i-b.i).map(o=>o.x);
 }
 function applyFilterChange(){saveFilter();renderBoard();renderInbox();renderMobile();if(ui.archiveOpen)renderArchive();refreshHeader();}
 function setLabelVisible(id,visible){if(visible)filter.hidden.delete(id);else filter.hidden.add(id);applyFilterChange();}
@@ -2719,6 +2749,8 @@ function renderLabelsMenu(){
     const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!filter.hidden.has(l.id); cb.dataset.labelVisible=l.id; cb.title=t('labelVisible'); row.append(cb);
     const dot=document.createElement('span'); dot.className='filter-label-dot'; dot.style.background=l.color; dot.setAttribute('aria-hidden','true'); row.append(dot);
     const nm=document.createElement('span'); nm.className='label-name'; nm.style.cursor='default'; nm.textContent=l.name; row.append(nm);
+    const fb=document.createElement('button'); fb.type='button'; fb.className='label-focus'+(filter.focus===l.id?' on':''); fb.dataset.labelFocus=l.id; fb.textContent='↑';
+    fb.title=filter.focus===l.id?t('focusOff'):t('focusLabelT'); fb.setAttribute('aria-label',fb.title); fb.setAttribute('aria-pressed',filter.focus===l.id?'true':'false'); row.append(fb);
     list.append(row);
   }
   const noneRow=document.createElement('label'); noneRow.className='label-row'; noneRow.style.cursor='pointer';
@@ -2726,6 +2758,15 @@ function renderLabelsMenu(){
   const ntx=document.createElement('span'); ntx.className='label-name'; ntx.style.cursor='default'; ntx.textContent=t('noLabelTasks'); noneRow.append(ntx); list.append(noneRow);
   const all=document.createElement('button'); all.type='button'; all.dataset.labelAction='showall'; all.textContent=t('showAllLabels'); list.append(all);
   const none=document.createElement('button'); none.type='button'; none.dataset.labelAction='hideall'; none.textContent=t('hideAllLabels'); list.append(none);
+  if(coinsOn()){
+    list.append(document.createElement('hr'));
+    const sl=document.createElement('div'); sl.className='menulabel'; sl.textContent=t('sortMenu'); list.append(sl);
+    [['own',t('sortOwn')],['coins',t('sortCoins')+' 🪙']].forEach(([v,txt])=>{
+      const b=document.createElement('button'); b.type='button'; b.className='chk'; b.dataset.labelSort=v;
+      const tick=document.createElement('span'); tick.className='tick'; tick.textContent=(filter.sort==='coins')===(v==='coins')?'✓':'';
+      const tx=document.createElement('span'); tx.textContent=txt; b.append(tick,tx); list.append(b);
+    });
+  }
   list.append(document.createElement('hr'));
   const manage=document.createElement('button'); manage.type='button'; manage.dataset.labelAction='manage'; manage.textContent=t('setManageLabels'); list.append(manage);
   updateFilterDot();
@@ -3814,7 +3855,7 @@ function matchesSearch(task){
   return !q||((task.title||'')+'\n'+(task.desc||'')).toLowerCase().includes(q);
 }
 function mobileTasks(r,c){
-  return (r==null?tasksIn(null,null):tasksIn(r,c)).filter(isTaskVisible).filter(matchesSearch);
+  return focusSort((r==null?tasksIn(null,null):tasksIn(r,c)).filter(isTaskVisible).filter(matchesSearch));
 }
 function dueLevel(tasks){
   let level=0;
@@ -4291,6 +4332,11 @@ function buildMobileMenu(){
   state.labels.forEach(l=>add(l.name,'label:'+l.id,!filter.hidden.has(l.id)));
   add(t('noLabelTasks'),'label:none',filter.none);
   add(t('showAllLabels'),'label:showall'); add(t('hideAllLabels'),'label:hideall');
+  if(state.labels.length){
+    const fl=document.createElement('div');fl.className='menulabel';fl.textContent='↑ '+t('focusMenu');list.append(fl);
+    state.labels.forEach(l=>add(l.name,'focus:'+l.id,filter.focus===l.id));
+  }
+  if(coinsOn()) add(t('sortCoins')+' 🪙','sortcoins',filter.sort==='coins');
   sep();
   add((soundOn?'🔊 ':'🔇 ')+t('setSound'),'sound',soundOn);
   if(coinsOn()) add(t('account')+' · '+coinsState().balance+' 🪙','account');
@@ -4832,6 +4878,8 @@ async function downloadTool(){
   toast(t('toolDownloaded')+name);
 }
 function performAction(a){
+  if(typeof a==='string'&&a.startsWith('focus:')){setFocusLabel(a.slice(6));return;}
+  if(a==='sortcoins'){setTaskSort(filter.sort==='coins'?null:'coins');return;}
   if(typeof a==='string'&&a.startsWith('label:')){
     const id=a.slice(6);
     if(id==='showall') showAllLabels();
@@ -5677,6 +5725,10 @@ $('#helpDlg').addEventListener('close',()=>{try{localStorage.setItem('em-seen','
 /* menus */
 $$('.menu').forEach(root=>setupMenu(root,root.id==='mobileMenu'));
 $('#labelsMenuList').addEventListener('click',e=>{
+  const fb=e.target.closest('[data-label-focus]');
+  if(fb){e.preventDefault();e.stopPropagation();setFocusLabel(fb.dataset.labelFocus);return;}
+  const sb=e.target.closest('[data-label-sort]');
+  if(sb){e.stopPropagation();setTaskSort(sb.dataset.labelSort);return;}
   const color=e.target.closest('[data-label-color]');
   if(color){
     e.stopPropagation();
