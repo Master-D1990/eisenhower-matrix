@@ -978,7 +978,6 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <label class="set-row"><input type="checkbox" id="setUseCoins"><span data-i18n="useCoins"></span></label>
       <p class="set-hint" id="setCoinsRule" data-i18n="coinsRule" hidden></p>
       <label class="set-row" id="setCoinQuickRow" hidden><span data-i18n="coinQuick"></span><input id="setCoinQuick" type="text" inputmode="numeric" autocomplete="off" placeholder="1, 2, 4, 6, 8"></label>
-      <label class="set-row" id="setCoinAskRow" hidden><input type="checkbox" id="setCoinAsk"><span data-i18n="coinAskNew"></span></label>
       <p class="set-hint" id="setCoinsHint" data-i18n="setCoinsHint" hidden></p>
     </section>
     <section class="set-section" data-section="display">
@@ -1124,7 +1123,7 @@ de:{
   coinsHistory:'Verlauf', coinsNoHistory:'Noch keine Buchungen.', coinsShowMore:'mehr zeigen',
   coinsRestoredSuffix:'wiederhergestellt', coinsPartial:(taken,total)=>'(nur '+taken+' von '+total+' vorhanden)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Nicht genug Münzen',
-  coinsRule:'Faustregel: 1 🪙 ≈ 15 Minuten Arbeit.', coinAskNew:'Wert erst beim Erledigen fragen (neue Aufgaben zeigen ?)',
+  coinsRule:'Faustregel: 1 🪙 ≈ 15 Minuten Arbeit.',
   coinAskTitle:title=>'Wie viele Goldmünzen hat «'+title+'» eingebracht?', coinAskNone:'Keine Münzen', coinAskKeep:'Diesen Wert für die nächsten Wiederholungen behalten',
   coinsAskLater:'Wert wird beim Erledigen gefragt', coinsAskBadge:'Wert beim Erledigen',
   themeSystem:'System',
@@ -1258,7 +1257,7 @@ en:{
   coinsHistory:'History', coinsNoHistory:'No entries yet.', coinsShowMore:'show more',
   coinsRestoredSuffix:'restored', coinsPartial:(taken,total)=>'(only '+taken+' of '+total+' available)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Not enough coins',
-  coinsRule:'Rule of thumb: 1 🪙 ≈ 15 minutes of work.', coinAskNew:'Ask for the value when done (new tasks show ?)',
+  coinsRule:'Rule of thumb: 1 🪙 ≈ 15 minutes of work.',
   coinAskTitle:title=>'How many gold coins did «'+title+'» earn?', coinAskNone:'No coins', coinAskKeep:'Keep this value for the next repeats',
   coinsAskLater:'Value is asked when done', coinsAskBadge:'Value when done',
   themeSystem:'System',
@@ -1665,10 +1664,6 @@ function cleanCoins(raw){
   if(raw.quick!==undefined){
     if(!Array.isArray(raw.quick)||raw.quick.length>MAX_COIN_QUICK||raw.quick.some(v=>!Number.isInteger(v)||v<1||v>MAX_TASK_COINS)) throw new Error(t('invalidReason','coins.quick'));
     out.quick=[...new Set(raw.quick)];
-  }
-  if(raw.askNew!==undefined){
-    if(typeof raw.askNew!=='boolean') throw new Error(t('invalidReason','coins.askNew'));
-    if(raw.askNew) out.askNew=true;
   }
   return out;
 }
@@ -2096,10 +2091,9 @@ function mergeStates(base,local,remote){
   balance=clamp(Math.round(balance),0,MAX_COIN_BALANCE);
   const qj=c=>c&&c.quick?JSON.stringify(c.quick):undefined;
   const quickJ=bc?three(qj(bc),qj(lc),qj(rc),true):(qj(rc)===undefined?qj(lc):qj(rc));
-  const askNew=bc?three(!!bc.askNew,!!lc.askNew,!!rc.askNew,true):!!(rc.askNew===undefined?lc.askNew:rc.askNew);
 
   const raw={format:FORMAT,version:VERSION,title,rows:r.rows,cols:r.cols,swapped:r.swapped,flipX,flipY,axisY,axisX,
-    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:Object.assign({enabled,balance,rewards,log},quickJ?{quick:JSON.parse(quickJ)}:{},askNew?{askNew:true}:{}),savedAt:isoNow()};
+    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:Object.assign({enabled,balance,rewards,log},quickJ?{quick:JSON.parse(quickJ)}:{}),savedAt:isoNow()};
   return {state:validateState(raw),conflicts};
 }
 
@@ -3419,12 +3413,7 @@ function setTaskCoins(id,value){
   commit(()=>{task.coins=n;delete task.coinsAsk;},{detail:true});
   toast(t('coinsValueSet',n));
 }
-function setCoinAskNew(v){
-  const c=coinsState(); v=!!v;
-  if(!!c.askNew===v){renderSettingsCoins();return;}
-  commit(()=>{if(v)c.askNew=true;else delete c.askNew;},{board:false,inbox:false,mobile:false});
-  renderSettingsCoins();
-}
+
 function setCoinsEnabled(v){
   v=!!v; const c=coinsState();
   if(c.enabled===v){renderSettingsCoins();return;}
@@ -3438,8 +3427,6 @@ function renderSettingsCoins(){
   const qr=$('#setCoinQuickRow'); if(qr) qr.hidden=!coinsOn();
   const qi=$('#setCoinQuick'); if(qi&&document.activeElement!==qi) qi.value=coinQuickValues().join(', ');
   const rule=$('#setCoinsRule'); if(rule) rule.hidden=!coinsOn();
-  const ar=$('#setCoinAskRow'); if(ar) ar.hidden=!coinsOn();
-  const ac=$('#setCoinAsk'); if(ac) ac.checked=!!(state.coins&&state.coins.askNew);
 }
 function accountOpen(){const d=$('#accountDlg');return !!(d&&d.open);}
 function openAccount(){
@@ -4449,7 +4436,6 @@ function addTask(title,cell){
   leaveExample();
   if(!cell) ensureInboxOpen();
   const task={id:uid(),title,desc:'',due:null,cell:cell?[cell[0],cell[1]]:null,at:cell?cellCenter(cell[0],cell[1],state.rows,state.cols):null,created:isoNow(),labels:[],coins:0};
-  if(coinsOn()&&state.coins.askNew) task.coinsAsk=true;
   commit(()=>state.tasks.push(task));
   requestAnimationFrame(()=>{
     const key=cell?cell[0]+','+cell[1]:'inbox';
@@ -5484,7 +5470,6 @@ $('#coinAskInput').addEventListener('keydown',e=>{
   e.stopPropagation();
   if(e.key==='Enter'){e.preventDefault();closeCoinAsk(normalizeCoins(e.target.value));}
 });
-$('#setCoinAsk').addEventListener('change',e=>setCoinAskNew(e.target.checked));
 $('#dCell').addEventListener('change',e=>setDetailCell(e.target.value));
 $('#dLabels').addEventListener('click',e=>{
   const chip=e.target.closest('[data-toggle-label]');

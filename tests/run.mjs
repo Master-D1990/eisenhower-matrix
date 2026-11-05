@@ -302,14 +302,15 @@ async function main() {
     const p = await open(browser, base);
     await p.ev(`setCoinsEnabled(true); openSettings&&openSettings()`); await sleep(100);
     const s = await p.ev(`(()=>{const sec=document.querySelector('.set-section[data-section="coins"]');
-      return {icon:sec.querySelector('h3').textContent.includes('🪙'), rule:!document.querySelector('#setCoinsRule').hidden,
-        ask:!document.querySelector('#setCoinAskRow').hidden};})()`);
-    check(s.icon && s.rule && s.ask, 'settings: coin in the heading, rule of thumb and ask option ' + JSON.stringify(s));
-    await p.ev(`(()=>{const c=document.querySelector('#setCoinAsk');c.checked=true;c.dispatchEvent(new Event('change'));document.querySelector('#settingsDlg').close();})()`);
-    check(await p.ev(`state.coins.askNew===true && JSON.parse(driveText()).coins.askNew===true`), 'option stored in the file');
+      return {icon:sec.querySelector('h3').textContent.includes('🪙'), rule:!document.querySelector('#setCoinsRule').hidden};})()`);
+    check(s.icon && s.rule, 'settings: coin in the heading and rule of thumb ' + JSON.stringify(s));
+    await p.ev(`document.querySelector('#settingsDlg').close()`);
     const id = await p.ev(`(addTask('mystery',[0,0]), state.tasks.find(t=>t.title==='mystery').id)`);
-    check(await p.ev(`findTask('${id}').coinsAsk===true`), 'new task is marked ?');
-    await sleep(100);
+    check(await p.ev(`findTask('${id}').coins===0 && !findTask('${id}').coinsAsk`), 'new task starts without ?');
+    await p.ev(`openDetail('${id}')`); await sleep(100);
+    await p.ev(`document.querySelector('#dCoinQuick [data-coin-quick="?"]').click()`); await sleep(100);
+    check(await p.ev(`findTask('${id}').coinsAsk===true && JSON.parse(driveText()).tasks.find(t=>t.id==='${id}').coinsAsk===true`), '? chosen in the task, kept in the file');
+    await p.ev(`closeDetail()`); await sleep(100);
     check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .coins-badge')?.textContent==='? 🪙'`), 'card shows ? 🪙');
     await p.ev(`openDetail('${id}')`); await sleep(100);
     check(await p.ev(`document.querySelector('#dCoinQuick [data-coin-quick="?"]').classList.contains('on') && document.querySelector('#dCoins').value===''`), 'detail: ? is selected');
@@ -328,7 +329,7 @@ async function main() {
     await p.ev(`(()=>{const i=document.querySelector('#coinAskInput');i.value='3';i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(150);
     check(await p.ev(`state.coins.balance===3`), 'own value with Enter');
     // repeat: keep the value for the next entries
-    const rid = await p.ev(`(addTask('weekly',[0,1]), (()=>{const t=state.tasks.find(t=>t.title==='weekly');t.due=localDateStr();t.repeat={f:'w',n:1,days:[isoDow(t.due)]};return t.id;})())`);
+    const rid = await p.ev(`(addTask('weekly',[0,1]), (()=>{const t=state.tasks.find(t=>t.title==='weekly');t.coinsAsk=true;t.due=localDateStr();t.repeat={f:'w',n:1,days:[isoDow(t.due)]};return t.id;})())`);
     p.ev(`archiveTask('${rid}')`); await sleep(150);
     check(await p.ev(`!document.querySelector('#coinAskKeepRow').hidden`), 'repeat: keep option shown');
     await p.ev(`document.querySelector('#coinAskKeep').checked=true; document.querySelector('#coinAskQuick [data-coin-ask="2"]').click()`); await sleep(150);
@@ -340,8 +341,8 @@ async function main() {
     check(await p.ev(`!document.querySelector('#coinAskDlg').open && state.coins.balance===11`), 'fixed value booked without question');
     let bad = false; try { await p.ev(`parseFileText(JSON.stringify({...state,tasks:[{...state.tasks[0],coinsAsk:'yes'}]}))`); } catch (e) { bad = true; }
     check(bad, 'invalid coinsAsk in a file is rejected');
-    const m = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),l=C(b),r=C(b);delete l.coins.askNew;return mergeStates(b,l,r).state.coins.askNew===undefined;})()`);
-    check(m, 'switching the option off survives a merge');
+    const m = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),l=C(b),r=C(b);const x=l.tasks.find(t=>true);x.coinsAsk=true;x.mod=new Date(Date.now()+1000).toISOString();return mergeStates(b,l,r).state.tasks.find(t=>t.id===x.id).coinsAsk===true;})()`);
+    check(m, 'a local ? survives a merge');
     noErrors(p);
   });
 
