@@ -4590,6 +4590,7 @@ function addTask(title,cell){
   leaveExample();
   if(!cell) ensureInboxOpen();
   const task={id:uid(),title,desc:'',due:null,cell:cell?[cell[0],cell[1]]:null,at:cell?cellCenter(cell[0],cell[1],state.rows,state.cols):null,created:isoNow(),labels:[],coins:0};
+  if(coinsOn()) task.coinsAsk=true;   // with coins on, the value is asked when the task is done
   commit(()=>state.tasks.push(task));
   playSound('add');
   requestAnimationFrame(()=>{

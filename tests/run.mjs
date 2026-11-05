@@ -306,7 +306,11 @@ async function main() {
     check(s.icon && s.rule, 'settings: coin in the heading and rule of thumb ' + JSON.stringify(s));
     await p.ev(`document.querySelector('#settingsDlg').close()`);
     const id = await p.ev(`(addTask('mystery',[0,0]), state.tasks.find(t=>t.title==='mystery').id)`);
-    check(await p.ev(`findTask('${id}').coins===0 && !findTask('${id}').coinsAsk`), 'new task starts without ?');
+    check(await p.ev(`findTask('${id}').coins===0 && findTask('${id}').coinsAsk===true`), 'coins on: new task starts with ?');
+    await p.ev(`setCoinsEnabled(false); addTask('plain',[0,0]); setCoinsEnabled(true)`);
+    check(await p.ev(`!state.tasks.find(t=>t.title==='plain').coinsAsk`), 'coins off: new task starts without ?');
+    await p.ev(`setTaskCoins('${id}',0)`);
+    check(await p.ev(`findTask('${id}').coins===0 && !findTask('${id}').coinsAsk`), '0 in the task removes ?');
     await p.ev(`openDetail('${id}')`); await sleep(100);
     await p.ev(`document.querySelector('#dCoinQuick [data-coin-quick="?"]').click()`); await sleep(100);
     check(await p.ev(`findTask('${id}').coinsAsk===true && JSON.parse(driveText()).tasks.find(t=>t.id==='${id}').coinsAsk===true`), '? chosen in the task, kept in the file');

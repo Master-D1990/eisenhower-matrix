@@ -25,7 +25,7 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
 - **Labels** such as "Work" and "Private" with your own colours, and a filter to show or hide them. With **↑** in the labels menu, the tasks of one label come to the top of every cell, e.g. "Work" while you are at work. With coins on, you can also sort by coins. Both only change the view, your own order stays.
-- **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. Mark a task with **?** to name its value only when it is done.
+- **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. New tasks start with **?**: you name the value when the task is done, or set it in the task right away.
 - **Sounds (optional, per device):** short sounds when you add, move, finish, delete or undo, a chime for every coin.
 - **Phone:** the list of the chosen field at the top, the matrix as buttons at the bottom; long-press a card and drop it on a button to move it, swipe right to finish it.
 - **Export** to CSV or PDF (print), **dark mode**, colour strength, **English and Swiss German**, built-in help.
@@ -72,7 +72,7 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
 - **Labels** wie „Beruf“ und „Privat“ mit eigenen Farben, dazu ein Filter zum Ein- und Ausblenden. Mit **↑** im Label-Menü kommen die Tasks eines Labels in jedem Feld nach oben, zum Beispiel „Beruf“ während der Arbeit. Mit Münzen lässt sich auch nach Münzen sortieren. Beides ändert nur die Ansicht, die eigene Reihenfolge bleibt.
-- **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Mit **?** nennst du den Wert erst beim Erledigen.
+- **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Neue Aufgaben starten mit **?**: Den Wert nennst du beim Erledigen oder gleich in der Aufgabe.
 - **Töne (freiwillig, pro Gerät):** kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für jede Münze.
 - **Handy:** oben die Liste des gewählten Felds, unten die Matrix als Knöpfe. Karte lange drücken und auf einen Knopf ziehen zum Verschieben, nach rechts wischen zum Erledigen.
 - **Export** als CSV oder PDF (Drucken), **Dark Mode**, Farbstärke, **Schweizerdeutsch und Englisch**, eingebaute Hilfe.
