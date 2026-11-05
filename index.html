@@ -270,6 +270,34 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .descmark{font-size:0;line-height:0;flex:0 0 auto}.descmark::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--faint)}
 .due{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--panel)}
 .coins-badge{color:var(--coin-ink);line-height:calc(15px*var(--tfs,1));white-space:nowrap;font-weight:700;flex:0 0 auto}
+.steps-badge{position:relative;z-index:6;flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:0 6px;font:inherit;font-weight:700;line-height:calc(15px*var(--tfs,1));cursor:pointer;white-space:nowrap}
+.steps-badge:hover,.steps-badge.open{border-color:var(--accent);color:var(--accent)}
+.steps-badge.all{color:var(--g);border-color:color-mix(in srgb,var(--g) 45%,var(--line))}
+.task-card.drop-into{outline:2px dashed var(--accent);outline-offset:-2px}
+.task-card.drop-into::after{content:attr(data-drop-label);position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:8;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.step-panel{margin:-1px 0 4px 8px;padding:2px 2px 2px 2px;display:flex;flex-direction:column;gap:0}
+.step-row{display:flex;align-items:center;gap:7px;min-height:24px;width:100%;font:inherit;font-size:calc(12px*var(--tfs,1));min-width:0;border:0;background:none;color:inherit;text-align:left;padding:1px 4px;border-radius:5px;cursor:pointer}
+.step-row:hover{background:var(--hover)}
+.step-bullet{flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.step-row:hover .step-bullet{background:var(--g)}
+.step-row.done .step-bullet{background:var(--faint)}
+.step-row .step-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step-row.done .step-title,.step-edit.done .step-name{text-decoration:line-through;color:var(--muted)}
+.step-check{flex:0 0 auto;width:19px;height:19px;padding:0;border:1.5px solid var(--faint);border-radius:5px;background:var(--panel);color:var(--g);font-size:12px;font-weight:800;line-height:15px;cursor:pointer}
+.step-check:hover{border-color:var(--g)}
+.step-edit.done .step-check{border-color:var(--g);background:color-mix(in srgb,var(--g) 14%,var(--panel))}
+.step-coins{flex:0 0 auto;color:var(--coin-ink);font-weight:700;font-size:11px;white-space:nowrap}
+.step-rows{display:flex;flex-direction:column;gap:3px}
+.step-rows:empty{display:none}
+.step-edit{display:flex;align-items:center;gap:5px;min-width:0}
+.step-edit .step-name{flex:1;min-width:0;padding:4px 6px}
+.step-edit .step-coin-in{width:4.2em;flex:0 0 auto;padding:4px 5px}
+.step-act{flex:0 0 auto;width:26px;height:26px;padding:0;border:1px solid transparent;background:none;color:var(--muted);border-radius:5px;cursor:pointer;font-size:13px}
+.step-act:hover{border-color:var(--line);color:var(--ink,inherit)}
+.step-add{resize:none;overflow:hidden;min-height:2.2em}
+.picker-grid.as-list{max-height:60vh;overflow:auto}
+.picker-grid.as-list .pick-task{text-align:left;padding:10px 12px;font-size:14px;min-height:40px}
+.pick-group{font-size:11px;font-weight:700;color:var(--muted);margin:6px 2px 0}
 .coin-fly{position:fixed;left:0;top:0;z-index:261;font-size:18px;line-height:1;pointer-events:none;will-change:transform,opacity}
 .coin-float{position:fixed;z-index:260;transform:translate(-50%,-50%);color:var(--coin-ink);font-weight:800;font-size:17px;text-shadow:0 1px 2px var(--panel),0 0 6px var(--panel);pointer-events:none;animation:coinRise .7s ease-out forwards}
 @keyframes coinRise{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}18%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 42px)) scale(1.08)}}
@@ -880,6 +908,10 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <div class="field-row"><button type="button" class="detail-done" id="detailDone" data-i18n-title="doneT" data-i18n-aria="doneT">✓</button><input id="dTitle" type="text" maxlength="500" data-i18n-aria="taskTitle"></div>
     </div>
     <label class="field"><span data-i18n="description"></span><textarea id="dDesc" maxlength="20000" rows="8"></textarea></label>
+    <div class="field" id="dStepsField"><span data-i18n="steps"></span>
+      <div class="step-rows" id="dSteps"></div>
+      <textarea id="dStepAdd" class="step-add" rows="1" maxlength="20000" data-i18n-placeholder="stepAddPh" data-i18n-aria="stepAddPh"></textarea>
+    </div>
     <label class="field"><span data-i18n="due"></span>
       <span class="field-row"><span class="date-field"><input type="text" class="date-text" id="dDueText" inputmode="numeric" autocomplete="off" data-i18n-aria="due"><button type="button" class="date-pick" data-date-pick="dDue" data-i18n-title="datePickT" data-i18n-aria="datePickT">📅</button><input id="dDue" type="date" class="date-native" tabindex="-1" aria-hidden="true"></span><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
     </label>
@@ -902,12 +934,14 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
         <input id="dCoins" type="number" min="0" max="9999" step="1" inputmode="numeric" data-i18n-aria="coinsValue">
       </div>
       <span class="coin-rule" data-i18n="coinsRule"></span>
+      <span class="coin-rule" id="dCoinsStepsHint" data-i18n="coinsStepsHint" hidden></span>
     </div>
     <label class="field"><span data-i18n="cellField"></span><select id="dCell"></select></label>
     <div class="field"><span data-i18n="labels"></span><div class="label-chips" id="dLabels"></div><div id="dLabelNewWrap"><button type="button" class="btn small" id="dLabelAdd" data-i18n="newLabel"></button></div></div>
     <div class="created-line" id="dCreated"></div>
     <div class="drawer-actions">
       <button class="btn mobile-only" id="detailMove" data-i18n="moveTo"></button>
+      <button class="btn mobile-only" id="detailAsStep" data-i18n="asStepOf"></button>
       <span class="spacer"></span>
       <button class="btn danger" id="detailDelete" data-i18n="delete"></button>
     </div>
@@ -1068,7 +1102,7 @@ const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>x===b[i]);
 const sameGrid=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((row,i)=>sameArray(row,b[i]));
 const FORMAT='eisenhower-matrix', VERSION=1;
-const MAX_TITLE=500, MAX_DESC=20000, MAX_LABEL=200, MAX_AXIS=200, MAX_ID=64;
+const MAX_TITLE=500, MAX_DESC=20000, MAX_LABEL=200, MAX_AXIS=200, MAX_ID=64, MAX_STEPS=50, MAX_STEP_ID=12;
 const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, STACK_MAX_OPEN=5;
 const MAX_LABELS=50, MAX_LABEL_NAME=40, LABEL_COLOR=/^#[0-9a-f]{6}$/i;
 const MAX_TASK_COINS=9999, MAX_COIN_BALANCE=999999999, MAX_REWARD_PRICE=999999, MAX_REWARD_NAME=60, MAX_COIN_LOG=2000, MAX_COIN_TEXT=300;
@@ -1211,6 +1245,14 @@ de:{
   months:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
   newTask:'Neue Aufgabe', moved:'Verschoben', archived:'Erledigt und archiviert', restored:'Wiederhergestellt', deleted:'Gelöscht',
   moveTo:'Verschieben', undoAction:'Rückgängig',
+  steps:'Schritte', stepAddPh:'Schritt hinzufügen (Enter, mehrere Zeilen gehen auch)', stepsBadgeT:(d,n)=>d+' von '+n+' Schritten erledigt, klicken zum Auf- und Zuklappen',
+  stepCheckT:'Schritt abhaken', stepUncheckT:'Haken entfernen', stepExtractT:'Als eigenen Task herauslösen', stepDeleteT:'Schritt löschen', stepCoinsT:'Münzen für diesen Schritt, leer = beim Abhaken fragen',
+  stepDone:(d,n)=>'Schritt erledigt ('+d+'/'+n+')', stepsAllDone:'Alle Schritte erledigt', finishTask:'Task abschliessen',
+  stepsOpenFinish:n=>n===1?'Ein Schritt ist noch offen. Mit dem Task als erledigt buchen?':n+' Schritte sind noch offen. Mit dem Task als erledigt buchen?',
+  stepsTooMany:n=>'Höchstens '+n+' Schritte pro Task.', stepDeleted:'Schritt gelöscht', stepExtracted:'Als eigener Task herausgelöst',
+  stepMerged:n=>'Als Schritt zu «'+n+'» hinzugefügt', stepNoRepeat:'Ein wiederholender Task kann kein Schritt werden.',
+  stepsValueSpread:(n,k)=>n+' Münzen auf '+k+' offene Schritte verteilt', coinsStepsHint:'Summe der offenen Schritte, eine Zahl hier wird auf sie verteilt.',
+  dropAsStep:'Als Schritt einfügen', asStepOf:'Als Schritt zu …', asStepPick:'Als Schritt zu diesem Task', asStepNone:'Kein anderer Task da.',
   mobileEmptyCell:'Noch keine Aufgaben in diesem Feld. Tippe auf +, um eine anzulegen.',
   mobileEmptyInbox:'Die Ablage ist leer. Tippe auf +, um eine Aufgabe anzulegen.',
   redistributed:'Tasks neu verteilt. Rückgängig mit Strg+Z',
@@ -1345,6 +1387,14 @@ en:{
   months:['January','February','March','April','May','June','July','August','September','October','November','December'],
   newTask:'New task', moved:'Moved', archived:'Done and archived', restored:'Restored', deleted:'Deleted',
   moveTo:'Move', undoAction:'Undo',
+  steps:'Steps', stepAddPh:'Add a step (Enter, several lines work too)', stepsBadgeT:(d,n)=>d+' of '+n+' steps done, click to show or hide',
+  stepCheckT:'Tick off step', stepUncheckT:'Remove tick', stepExtractT:'Make it a task of its own', stepDeleteT:'Delete step', stepCoinsT:'Coins for this step, empty = ask when ticked',
+  stepDone:(d,n)=>'Step done ('+d+'/'+n+')', stepsAllDone:'All steps done', finishTask:'Finish task',
+  stepsOpenFinish:n=>n===1?'One step is still open. Book it as done with the task?':n+' steps are still open. Book them as done with the task?',
+  stepsTooMany:n=>'At most '+n+' steps per task.', stepDeleted:'Step deleted', stepExtracted:'Made a task of its own',
+  stepMerged:n=>'Added as a step to «'+n+'»', stepNoRepeat:'A repeating task cannot become a step.',
+  stepsValueSpread:(n,k)=>n+' coins spread over '+k+' open steps', coinsStepsHint:'Sum of the open steps, a number here is spread over them.',
+  dropAsStep:'Add as step', asStepOf:'Add as step to …', asStepPick:'Add as a step to this task', asStepNone:'No other task yet.',
   mobileEmptyCell:'No tasks in this cell yet. Tap + to add one.',
   mobileEmptyInbox:'The inbox is empty. Tap + to add a task.',
   redistributed:'Tasks redistributed. Undo with Ctrl+Z',
@@ -1435,14 +1485,17 @@ function defaultForLayout(rows,cols,lang=LANG,swapped=state.swapped){
 }
 function transposeCell(cell,R,C){return Array.isArray(cell)?[C-1-cell[1],R-1-cell[0]]:cell;}
 function transposeEntries(tasks,archive,R,C){
+  const flipSteps=e=>{for(const s of Array.isArray(e.steps)?e.steps:[]) if(s.from&&Array.isArray(s.from.at)) s.from.at=[s.from.at[1],s.from.at[0]];};
   for(const task of tasks){
     task.cell=transposeCell(task.cell,R,C);
     if(Array.isArray(task.at)) task.at=[task.at[1],task.at[0]];
+    flipSteps(task);
   }
   for(const item of archive){
     item.cell=transposeCell(item.cell,R,C);
     if(item.fromCell) item.fromCell=transposeCell(item.fromCell,R,C);
     if(Array.isArray(item.at)) item.at=[item.at[1],item.at[0]];
+    flipSteps(item);
   }
 }
 /* continuous position: fy = importance (1 = top), fx = urgency (1 = right) */
@@ -1517,7 +1570,7 @@ function sampleState(lang=LANG){
 let state=blankState();
 let dirty=false, fileHandle=null, autoWrite=false, stateRev=0;
 let undoStack=[], redoStack=[], editSnap=null, editActive=false;
-const ui={showPlanned:false,repeatCustom:false,search:'',mobileCell:null,detailId:null,archiveOpen:false,archiveQuery:'',inboxOpen:true,pickTask:null,longPressGuard:0,coinHistoryLimit:100,editReward:null};
+const ui={showPlanned:false,repeatCustom:false,search:'',mobileCell:null,detailId:null,archiveOpen:false,archiveQuery:'',inboxOpen:true,pickTask:null,longPressGuard:0,coinHistoryLimit:100,editReward:null,openSteps:new Set()};
 let fileTimer=null,writingFile=false,writeAgain=false,lastSaveError=false;
 /* Google Drive connection state; the access token stays in memory only */
 let gdrive=null;                 // remembered {fileId,name,version}
@@ -1594,6 +1647,30 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     out.sleep=x.sleep;
   }
   if(x.spawned===true) out.spawned=true;
+  if(x.steps!==undefined&&x.steps!==null){
+    if(!Array.isArray(x.steps)||x.steps.length>MAX_STEPS) throw new Error(t('invalidReason',path+'.steps'));
+    const sids=new Set(); out.steps=[];
+    x.steps.forEach((s,i)=>{
+      const p=path+'.steps['+i+']';
+      if(!s||typeof s!=='object'||Array.isArray(s)) throw new Error(t('invalidReason',p));
+      let sid=reqStr(s.id,p+'.id',MAX_STEP_ID,false);
+      if(!/^[A-Za-z0-9_-]+$/.test(sid)) throw new Error(t('invalidReason',p+'.id'));
+      // a doubled step id is repaired like a doubled task id, never a reason to reject the file
+      for(let n=2;sids.has(sid);n++) sid=sid.slice(0,MAX_STEP_ID-4)+'-d'+n;
+      sids.add(sid);
+      const st={id:sid,title:reqStr(s.title,p+'.title',MAX_TITLE),coins:reqTaskCoins(s.coins,p+'.coins')};
+      if(s.ask===true) st.ask=true;
+      if(s.done!==undefined&&s.done!==null){
+        st.done=reqStr(s.done,p+'.done',40,false);
+        if(!isValidISODate(st.done)) throw new Error(t('invalidReason',p+'.done'));
+        st.got=reqTaskCoins(s.got,p+'.got');
+      }
+      if(s.n!==undefined){if(!Number.isInteger(s.n)||s.n<0||s.n>999999) throw new Error(t('invalidReason',p+'.n')); if(s.n) st.n=s.n;}
+      if(s.from!==undefined&&s.from!==null) st.from=cleanStepFrom(s.from,p+'.from',labelIds);
+      out.steps.push(st);
+    });
+    if(!out.steps.length) delete out.steps;
+  }
   if(x.labels!==undefined){
     if(!Array.isArray(x.labels)) throw new Error(t('invalidReason',path+'.labels'));
     out.labels=[...new Set(x.labels.filter(l=>typeof l==='string'&&labelIds.has(l)))];
@@ -1605,6 +1682,18 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     if(!out.at&&out.fromCell) out.at=cellCenter(out.fromCell[0],out.fromCell[1],rows,cols);
   }
   if(!out.at&&out.cell) out.at=cellCenter(out.cell[0],out.cell[1],rows,cols);
+  return out;
+}
+/* what a task brought along when it was dropped onto another as a step, so it comes back whole */
+function cleanStepFrom(x,path,labelIds){
+  if(!x||typeof x!=='object'||Array.isArray(x)) throw new Error(t('invalidReason',path));
+  const out={};
+  if(x.id!==undefined){out.id=reqStr(x.id,path+'.id',MAX_ID,false);if(!/^[A-Za-z0-9_-]+$/.test(out.id)) throw new Error(t('invalidReason',path+'.id'));}
+  if(x.desc!==undefined) out.desc=reqStr(x.desc,path+'.desc',MAX_DESC);
+  if(x.due!==undefined&&x.due!==null){if(!isValidDateStr(x.due)) throw new Error(t('invalidReason',path+'.due'));out.due=x.due;}
+  if(x.created!==undefined){out.created=reqStr(x.created,path+'.created',40,false);if(!isValidISODate(out.created)) throw new Error(t('invalidReason',path+'.created'));}
+  if(x.at!==undefined&&x.at!==null) out.at=reqAt(x.at,path+'.at');
+  if(x.labels!==undefined){if(!Array.isArray(x.labels)) throw new Error(t('invalidReason',path+'.labels'));out.labels=[...new Set(x.labels.filter(l=>typeof l==='string'&&labelIds.has(l)))];}
   return out;
 }
 /* repeat: {f:'d'|'w'|'m'|'y', n:every, days:[0=Mon..6], md:day of month, nth:1..4|-1 with wd, mo:month,
@@ -1977,6 +2066,27 @@ function entryModTime(v){
 }
 /* both changed: the newer mod wins, ties go to remote (missing mod = oldest) */
 function newerEntry(l,r){return entryModTime(l)>entryModTime(r)?l:r;}
+/* steps of one task changed on two devices: three-way per step id, a tick wins over an untouched step */
+function mergeSteps(bs,ls,rs){
+  const idx=a=>new Map((Array.isArray(a)?a:[]).map(s=>[s.id,s]));
+  const B=idx(bs),L=idx(ls),R=idx(rs);
+  const pick=id=>{
+    const b=B.get(id),l=L.get(id),r=R.get(id);
+    if(entryEqual(l,b)) return r;
+    if(entryEqual(r,b)) return l;
+    if(!l||!r) return l||r;
+    return l.done&&!r.done?l:r;
+  };
+  const ids=[...R.keys()];
+  // a step only local goes in after the step before it
+  let prev=null;
+  for(const id of L.keys()){
+    if(!R.has(id)){const at=prev?ids.indexOf(prev)+1:ids.length;ids.splice(at,0,id);}
+    prev=id;
+  }
+  const out=ids.map(pick).filter(Boolean).map(s=>({...s}));
+  return out.length?out:undefined;
+}
 function mergeStates(base,local,remote){
   let b=base?cloneState(base):null;
   let l=cloneState(local);
@@ -2038,7 +2148,14 @@ function mergeStates(base,local,remote){
       pick=le;
     }else{
       pick=newerEntry(le,re);
-      if(!entryEqual(le,re)) conflicts++;
+      // steps ticked on two devices: merge them one by one, so no tick and no step is lost
+      if(be&&le.place===re.place&&(le.entry.steps||re.entry.steps)){
+        const steps=mergeSteps(be.entry.steps,le.entry.steps,re.entry.steps);
+        const rest=v=>{const c={...v.entry};delete c.steps;delete c.mod;delete c.coins;delete c.coinsAsk;return c;};
+        if(!entryEqual(rest(le),rest(re))) conflicts++;
+        const entry={...pick.entry}; entry.steps=steps; syncStepValue(entry);
+        pick={place:pick.place,entry};
+      }else if(!entryEqual(le,re)) conflicts++;
     }
     if(pick) chosen.set(id,pick); else chosen.delete(id);
   }
@@ -2130,8 +2247,8 @@ function mergeStates(base,local,remote){
   if(bc){
     balance=bc.balance||0;
     const baseIds=new Set((bc.log||[]).map(x=>x.id));
-    for(const x of lc.log||[]) if(!baseIds.has(x.id)) balance+=Number(x.amount)||0;
-    for(const x of rc.log||[]) if(!baseIds.has(x.id)) balance+=Number(x.amount)||0;
+    // an entry new on both sides (the same step ticked on two devices) counts once
+    for(const x of logById.values()) if(!baseIds.has(x.id)) balance+=Number(x.amount)||0;
   }else{
     balance=rc.balance||0;
     const remoteIds=new Set((rc.log||[]).map(x=>x.id));
@@ -3031,6 +3148,10 @@ function makeNextInstance(task,next,{leftDrop=1}={}){
   const nt={id,title:task.title,desc:task.desc,due:next,cell:task.cell?task.cell.slice():null,
     at:Array.isArray(task.at)?task.at.slice():null,created:isoNow(),labels:(task.labels||[]).slice(),coins:task.coins,repeat:r,series};
   if(task.coinsAsk) nt.coinsAsk=true;
+  if(stepsOf(task).length){
+    nt.steps=stepsOf(task).map(s=>Object.assign({id:s.id,title:s.title,coins:s.ask?0:s.coins},s.ask?{ask:true}:{}));
+    syncStepValue(nt);
+  }
   if(next>localDateStr()) nt.sleep=next;
   return nt;
 }
@@ -3442,9 +3563,9 @@ function setCoinQuick(text){
   renderSettingsCoins();
 }
 function normalizeCoins(v){const n=Math.round(Number(v));return Number.isFinite(n)?clamp(n,0,MAX_TASK_COINS):0;}
-function pushCoinLog(amount,text,taskId=null){
+function pushCoinLog(amount,text,taskId=null,id=null){
   const c=coinsState();
-  c.log.push({id:uid(),at:isoNow(),amount:Math.round(amount),text:String(text||'').slice(0,MAX_COIN_TEXT),taskId:taskId||null});
+  c.log.push({id:id||uid(),at:isoNow(),amount:Math.round(amount),text:String(text||'').slice(0,MAX_COIN_TEXT),taskId:taskId||null});
   if(c.log.length>MAX_COIN_LOG) c.log=c.log.slice(-MAX_COIN_LOG);
 }
 function renderCoinsHeader(){
@@ -3569,6 +3690,7 @@ function coinReward(gain,rect,before){
 }
 function setTaskCoins(id,value){
   const task=findTask(id); if(!task) return;
+  if(stepsOf(task).length){setOpenStepsValue(task,value);return;}
   if(value==='?'){
     if(task.coinsAsk){refreshDetail(true);return;}
     commit(()=>{task.coinsAsk=true;task.coins=0;},{detail:true});
@@ -3581,6 +3703,188 @@ function setTaskCoins(id,value){
   commit(()=>{task.coins=n;delete task.coinsAsk;},{detail:true});
   toast(t('coinsValueSet',n));
 }
+
+/* ---------- steps: a task broken into smaller steps, each one pays its coins when ticked ---------- */
+function stepsOf(task){return task&&Array.isArray(task.steps)?task.steps:[];}
+function openStepsOf(task){return stepsOf(task).filter(s=>!s.done);}
+function findStep(task,sid){return stepsOf(task).find(s=>s.id===sid)||null;}
+function newStepId(task,taken=new Set()){
+  let id;
+  do id='s'+Math.random().toString(36).slice(2,9); while(findStep(task,id)||taken.has(id));
+  return id;
+}
+/* total spread over n steps as evenly as whole coins allow: 8 over 3 -> 3,3,2 */
+function shareCoins(total,n){const b=Math.floor(total/n),r=total-b*n;return Array.from({length:n},(_,i)=>b+(i<r?1:0));}
+/* with steps the task is worth what its open steps still pay; ? when one of them is asked on ticking */
+function syncStepValue(task){
+  const st=stepsOf(task);
+  if(!st.length){delete task.steps;return;}
+  const open=st.filter(s=>!s.done);
+  task.coins=open.reduce((a,s)=>a+(s.ask?0:s.coins),0);
+  if(open.some(s=>s.ask)) task.coinsAsk=true; else delete task.coinsAsk;
+}
+const stepLogId=(task,step,suffix='')=>task.id.slice(0,40)+'-'+step.id+'-'+(step.n||0)+suffix;
+const stepText=(task,step)=>(task.title||t('untitled'))+': '+(step.title||t('untitled'));
+/* the value new steps get: a task without steps hands its value on, an even split is spread again,
+   steps with values of their own stay as they are and the new ones are asked (with coins on) */
+function stepValuesFor(task,count){
+  const open=openStepsOf(task);
+  if(!stepsOf(task).length){
+    if(task.coinsAsk) return Array(count).fill('?');
+    return {spread:shareCoins(Number.isInteger(task.coins)?task.coins:0,count)};
+  }
+  if(open.length&&open.every(s=>s.ask)) return Array(count).fill('?');
+  const total=open.reduce((a,s)=>a+s.coins,0);
+  if(open.length&&open.every(s=>!s.ask)&&JSON.stringify(open.map(s=>s.coins))===JSON.stringify(shareCoins(total,open.length)))
+    return {spread:shareCoins(total,open.length+count),again:true};
+  return Array(count).fill(coinsOn()?'?':0);
+}
+function applyStepValue(step,v){if(v==='?'){step.ask=true;step.coins=0;}else{delete step.ask;step.coins=v;}}
+function addSteps(id,text){
+  const task=findTask(id); if(!task) return false;
+  const lines=String(text||'').split(/\r?\n/).map(l=>l.replace(/^\s*([-*•]|\d+[.)]|\[[ x]?\])\s+/i,'').trim().slice(0,MAX_TITLE)).filter(Boolean);
+  if(!lines.length) return false;
+  if(stepsOf(task).length+lines.length>MAX_STEPS){toast(t('stepsTooMany',MAX_STEPS));return false;}
+  leaveExample();
+  commit(()=>{
+    const vals=stepValuesFor(task,lines.length);
+    const steps=task.steps=stepsOf(task).slice();
+    const taken=new Set();
+    const added=lines.map(title=>{const s={id:newStepId(task,taken),title,coins:0};taken.add(s.id);return s;});
+    if(Array.isArray(vals)) added.forEach((s,i)=>applyStepValue(s,vals[i]));
+    else{
+      const open=vals.again?steps.filter(s=>!s.done):[];
+      [...open,...added].forEach((s,i)=>applyStepValue(s,vals.spread[i]));
+    }
+    steps.push(...added);
+    syncStepValue(task);
+  },{detail:true});
+  playSound('add');
+  return true;
+}
+function renameStep(id,sid,title){
+  const task=findTask(id),step=findStep(task,sid); if(!step) return;
+  title=String(title||'').trim().slice(0,MAX_TITLE);
+  if(!title||title===step.title){refreshDetail(true);return;}
+  leaveExample();
+  commit(()=>{step.title=title;},{detail:true});
+}
+function setStepCoins(id,sid,value){
+  const task=findTask(id),step=findStep(task,sid); if(!step||step.done) return;
+  const v=value==='?'||value===''?'?':normalizeCoins(value);
+  if(v==='?'?step.ask:(!step.ask&&step.coins===v)){refreshDetail(true);return;}
+  leaveExample();
+  commit(()=>{applyStepValue(step,v);syncStepValue(task);},{detail:true});
+}
+/* the value field of a task with steps sets its open steps: ? for all, a number spread over them */
+function setOpenStepsValue(task,value){
+  const open=openStepsOf(task); if(!open.length){refreshDetail(true);return;}
+  const n=value==='?'?null:normalizeCoins(value);
+  const vals=n===null?open.map(()=>'?'):shareCoins(n,open.length);
+  if(open.every((s,i)=>vals[i]==='?'?s.ask:(!s.ask&&s.coins===vals[i]))){refreshDetail(true);return;}
+  leaveExample();
+  commit(()=>{open.forEach((s,i)=>applyStepValue(s,vals[i]));syncStepValue(task);},{detail:true});
+  toast(n===null?t('coinsAskLater'):t('stepsValueSpread',n,open.length));
+}
+function deleteStep(id,sid){
+  const task=findTask(id); if(!findStep(task,sid)) return;
+  leaveExample();
+  commit(()=>{task.steps=stepsOf(task).filter(s=>s.id!==sid);syncStepValue(task);},{detail:true});
+  playSound('delete');
+  toast(t('stepDeleted'),{label:t('undoAction'),fn:undo});
+}
+/* ticking a step books its coins at once; unticking books them back */
+async function toggleStep(id,sid,anchor){
+  let task=findTask(id),step=findStep(task,sid); if(!step) return;
+  const rect=anchor&&anchor.isConnected?anchor.getBoundingClientRect():null;
+  if(step.done){
+    leaveExample();
+    commit(()=>{
+      const got=Number.isInteger(step.got)?step.got:0;
+      if(got>0){
+        const c=coinsState(),taken=Math.min(got,c.balance);
+        c.balance-=taken;
+        pushCoinLog(-taken,stepText(task,step)+' '+t('coinsRestoredSuffix')+(taken<got?' '+t('coinsPartial',taken,got):''),task.id,stepLogId(task,step,'r'));
+      }
+      delete step.done; delete step.got;
+      syncStepValue(task);
+    },{detail:true,header:true});
+    playSound('move');
+    return;
+  }
+  let value=step.ask?0:step.coins;
+  if(coinsOn()&&step.ask){
+    const a=await askTaskCoins({title:stepText(task,step)});
+    if(!a) return;
+    task=findTask(id); step=findStep(task,sid); if(!step||step.done) return;
+    value=a.coins;
+  }
+  const gain=Number.isInteger(value)&&value>0?value:0;
+  const before=coinsState().balance;
+  leaveExample();
+  commit(()=>{
+    step.n=(step.n||0)+1;
+    step.done=isoNow(); step.got=gain;
+    if(gain>0){const c=coinsState();c.balance=Math.min(MAX_COIN_BALANCE,c.balance+gain);pushCoinLog(gain,stepText(task,step),task.id,stepLogId(task,step));}
+    syncStepValue(task);
+  },{detail:true,header:true});
+  playSound('done');
+  if(gain>0&&coinsOn()) coinReward(gain,rect,before);
+  if(!openStepsOf(task).length) toast(t('stepsAllDone'),{label:t('finishTask'),fn:()=>archiveTask(id)});
+  else toast(t('stepDone',stepsOf(task).length-openStepsOf(task).length,stepsOf(task).length),{label:t('undoAction'),fn:undo});
+}
+/* a step taken out of its task becomes a task of its own again, with what it brought along */
+function extractStep(id,sid){
+  const task=findTask(id),step=findStep(task,sid); if(!step||step.done) return;
+  const f=step.from||{};
+  const at=Array.isArray(f.at)?f.at:(Array.isArray(task.at)?task.at.slice():null);
+  const cell=Array.isArray(f.at)?cellFromAt(f.at,state.rows,state.cols):(task.cell?task.cell.slice():null);
+  const takenId=f.id&&(findTask(f.id)||state.archive.some(x=>x.id===f.id));
+  const nt={id:f.id&&!takenId?f.id:uid(),title:step.title,desc:f.desc||'',due:f.due||null,cell,at:cell?at:null,created:f.created||isoNow(),
+    labels:Array.isArray(f.labels)?f.labels.filter(l=>labelById(l)):(task.labels||[]).slice(),coins:step.ask?0:step.coins};
+  if(step.ask) nt.coinsAsk=true;
+  leaveExample();
+  if(!cell) ensureInboxOpen();
+  commit(()=>{
+    task.steps=stepsOf(task).filter(s=>s.id!==sid); syncStepValue(task);
+    const i=state.tasks.indexOf(task);
+    state.tasks.splice(i+1,0,nt);
+  },{detail:true});
+  playSound('move');
+  toast(t('stepExtracted'),{label:t('undoAction'),fn:undo});
+}
+/* a task dropped onto another becomes its last step; its own steps come along, one level only */
+function mergeIntoSteps(srcId,targetId){
+  const src=findTask(srcId),target=findTask(targetId);
+  if(!src||!target||src===target) return false;
+  if(src.repeat){toast(t('stepNoRepeat'));return false;}
+  const incoming=stepsOf(src).length?stepsOf(src).length:1;
+  const ownStep=!stepsOf(target).length&&(target.coinsAsk||target.coins>0)?1:0;
+  if(stepsOf(target).length+ownStep+incoming>MAX_STEPS){toast(t('stepsTooMany',MAX_STEPS));return false;}
+  leaveExample();
+  commit(()=>{
+    const steps=stepsOf(target).slice(), taken=new Set(steps.map(s=>s.id));
+    const fresh=()=>{const id=newStepId(target,taken);taken.add(id);return id;};
+    // the target's own value would vanish into the sum of its steps: it keeps it as its first step
+    if(ownStep){const s={id:fresh(),title:target.title,coins:0};applyStepValue(s,target.coinsAsk?'?':target.coins);steps.push(s);}
+    if(stepsOf(src).length){
+      for(const s of stepsOf(src)) steps.push({...s,id:taken.has(s.id)?fresh():(taken.add(s.id),s.id)});
+    }else{
+      const s={id:fresh(),title:src.title,coins:0};
+      applyStepValue(s,src.coinsAsk?'?':(Number.isInteger(src.coins)?src.coins:0));
+      s.from={id:src.id,desc:src.desc||'',due:src.due||null,created:src.created,at:Array.isArray(src.at)?src.at.slice():null,labels:(src.labels||[]).slice()};
+      steps.push(s);
+    }
+    target.steps=steps; syncStepValue(target);
+    state.tasks=state.tasks.filter(x=>x!==src);
+  },{detail:true});
+  if(ui.detailId===srcId) closeDetail();
+  ui.openSteps.add(targetId);
+  playSound('move');
+  toast(t('stepMerged',target.title||t('untitled')),{label:t('undoAction'),fn:undo});
+  return true;
+}
+function toggleStepsOpen(id){if(ui.openSteps.has(id))ui.openSteps.delete(id);else ui.openSteps.add(id);renderBoard();renderInbox();renderMobile();}
 
 function setCoinsEnabled(v){
   v=!!v; const c=coinsState();
@@ -3718,7 +4022,14 @@ function taskCard(task){
   const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title||t('untitled'); el.append(title);
   const meta=document.createElement('span'); meta.className='task-meta';
   if(task.desc.trim()){const dm=document.createElement('span');dm.className='descmark';dm.textContent='≡';dm.title=t('description');meta.append(dm);}
-  if(coinsOn()&&task.coinsAsk){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent='? 🪙';cb.title=t('coinsAskBadge');meta.append(cb);}
+  const steps=stepsOf(task);
+  if(steps.length){
+    const d=steps.length-openStepsOf(task).length;
+    const sb=document.createElement('button'); sb.type='button'; sb.className='steps-badge'+(d===steps.length?' all':'')+(ui.openSteps.has(task.id)?' open':'');
+    sb.dataset.stepsToggle=task.id; sb.textContent=d+'/'+steps.length; sb.title=t('stepsBadgeT',d,steps.length);
+    sb.setAttribute('aria-expanded',String(ui.openSteps.has(task.id))); meta.append(sb);
+  }
+  if(coinsOn()&&task.coinsAsk){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=(task.coins>0?task.coins+'+':'')+'? 🪙';cb.title=t('coinsAskBadge');meta.append(cb);}
   else if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
   if(task.repeat){const ri=document.createElement('span');ri.className='repeat-ic';ri.textContent='↻';ri.title=t('repeat')+': '+repeatSummary(task.repeat,task.due||localDateStr());meta.append(ri);}
   if(info){const due=document.createElement('span');due.className='due '+info.cls;due.textContent=info.label;due.title=info.title;meta.append(due);}
@@ -3728,6 +4039,28 @@ function taskCard(task){
   const q=ui.search.trim().toLowerCase();
   if(q&&!((task.title||'')+'\n'+(task.desc||'')).toLowerCase().includes(q)) el.classList.add('filtered');
   return el;
+}
+
+/* the steps of a task, unfolded under its card: tick them off while working */
+function stepsPanel(task){
+  const box=document.createElement('div'); box.className='step-panel'; box.dataset.stepsOf=task.id;
+  for(const s of stepsOf(task)){
+    const row=document.createElement('button'); row.type='button'; row.className='step-row'+(s.done?' done':''); row.dataset.stepCheck=task.id+'|'+s.id;
+    row.title=t(s.done?'stepUncheckT':'stepCheckT')+': '+(s.title||t('untitled'));
+    const b=document.createElement('span'); b.className='step-bullet'; b.setAttribute('aria-hidden','true');
+    const ti=document.createElement('span'); ti.className='step-title'; ti.textContent=s.title||t('untitled');
+    row.append(b,ti);
+    if(coinsOn()){
+      const v=s.done?s.got:(s.ask?'?':s.coins);
+      if(v==='?'||v>0){const c=document.createElement('span');c.className='step-coins';c.textContent=v+' 🪙';row.append(c);}
+    }
+    box.append(row);
+  }
+  return box;
+}
+function cardWithSteps(task){
+  const card=taskCard(task);
+  return ui.openSteps.has(task.id)&&stepsOf(task).length?[card,stepsPanel(task)]:[card];
 }
 
 /* ---------- desktop matrix ---------- */
@@ -3847,7 +4180,7 @@ function cellElement(r,c,cellRow=1,cellCol=1){
   const list=document.createElement('div'); list.className='cell-list'; list.dataset.cellkey=key;
   const tasks=visibleTasksIn(r,c);
   if(!tasks.length){const empty=document.createElement('div');empty.className='empty-cell';empty.textContent=t('emptyCell');list.append(empty);}
-  else tasks.forEach(task=>list.append(taskCard(task)));
+  else tasks.forEach(task=>list.append(...cardWithSteps(task)));
   const pn=plannedCount(r,c); if(pn) list.append(plannedChip(pn));
   scroll.append(list); cell.append(scroll);
   const fade=document.createElement('div'); fade.className='cell-fade'; cell.append(fade);
@@ -3860,7 +4193,7 @@ function renderInbox(){
   const list=document.createElement('div'); list.className='cell-list'; list.dataset.cellkey='inbox';
   const tasks=visibleTasksIn(null,null);
   if(!tasks.length){const empty=document.createElement('div');empty.className='empty-cell';empty.textContent=t('inboxEmpty');list.append(empty);}
-  else tasks.forEach(task=>list.append(taskCard(task)));
+  else tasks.forEach(task=>list.append(...cardWithSteps(task)));
   const pn=plannedCount(null,null); if(pn) list.append(plannedChip(pn));
   body.append(list);
   $('#inboxCount').textContent=String(tasks.length);
@@ -3923,7 +4256,7 @@ function renderMobileList(){
   const list=$('#mobileCellList'); list.replaceChildren();
   const wrap=document.createElement('div'); wrap.className='cell-list'; wrap.dataset.cellkey=target?target.r+','+target.c:'inbox';
   if(!tasks.length){const empty=document.createElement('div');empty.className='mobile-empty';empty.textContent=target?t('mobileEmptyCell'):t('mobileEmptyInbox');wrap.append(empty);}
-  else tasks.forEach(task=>wrap.append(taskCard(task)));
+  else tasks.forEach(task=>wrap.append(...cardWithSteps(task)));
   const pn=target?plannedCount(target.r,target.c):plannedCount(null,null); if(pn) wrap.append(plannedChip(pn));
   list.append(wrap);
 }
@@ -4107,7 +4440,8 @@ function renderDetailCoins(task){
   const on=coinsOn();
   field.hidden=!on;
   if(!on) return;
-  const val=task.coinsAsk?'?':(Number.isInteger(task.coins)?task.coins:0);
+  const val=task.coinsAsk&&!(stepsOf(task).length&&task.coins>0)?'?':(Number.isInteger(task.coins)?task.coins:0);
+  const hint=$('#dCoinsStepsHint'); if(hint) hint.hidden=!stepsOf(task).length;
   const quick=$('#dCoinQuick');
   if(quick){
     quick.replaceChildren();
@@ -4120,6 +4454,51 @@ function renderDetailCoins(task){
     });
   }
   const inp=$('#dCoins'); if(inp&&document.activeElement!==inp){inp.value=val==='?'?'':String(val);inp.placeholder=val==='?'?'?':'';}
+}
+function renderDetailSteps(task){
+  const box=$('#dSteps'); if(!box) return;
+  const ae=document.activeElement;
+  // keep the step being typed in, a re-render would throw the cursor out
+  if(ae&&box.contains(ae)&&ae.matches('input')) return;
+  box.replaceChildren();
+  for(const s of stepsOf(task)){
+    const row=document.createElement('div'); row.className='step-edit'+(s.done?' done':''); row.dataset.stepId=s.id;
+    const b=document.createElement('button'); b.type='button'; b.className='step-check'; b.dataset.stepCheck=task.id+'|'+s.id;
+    b.textContent=s.done?'✓':''; b.title=t(s.done?'stepUncheckT':'stepCheckT'); b.setAttribute('aria-label',b.title);
+    const ti=document.createElement('input'); ti.type='text'; ti.className='step-name'; ti.maxLength=MAX_TITLE; ti.value=s.title; ti.dataset.stepName=s.id; ti.setAttribute('aria-label',t('steps'));
+    row.append(b,ti);
+    if(coinsOn()){
+      if(s.done){const c=document.createElement('span');c.className='step-coins';c.textContent=(s.got||0)+' 🪙';row.append(c);}
+      else{
+        const c=document.createElement('input'); c.type='number'; c.min='0'; c.max=String(MAX_TASK_COINS); c.step='1'; c.inputMode='numeric';
+        c.className='step-coin-in'; c.dataset.stepCoins=s.id; c.value=s.ask?'':String(s.coins); c.placeholder='?'; c.title=t('stepCoinsT'); c.setAttribute('aria-label',t('stepCoinsT'));
+        row.append(c);
+      }
+    }
+    if(!s.done){const x=document.createElement('button');x.type='button';x.className='step-act';x.dataset.stepExtract=s.id;x.textContent='↗';x.title=t('stepExtractT');x.setAttribute('aria-label',x.title);row.append(x);}
+    const del=document.createElement('button'); del.type='button'; del.className='step-act'; del.dataset.stepDelete=s.id; del.textContent='✕'; del.title=t('stepDeleteT'); del.setAttribute('aria-label',del.title);
+    row.append(del);
+    box.append(row);
+  }
+}
+/* mobile: pick the task this one becomes a step of */
+function openStepPicker(id){
+  const task=findTask(id); if(!task) return;
+  ui.pickTask=id; ui.pickMode='step';
+  $('#pickerTitle').textContent=task.title||t('untitled');
+  $('#pickerSub').textContent=t('asStepPick');
+  const grid=$('#pickerGrid'); grid.replaceChildren(); grid.style.gridTemplateColumns='minmax(0,1fr)';
+  const keys=[...(inboxOn()?[null]:[]),...Array.from({length:state.rows*state.cols},(_,i)=>[dispR(Math.floor(i/state.cols)),dispC(i%state.cols)])];
+  let n=0;
+  for(const k of keys){
+    const list=tasksIn(k?k[0]:null,k?k[1]:null).filter(x=>x.id!==id&&isTaskVisible(x));
+    if(!list.length) continue;
+    const h=document.createElement('div'); h.className='pick-group'; h.textContent=k?cellLabel(k[0],k[1]):inboxLabel(); grid.append(h);
+    for(const x of list){const b=document.createElement('button');b.type='button';b.className='pick-task';b.dataset.pickStep=x.id;b.textContent=x.title||t('untitled');if(k)paintCellColors(b,k[0],k[1]);grid.append(b);n++;}
+  }
+  if(!n){const e=document.createElement('div');e.className='picker-sub';e.textContent=t('asStepNone');grid.append(e);}
+  grid.classList.add('as-list');
+  $('#movePicker').hidden=false;
 }
 /* ---------- repeat in the task detail (options like Google Calendar) ---------- */
 function repeatAnchor(task){return task.due||localDateStr();}
@@ -4244,6 +4623,7 @@ function renderDetailValues(task){
   fillDetailCellSelect(task);
   renderDetailLabels(task);
   renderDetailCoins(task);
+  renderDetailSteps(task);
   renderDetailRepeat(task);
   $('#dCreated').textContent=t('createdLine',fmtDate(task.created,true));
 }
@@ -4648,14 +5028,26 @@ function closeCoinAsk(v){const d=$('#coinAskDlg');if(!d.open)return;d.returnValu
 async function archiveTask(id){
   let task=findTask(id); if(!task) return;
   let asked=null;
-  if(coinsOn()&&task.coinsAsk){
+  const withSteps=stepsOf(task).length>0;
+  if(withSteps){
+    /* open steps are done with the task: their coins are booked now, a ? among them is asked once */
+    if(openStepsOf(task).length){
+      if(!await ask(t('stepsOpenFinish',openStepsOf(task).length))) return;
+      task=findTask(id); if(!task) return;
+      if(coinsOn()&&openStepsOf(task).some(s=>s.ask)){
+        asked=await askTaskCoins({title:task.title});
+        if(!asked) return;
+        task=findTask(id); if(!task) return;
+      }
+    }
+  }else if(coinsOn()&&task.coinsAsk){
     asked=await askTaskCoins(task);
     if(!asked) return;
     task=findTask(id); if(!task) return;
   }
   const card=document.querySelector('.task-card[data-task="'+id+'"]');
   const rect=card?card.getBoundingClientRect():null;
-  const value=asked?asked.coins:task.coins;
+  const value=withSteps?openStepsOf(task).reduce((a,s)=>a+(s.ask?0:s.coins),0)+(asked?asked.coins:0):(asked?asked.coins:task.coins);
   const gain=Number.isInteger(value)&&value>0?value:0;
   const before=coinsState().balance;
   leaveExample();
@@ -4673,10 +5065,10 @@ async function archiveTask(id){
     state.tasks.splice(i,1);
     if(nextDate){
       nextTask=makeNextInstance(task,nextDate);
-      if(nextTask&&asked&&asked.keep){nextTask.coins=asked.coins;delete nextTask.coinsAsk;}
+      if(nextTask&&asked&&asked.keep&&!withSteps){nextTask.coins=asked.coins;delete nextTask.coinsAsk;}
       if(nextTask) state.tasks.splice(i,0,nextTask);
     }
-    state.archive.push({id:task.id,title:task.title,desc:task.desc,due:task.due,created:task.created,doneAt:isoNow(),fromCell:task.cell?[task.cell[0],task.cell[1]]:null,at:Array.isArray(task.at)?task.at.slice():null,labels:Array.isArray(task.labels)?task.labels.slice():[],coins:gain});
+    state.archive.push({id:task.id,title:task.title,desc:task.desc,due:task.due,created:task.created,doneAt:isoNow(),fromCell:task.cell?[task.cell[0],task.cell[1]]:null,at:Array.isArray(task.at)?task.at.slice():null,labels:Array.isArray(task.labels)?task.labels.slice():[],coins:gain,...(withSteps?{steps:cloneState(task.steps)}:{})});
     if(gain>0){const c=coinsState();c.balance=Math.min(MAX_COIN_BALANCE,c.balance+gain);pushCoinLog(gain,task.title,task.id);}
   },{archive:true,detail:true});
   if(ui.detailId===id) closeDetail();
@@ -4693,6 +5085,8 @@ function restoreArchive(id){
   commit(()=>{
     state.archive.splice(idx,1);
     state.tasks.push({id:item.id,title:item.title,desc:item.desc,due:item.due,cell:validCoord(item.fromCell)?[item.fromCell[0],item.fromCell[1]]:null,at:Array.isArray(item.at)?item.at.slice():(validCoord(item.fromCell)?cellCenter(item.fromCell[0],item.fromCell[1],state.rows,state.cols):null),created:item.created,labels:Array.isArray(item.labels)?item.labels.slice():[],coins});
+    const back=state.tasks[state.tasks.length-1];
+    if(stepsOf(item).length){back.steps=cloneState(item.steps);syncStepValue(back);}
     if(coins>0){
       const c=coinsState();
       const taken=Math.min(coins,c.balance);
@@ -4826,8 +5220,9 @@ function openMovePicker(id){
   const task=findTask(id); if(!task) return;
   ui.pickTask=id;
   $('#pickerTitle').textContent=task.title||t('untitled');
+  ui.pickMode='cell';
   $('#pickerSub').textContent=t('cellField');
-  const grid=$('#pickerGrid'); grid.replaceChildren(); grid.style.gridTemplateColumns=`repeat(${state.cols},minmax(0,1fr))`;
+  const grid=$('#pickerGrid'); grid.replaceChildren(); grid.classList.remove('as-list'); grid.style.gridTemplateColumns=`repeat(${state.cols},minmax(0,1fr))`;
   // iterate the displayed grid so the picker mirrors the board, values stay canonical
   for(let dr=0;dr<state.rows;dr++) for(let dc=0;dc<state.cols;dc++){
     const r=dispR(dr),c=dispC(dc);
@@ -5467,6 +5862,10 @@ $('#inboxBody').addEventListener('dblclick',e=>{/* cards only, no labels */});
 /* task clicks, done and long press */
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-toggle-planned]')){e.preventDefault();ui.showPlanned=!ui.showPlanned;renderAllDynamic();return;}
+  const tog=e.target.closest('[data-steps-toggle]');
+  if(tog){e.preventDefault();e.stopPropagation();toggleStepsOpen(tog.dataset.stepsToggle);return;}
+  const sc=e.target.closest('[data-step-check]');
+  if(sc){e.preventDefault();const [tid,sid]=sc.dataset.stepCheck.split('|');toggleStep(tid,sid,sc);return;}
   const done=e.target.closest('[data-done]');
   if(done){e.preventDefault();archiveTask(done.dataset.done);return;}
   const card=e.target.closest('.task-card');
@@ -5635,12 +6034,41 @@ $('#mobilePad').addEventListener('click',e=>{
 $('.mobile-pad').addEventListener('click',e=>{if(e.target.closest('#mobileInboxBtn'))setMobileSel('inbox');});
 $('#pickerCancel').addEventListener('click',closeMovePicker);
 $('#movePicker').addEventListener('click',e=>{if(e.target.id==='movePicker')closeMovePicker();});
-$('#pickerGrid').addEventListener('click',e=>{const b=e.target.closest('[data-pick-cell]');if(b)choosePickTarget(b.dataset.pickCell);});
+$('#pickerGrid').addEventListener('click',e=>{
+  const st=e.target.closest('[data-pick-step]');
+  if(st){const id=ui.pickTask;closeMovePicker();if(id)mergeIntoSteps(id,st.dataset.pickStep);return;}
+  const b=e.target.closest('[data-pick-cell]');if(b)choosePickTarget(b.dataset.pickCell);
+});
 
 /* detail drawer */
 $('#detailClose').addEventListener('click',closeDetail);
 $('#detailDone').addEventListener('click',detailDone);
 $('#detailMove').addEventListener('click',()=>{if(ui.detailId)openMovePicker(ui.detailId);});
+$('#detailAsStep').addEventListener('click',()=>{if(ui.detailId)openStepPicker(ui.detailId);});
+/* steps in the detail: Enter adds (a pasted list adds one step per line), Shift+Enter starts a new line */
+$('#dStepAdd').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(ui.detailId&&addSteps(ui.detailId,e.target.value)){e.target.value='';e.target.style.height='';}}
+  else if(e.key==='Escape'){e.target.value='';e.target.blur();}
+});
+$('#dStepAdd').addEventListener('input',e=>{const el=e.target;el.style.height='';el.style.height=Math.min(el.scrollHeight,160)+'px';});
+$('#dSteps').addEventListener('change',e=>{
+  if(!ui.detailId) return;
+  const n=e.target.closest('[data-step-name]'); if(n){renameStep(ui.detailId,n.dataset.stepName,n.value);return;}
+  const c=e.target.closest('[data-step-coins]'); if(c) setStepCoins(ui.detailId,c.dataset.stepCoins,c.value);
+});
+$('#dSteps').addEventListener('keydown',e=>{
+  if(!e.target.matches('input')) return;
+  e.stopPropagation();
+  if(e.key==='Enter'){e.preventDefault();e.target.blur();}
+  else if(e.key==='Escape'){e.preventDefault();refreshDetail(true);}
+});
+$('#dSteps').addEventListener('focusout',e=>{if(e.target.matches('input'))setTimeout(()=>{const task=detailTask();if(task&&!$('#dSteps').contains(document.activeElement))renderDetailSteps(task);});});
+$('#dSteps').addEventListener('click',e=>{
+  if(!ui.detailId) return;
+  const x=e.target.closest('[data-step-extract]'); if(x){extractStep(ui.detailId,x.dataset.stepExtract);return;}
+  const d=e.target.closest('[data-step-delete]'); if(d) deleteStep(ui.detailId,d.dataset.stepDelete);
+});
 $('#detailDelete').addEventListener('click',()=>{if(ui.detailId)deleteTask(ui.detailId);});
 $('#dTitle').addEventListener('input',e=>setDetailLive('title',e.target.value));
 $('#dDesc').addEventListener('input',e=>setDetailLive('desc',e.target.value));
@@ -5836,7 +6264,7 @@ document.addEventListener('keydown',e=>{
 
 /* drag and drop */
 let dragTaskId=null,dropInfo=null;
-function clearDropMarks(){$$('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));$$('.cell-list.drop-empty').forEach(el=>el.classList.remove('drop-empty'));$$('#dropDone,#dropTrash').forEach(el=>el.classList.remove('over'));}
+function clearDropMarks(){$$('.drop-into').forEach(el=>{el.classList.remove('drop-into');delete el.dataset.dropLabel;});$$('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));$$('.cell-list.drop-empty').forEach(el=>el.classList.remove('drop-empty'));$$('#dropDone,#dropTrash').forEach(el=>el.classList.remove('over'));}
 function finishDrag(){dragTaskId=null;dropInfo=null;clearDropMarks();document.body.classList.remove('dragging');$$('.task-card.dragging').forEach(el=>el.classList.remove('dragging'));}
 document.addEventListener('dragstart',e=>{
   const card=e.target.closest('.task-card'); if(!card||narrow()) return;
@@ -5854,6 +6282,16 @@ document.addEventListener('dragover',e=>{
   if(!list) return;
   e.preventDefault(); e.dataTransfer.dropEffect='move'; clearDropMarks();
   const cards=$$('.task-card:not(.dragging):not(.filtered)',list);
+  /* the middle of a card takes the dragged task in as a step, its upper and lower edge sort as before */
+  const over=el.closest('.task-card');
+  if(over&&!over.classList.contains('dragging')&&!over.classList.contains('filtered')&&list.contains(over)){
+    const r=over.getBoundingClientRect(), edge=Math.max(6,r.height*0.28);
+    if(e.clientY>r.top+edge&&e.clientY<r.bottom-edge){
+      over.classList.add('drop-into'); over.dataset.dropLabel=t('dropAsStep');
+      dropInfo={into:over.dataset.task};
+      return;
+    }
+  }
   let targetId=null,after=false;
   for(const card of cards){
     const r=card.getBoundingClientRect();
@@ -5871,6 +6309,7 @@ document.addEventListener('drop',e=>{
   if(e.target.closest('#dropTrash')){const id=dragTaskId;finishDrag();deleteTask(id);return;}
   const info=dropInfo; const id=dragTaskId;
   finishDrag();
+  if(info&&info.into){mergeIntoSteps(id,info.into);return;}
   if(info&&!info.done&&info.cellKey) moveTaskTo(id,info.cellKey,info.targetId,info.after);
 });
 

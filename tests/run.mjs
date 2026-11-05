@@ -350,6 +350,116 @@ async function main() {
     noErrors(p);
   });
 
+  await test('steps: break a task down, each step pays its coins, drop a task onto another as a step', async () => {
+    const p = await open(browser, base);
+    await p.ev(`leaveExample(); setCoinsEnabled(true)`);
+    const id = await p.ev(`(addTask('big',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='big');setTaskCoins(t.id,8);return t.id;})())`);
+    await p.ev(`addSteps('${id}','- a\\n- b\\n- c\\n- d')`);
+    check(await p.ev(`JSON.stringify(findTask('${id}').steps.map(s=>s.title+s.coins))`) === '["a2","b2","c2","d2"]', 'the value is spread over the steps, list marks stripped');
+    await p.ev(`addSteps('${id}','e')`);
+    check(await p.ev(`findTask('${id}').steps.map(s=>s.coins).join()`) === '2,2,2,1,1' && await p.ev(`findTask('${id}').coins`) === 8, 'an even split is spread again, the sum stays');
+    await p.ev(`setStepCoins('${id}',findTask('${id}').steps[4].id,5)`);
+    await p.ev(`addSteps('${id}','f')`);
+    check(await p.ev(`(()=>{const s=findTask('${id}').steps;return s[4].coins===5&&s[5].ask===true&&findTask('${id}').coinsAsk===true;})()`), 'own values stay, the new step is asked');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '0/6', 'card shows 0/6');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .coins-badge').textContent`) === '12+? 🪙', 'card shows the open value and ?');
+    await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').click()`); await sleep(50);
+    check(await p.ev(`document.querySelectorAll('.step-panel[data-steps-of="${id}"] .step-row').length`) === 6 && await p.ev(`ui.detailId===null`), 'the badge unfolds the steps, no detail opened');
+    await p.ev(`document.querySelector('.step-panel[data-steps-of="${id}"] .step-row').click()`); await sleep(100);
+    check(await p.ev(`state.coins.balance===2 && !!findTask('${id}').steps[0].done && findTask('${id}').coins===10`), 'ticking a step books its coins at once');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '1/6', 'card shows 1/6');
+    await p.ev(`undo()`);
+    check(await p.ev(`state.coins.balance===0 && !findTask('${id}').steps[0].done`), 'undo takes the tick and the coins back');
+    await p.ev(`redo()`); await p.ev(`toggleStep('${id}',findTask('${id}').steps[0].id)`);
+    check(await p.ev(`state.coins.balance===0 && !findTask('${id}').steps[0].done && state.coins.log.at(-1).amount===-2`), 'unticking books the coins back');
+    // a ? step asks when ticked
+    p.ev(`toggleStep('${id}',findTask('${id}').steps[5].id)`); await sleep(150);
+    check(await p.ev(`document.querySelector('#coinAskDlg').open && document.querySelector('#coinAskText').textContent.includes('big: f')`), 'a ? step asks its value');
+    await p.ev(`document.querySelector('#coinAskQuick [data-coin-ask="4"]').click()`); await sleep(150);
+    check(await p.ev(`state.coins.balance===4 && findTask('${id}').steps[5].got===4 && !findTask('${id}').coinsAsk`), 'the asked value is booked');
+    // drop a task onto the middle of another: it becomes the last step and keeps what it had
+    const sid = await p.ev(`(addTask('small',[1,1]), (()=>{const t=state.tasks.find(t=>t.title==='small');setTaskCoins(t.id,3);t.desc='note';t.due='2030-01-02';return t.id;})())`);
+    await p.ev(`renderAllDynamic()`);
+    const dr = await p.ev(`(()=>{
+      const card=document.querySelector('.task-card[data-task="${sid}"]'), tgt=document.querySelector('.task-card[data-task="${id}"]');
+      const r=tgt.getBoundingClientRect(), mid={clientX:r.left+r.width/2,clientY:r.top+r.height/2,bubbles:true,cancelable:true,dataTransfer:new DataTransfer()};
+      card.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:new DataTransfer()}));
+      tgt.querySelector('.task-title').dispatchEvent(new DragEvent('dragover',mid));
+      const marked=tgt.classList.contains('drop-into')&&tgt.dataset.dropLabel==='Als Schritt einfügen';
+      tgt.querySelector('.task-title').dispatchEvent(new DragEvent('drop',mid));
+      return {marked};
+    })()`);
+    check(dr.marked, 'the middle of a card is marked as step drop');
+    check(await p.ev(`!findTask('${sid}') && (()=>{const s=findTask('${id}').steps.at(-1);return s.title==='small'&&s.coins===3&&s.from.desc==='note'&&s.from.due==='2030-01-02';})()`), 'dropped task is the last step, with its value and data');
+    // the edge of a card still sorts
+    const er = await p.ev(`(()=>{
+      addTask('other',[0,0]); renderAllDynamic();
+      const o=state.tasks.find(t=>t.title==='other'), card=document.querySelector('.task-card[data-task="'+o.id+'"]'), tgt=document.querySelector('.task-card[data-task="${id}"]');
+      const r=tgt.getBoundingClientRect(), top={clientX:r.left+r.width/2,clientY:r.top+2,bubbles:true,cancelable:true,dataTransfer:new DataTransfer()};
+      card.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:new DataTransfer()}));
+      tgt.dispatchEvent(new DragEvent('dragover',top)); tgt.dispatchEvent(new DragEvent('drop',top));
+      const cell=state.tasks.filter(t=>t.cell&&t.cell[0]===0&&t.cell[1]===0).map(t=>t.title);
+      return {before:cell.indexOf('other')===cell.indexOf('big')-1, kept:!!findTask(o.id)};
+    })()`);
+    check(er.before && er.kept, 'the upper edge sorts before the card: ' + JSON.stringify(er));
+    // take it out again: it comes back whole
+    await p.ev(`extractStep('${id}',findTask('${id}').steps.at(-1).id)`);
+    check(await p.ev(`(()=>{const t=findTask('${sid}');return !!t&&t.desc==='note'&&t.due==='2030-01-02'&&t.coins===3&&t.cell[0]===1&&t.cell[1]===1;})()`), 'extracted step is the old task again, in its old field');
+    await p.ev(`(()=>{const t=findTask('${sid}');t.repeat={f:'d',n:1};})()`);
+    check(await p.ev(`mergeIntoSteps('${sid}','${id}')===false && !!findTask('${sid}')`), 'a repeating task does not become a step');
+    // finishing with open steps: asked in the page, their coins booked, restore takes them back
+    const bal = await p.ev(`state.coins.balance`);
+    const openSum = await p.ev(`openStepsOf(findTask('${id}')).reduce((a,s)=>a+s.coins,0)`);
+    p.ev(`archiveTask('${id}')`); await sleep(150);
+    check(await p.ev(`document.querySelector('#askDlg').open && document.querySelector('#askText').textContent.includes('noch offen')`), 'open steps: asked in the page');
+    await p.ev(`document.querySelector('#askOk').click()`); await sleep(150);
+    check(await p.ev(`!findTask('${id}') && state.coins.balance===${bal + openSum} && state.archive.find(a=>a.id==='${id}').steps.length===6`), 'finished: open steps booked, steps kept in the archive');
+    await p.ev(`restoreArchive('${id}')`);
+    check(await p.ev(`!!findTask('${id}') && state.coins.balance===${bal} && findTask('${id}').steps.length===6`), 'restore takes the booking back, steps return');
+    // repeats: the next entry has the same steps, all open
+    const rid = await p.ev(`(()=>{addTask('daily',[0,1]);const t=state.tasks.find(t=>t.title==='daily');t.due=localDateStr();t.repeat={f:'d',n:1};t.coinsAsk=false;delete t.coinsAsk;addSteps(t.id,'x\\ny');toggleStep(t.id,findTask(t.id).steps[0].id);toggleStep(t.id,findTask(t.id).steps[1].id);return t.id;})()`);
+    await sleep(100);
+    await p.ev(`archiveTask('${rid}')`); await sleep(150);
+    check(await p.ev(`(()=>{const n=state.tasks.find(t=>t.series==='${rid}');return !!n&&n.steps.length===2&&n.steps.every(s=>!s.done&&!s.got);})()`), 'next repeat: same steps, all open');
+    // two devices tick different steps: both ticks survive; the same step ticked on both counts once
+    const m = await p.ev(`(()=>{
+      const C=o=>JSON.parse(JSON.stringify(o)), tk=findTask('${id}');
+      tk.steps.forEach(s=>{delete s.done;delete s.got;}); syncStepValue(tk);
+      const b=C(state), l=C(b), r=C(b);
+      const tick=(st,i)=>{const t=st.tasks.find(x=>x.id==='${id}'),s=t.steps[i];s.n=(s.n||0)+1;s.done=new Date().toISOString();s.got=s.coins;st.coins.balance+=s.coins;st.coins.log.push({id:stepLogId(t,s),at:s.done,amount:s.coins,text:'x',taskId:t.id});syncStepValue(t);t.mod=s.done;};
+      tick(l,0); tick(r,1);
+      const a=mergeStates(b,l,r).state, ta=a.tasks.find(x=>x.id==='${id}');
+      const l2=C(b), r2=C(b); tick(l2,0); tick(r2,0);
+      const c=mergeStates(b,l2,r2).state;
+      return {both:!!ta.steps[0].done&&!!ta.steps[1].done, bal:a.coins.balance===b.coins.balance+b.tasks.find(x=>x.id==='${id}').steps[0].coins+b.tasks.find(x=>x.id==='${id}').steps[1].coins,
+        once:c.coins.balance===b.coins.balance+b.tasks.find(x=>x.id==='${id}').steps[0].coins, value:ta.coins===ta.steps.filter(s=>!s.done).reduce((x,s)=>x+(s.ask?0:s.coins),0)};
+    })()`);
+    check(m.both && m.bal && m.value, 'merge: ticks of two devices both kept ' + JSON.stringify(m));
+    check(m.once, 'merge: the same step ticked on two devices is booked once');
+    // files: a doubled step id is repaired, a broken step rejected
+    const v = await p.ev(`(()=>{const st=JSON.parse(driveText());const t=st.tasks.find(x=>x.id==='${id}');t.steps[1].id=t.steps[0].id;const ok=parseFileText(JSON.stringify(st)).tasks.find(x=>x.id==='${id}').steps;
+      let bad=false;try{t.steps[0].coins='x';parseFileText(JSON.stringify(st));}catch(e){bad=true;}return {unique:new Set(ok.map(s=>s.id)).size===ok.length,bad};})()`);
+    check(v.unique && v.bad, 'file: doubled step id repaired, broken step rejected ' + JSON.stringify(v));
+    // the detail: add with Enter, a pasted list gives one step per line
+    await p.ev(`openDetail('${sid}')`); await sleep(80);
+    await p.ev(`(()=>{const a=document.querySelector('#dStepAdd');a.value='one\\ntwo';a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(80);
+    check(await p.ev(`findTask('${sid}').steps.length===2 && document.querySelectorAll('#dSteps .step-edit').length===2 && document.querySelector('#dStepAdd').value===''`), 'detail: Enter adds one step per line');
+    noErrors(p);
+  });
+
+  await test('steps on the phone: add as step to another task from the detail', async () => {
+    const p = await open(browser, base, { width: 390, height: 800, mobile: true });
+    const r = await p.ev(`(()=>{leaveExample();addTask('host',[0,0]);addTask('guest',[0,1]);renderAllDynamic();
+      const h=state.tasks.find(t=>t.title==='host'),g=state.tasks.find(t=>t.title==='guest');
+      openDetail(g.id); const shown=getComputedStyle(document.querySelector('#detailAsStep')).display!=='none';
+      document.querySelector('#detailAsStep').click();
+      const list=[...document.querySelectorAll('#pickerGrid [data-pick-step]')].map(b=>b.textContent);
+      document.querySelector('#pickerGrid [data-pick-step="'+h.id+'"]').click();
+      return {shown,list,merged:!findTask(g.id)&&findTask(h.id).steps[0].title==='guest',closed:document.querySelector('#movePicker').hidden};})()`);
+    check(r.shown && r.list.includes('host') && !r.list.includes('guest') && r.merged && r.closed, 'phone: picker lists the other tasks and adds as step ' + JSON.stringify(r));
+    noErrors(p);
+  });
+
   await test('sounds: off by default, per device; coins fly to the counter and it counts up', async () => {
     const p = await open(browser, base);
     await p.ev(`setCoinsEnabled(true)`);
