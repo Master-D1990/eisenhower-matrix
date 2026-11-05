@@ -686,6 +686,31 @@ async function main() {
     noErrors(p);
   });
 
+  await test('duplicate id: repaired on load, the repeat bug that made it is gone, nothing replaced silently', async () => {
+    const p = await open(browser, base);
+    // file with the same id open and in the archive (made by the old repeat bug)
+    const d = await p.ev(`(()=>{const s=JSON.parse(JSON.stringify(state)); const x=s.tasks[0];
+      s.archive.push({id:x.id,title:'old copy',desc:'',due:null,created:x.created,doneAt:new Date().toISOString(),fromCell:x.cell,at:null,labels:[],coins:0});
+      const a=parseFileText(JSON.stringify(s)), b=parseFileText(JSON.stringify(s));
+      const ids=[...a.tasks,...a.archive].map(t=>t.id);
+      return {unique:new Set(ids).size===ids.length, kept:a.tasks.length===s.tasks.length&&a.archive.length===s.archive.length,
+        open:a.tasks[0].id===x.id, same:JSON.stringify(b.archive.map(t=>t.id))===JSON.stringify(a.archive.map(t=>t.id))};})()`);
+    check(d.unique && d.kept && d.open && d.same, 'duplicate repaired, all entries kept, same on every device: ' + JSON.stringify(d));
+    // tomorrow's entry of a daily task, without a date, ticked off today: the next one must not take its id
+    const r = await p.ev(`(async()=>{setCoinsEnabled(false);
+      const tom=(()=>{const d=new Date();d.setDate(d.getDate()+1);return d.toLocaleDateString('sv');})();
+      const id='s_rep_'+tom.replace(/-/g,'');
+      state.tasks.push({id,title:'daily',desc:'',due:null,cell:[0,0],at:null,created:new Date().toISOString(),labels:[],coins:0,repeat:{f:'d',n:1},series:'s_rep'});
+      await archiveTask(id);
+      const ids=[...state.tasks,...state.archive].map(t=>t.id); const next=state.tasks.find(t=>t.series==='s_rep');
+      return {unique:new Set(ids).size===ids.length, next:next&&next.id, own:id, valid:(()=>{try{parseFileText(driveText());return true;}catch(e){return e.message;}})()};})()`);
+    check(r.unique && r.next && r.next !== r.own && r.valid === true, 'next repeat gets its own id: ' + JSON.stringify(r));
+    // an unreadable stored matrix is kept aside, not just replaced by the example
+    await p.ev(`localStorage.setItem('em-state','{"format":"eisenhower-matrix","broken":true}')`);
+    await p.reload();
+    check(await p.ev(`localStorage.getItem('em-state-broken')`) === '{"format":"eisenhower-matrix","broken":true}', 'unreadable stored matrix kept as em-state-broken');
+  });
+
   await test('merge: the order of the device that reordered wins', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),ids=s=>s.tasks.map(t=>t.id).join();

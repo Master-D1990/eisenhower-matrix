@@ -1733,9 +1733,15 @@ function validateState(raw){
   if(!Array.isArray(raw.archive)) throw new Error(t('invalidReason','archive'));
   const tasks=raw.tasks.map((x,i)=>cleanTask(x,'tasks['+i+']',false,rows,cols,labelIds));
   const archive=raw.archive.map((x,i)=>cleanTask(x,'archive['+i+']',true,rows,cols,labelIds));
+  /* a duplicate id (an old repeat bug could create one) is repaired, not rejected: the later entry gets
+     a new id, derived from the old one so that every device repairs it the same way; nothing is lost */
   const seen=new Set();
   for(const x of [...tasks,...archive]){
-    if(seen.has(x.id)) throw new Error(t('invalidReason','id (duplicate)'));
+    if(seen.has(x.id)){
+      let n=2,id;
+      do{ id=x.id.slice(0,MAX_ID-4)+'-d'+n++; }while(seen.has(id)||tasks.some(y=>y.id===id)||archive.some(y=>y.id===id));
+      x.id=id;
+    }
     seen.add(x.id);
   }
   const coins=cleanCoins(raw.coins);
@@ -4639,7 +4645,14 @@ async function archiveTask(id){
   const gain=Number.isInteger(value)&&value>0?value:0;
   const before=coinsState().balance;
   leaveExample();
-  const nextDate=nextOnDone(task);
+  let nextDate=nextOnDone(task);
+  /* the next entry is named after its day: when that is the day of the entry just ticked off
+     (e.g. tomorrow's entry ticked today without a date), take the following occurrence */
+  const ownDay=d=>(task.series||task.id).slice(0,MAX_ID-9)+'_'+d.replace(/-/g,'');
+  for(let g=0;nextDate&&ownDay(nextDate)===task.id&&g<400;g++){
+    nextDate=nextOccurrence(nextDate,task.repeat);
+    if(task.repeat.until&&nextDate>task.repeat.until) nextDate=null;
+  }
   let nextTask=null;
   commit(()=>{
     const i=state.tasks.findIndex(x=>x.id===id); if(i<0) return;
@@ -5863,7 +5876,10 @@ function init(){
   let restored=false;
   try{
     const raw=localStorage.getItem('em-state');
-    if(raw){state=validateState(JSON.parse(raw));migrateColLabels(state);restored=true;}
+    if(raw){
+      try{state=validateState(JSON.parse(raw));migrateColLabels(state);restored=true;}
+      catch(e){restored=false;try{localStorage.setItem('em-state-broken',raw);}catch(e2){} console.warn('stored matrix unreadable, kept as em-state-broken',e);}
+    }
   }catch(e){restored=false;}
   if(!restored) state=sampleState();
   let wasExample=false;
