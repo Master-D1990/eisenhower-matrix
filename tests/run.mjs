@@ -686,6 +686,21 @@ async function main() {
     noErrors(p);
   });
 
+  await test('merge: the order of the device that reordered wins', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),ids=s=>s.tasks.map(t=>t.id).join();
+      const rot=s=>{s.tasks.push(s.tasks.shift());return s;}, rev=s=>{s.tasks.reverse();return s;};
+      const l1=rot(C(b)), m1=mergeStates(b,l1,C(b)).state;                 // only here
+      const r2=rot(C(b)), m2=mergeStates(b,C(b),r2).state;                 // only there
+      const l3=rot(C(b)), r3=rev(C(b)), m3=mergeStates(b,l3,r3).state;     // both: remote leads
+      const l4=rot(C(b)), r4=C(b); r4.tasks.push({...r4.tasks[0],id:'newR',title:'new there'});
+      const m4=mergeStates(b,l4,r4).state;                                 // reorder here, task added there
+      return {only_here:ids(m1)===ids(l1), only_there:ids(m2)===ids(r2), both:ids(m3)===ids(r3),
+        added:m4.tasks.filter(t=>t.id!=='newR').map(t=>t.id).join()===ids(l4)&&m4.tasks.some(t=>t.id==='newR')};})()`);
+    check(r.only_here && r.only_there && r.both && r.added, JSON.stringify(r));
+    noErrors(p);
+  });
+
   await test('merge: two devices worked offline', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
@@ -774,6 +789,17 @@ async function main() {
     await p.ev(`document.querySelector('#undo').click()`); await p.ev(`document.querySelector('#undo').click()`); await sleep(1500);
     check(!(await p.ev(`state.tasks.some(t=>/^undo me/.test(t.title))`)), 'undo button removes both tasks');
     check(!(await p.ev(`JSON.parse(__drive.files[0].content).tasks.some(t=>/^undo me/.test(t.title))`)), 'undo reaches Drive');
+    // reordering here while Drive raised the version without a content change: the new order stays, no "merged" note
+    const ro = await p.ev(`(async()=>{
+      const ids=()=>state.tasks.map(t=>t.id).join();
+      __drive.files[0].version=String(++__drive.ver);
+      const toasts=[]; const tw=window.toast; window.toast=(m,...a)=>{toasts.push(String(m));return tw(m,...a);};
+      const a=state.tasks[0].id, last=state.tasks[state.tasks.length-1].id;
+      moveTaskTo(a,state.tasks[state.tasks.length-1].cell?state.tasks[state.tasks.length-1].cell.join():'inbox',last,true);
+      const want=ids(); await new Promise(r=>setTimeout(r,1500)); window.toast=tw;
+      return {kept:ids()===want, drive:JSON.parse(__drive.files[0].content).tasks.map(t=>t.id).join()===want, merged:toasts.some(m=>m.includes(t('gdriveMerged')))};
+    })()`);
+    check(ro.kept && ro.drive && !ro.merged, 'reorder survives a version-only change, no merge note: ' + JSON.stringify(ro));
     // the other device saves while this one only looks: pulled without writing back
     await p.ev(`(()=>{const f=__drive.files[0],s=JSON.parse(f.content);s.tasks.push({...s.tasks[0],id:'other2',title:'pulled',mod:new Date().toISOString()});f.content=JSON.stringify(s);f.version=String(++__drive.ver);})()`);
     const v0 = await p.ev(`__drive.ver`);

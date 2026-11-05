@@ -2036,14 +2036,20 @@ function mergeStates(base,local,remote){
     }
     if(pick) chosen.set(id,pick); else chosen.delete(id);
   }
-  const orderList=(place,localList,remoteList)=>{
-    const out=remoteList.filter(e=>{const c=chosen.get(e.id);return c&&c.place===place;}).map(e=>e.id);
+  /* order: the side that changed it wins; only when both reordered, the remote order leads */
+  const orderList=(place,localList,remoteList,baseList)=>{
+    // compare only entries present on all three sides: added or removed tasks are not a reorder
+    const common=baseList?new Set(baseList.map(e=>e.id).filter(id=>localList.some(e=>e.id===id)&&remoteList.some(e=>e.id===id))):null;
+    const ord=list=>list.filter(e=>common.has(e.id)).map(e=>e.id).join();
+    let lead=remoteList,other=localList;
+    if(baseList&&ord(remoteList)===ord(baseList)&&ord(localList)!==ord(baseList)){lead=localList;other=remoteList;}
+    const out=lead.filter(e=>{const c=chosen.get(e.id);return c&&c.place===place;}).map(e=>e.id);
     const seen=new Set(out);
-    for(const e of localList){
+    for(const e of other){
       const c=chosen.get(e.id);
       if(!c||c.place!==place||seen.has(e.id)) continue;
       let prev=null;
-      for(const p of localList){
+      for(const p of other){
         if(p.id===e.id) break;
         if(seen.has(p.id)) prev=p.id;
       }
@@ -2055,8 +2061,8 @@ function mergeStates(base,local,remote){
     }
     return out.map(id=>cloneState(chosen.get(id).entry));
   };
-  const tasks=orderList('tasks',l.tasks,r.tasks);
-  const archive=orderList('archive',l.archive,r.archive);
+  const tasks=orderList('tasks',l.tasks,r.tasks,hasBase?b.tasks:null);
+  const archive=orderList('archive',l.archive,r.archive,hasBase?b.archive:null);
 
   /* labels: same three-way rules; both changed -> remote */
   const labelList=st=>Array.isArray(st.labels)?st.labels:[];
