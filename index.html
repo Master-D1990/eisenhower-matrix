@@ -267,6 +267,7 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .descmark{font-size:0;line-height:0;flex:0 0 auto}.descmark::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--faint)}
 .due{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 3px;line-height:calc(15px*var(--tfs,1));white-space:nowrap;background:var(--panel)}
 .coins-badge{color:var(--coin-ink);line-height:calc(15px*var(--tfs,1));white-space:nowrap;font-weight:700;flex:0 0 auto}
+.coin-fly{position:fixed;left:0;top:0;z-index:261;font-size:18px;line-height:1;pointer-events:none;will-change:transform,opacity}
 .coin-float{position:fixed;z-index:260;transform:translate(-50%,-50%);color:var(--coin-ink);font-weight:800;font-size:17px;text-shadow:0 1px 2px var(--panel),0 0 6px var(--panel);pointer-events:none;animation:coinRise .7s ease-out forwards}
 @keyframes coinRise{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}18%{opacity:1}100%{opacity:0;transform:translate(-50%,calc(-50% - 42px)) scale(1.08)}}
 .due.soon{color:#6b4300;background:#ffedc2;border-color:#ecc66d}
@@ -480,7 +481,7 @@ label.set-row{justify-content:space-between;cursor:pointer}
 .set-tint input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--panel);border:2px solid var(--text);cursor:pointer}
 .set-tint input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--text);cursor:pointer}
 .set-tint>span:first-child{min-width:9.5em}
-#setTaskFont{background:var(--empty)}
+#setTaskFont,#setSoundVol{background:var(--empty)}
 .set-tint output{font:11px ui-monospace,monospace;text-align:right;color:var(--text)}
 .linkbtn{border:0;background:transparent;color:var(--accent);cursor:pointer;padding:0;font-size:12px;text-decoration:underline;white-space:nowrap}
 
@@ -987,6 +988,9 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <div class="set-row set-tint"><span data-i18n="tintLabel"></span><input type="range" id="setTint" min="0" max="100" step="1" data-i18n-aria="tintLabel"><output id="setTintOut"></output><button type="button" class="linkbtn" id="setTintReset" data-i18n="resetShort"></button></div>
       <label class="set-row set-datefmt"><span data-i18n="dateFmtLabel"></span><select id="setDateFmt"></select></label>
       <div class="set-row set-tint"><span data-i18n="taskFontLabel"></span><input type="range" id="setTaskFont" min="80" max="160" step="5" data-i18n-aria="taskFontLabel"><output id="setTaskFontOut"></output><button type="button" class="linkbtn" id="setTaskFontReset" data-i18n="resetShort"></button></div>
+      <label class="set-row"><input type="checkbox" id="setSound"><span data-i18n="setSound"></span></label>
+      <div class="set-row set-tint" id="setSoundVolRow" hidden><span data-i18n="soundVol"></span><input type="range" id="setSoundVol" min="5" max="100" step="5" data-i18n-aria="soundVol"><output id="setSoundVolOut"></output><button type="button" class="linkbtn" id="setSoundTest" data-i18n="soundTest"></button></div>
+      <p class="set-hint" id="setSoundHint" data-i18n="setSoundHint" hidden></p>
     </section>
   </div>
 </dialog>
@@ -1205,7 +1209,7 @@ de:{
   swapAxes:'⇄ Achsen tauschen', swapAxesT:'Achsen tauschen', swapped:'Achsen getauscht. Rückgängig mit Strg+Z',
   swapHint:(x,y)=>x+' waagrecht, '+y+' senkrecht', hideAxes:'Achsen ausblenden',
   flipDirT:n=>'Richtung umkehren: '+n, flipAxis:n=>n+' umkehren', flipDone:'Richtung umgekehrt. Rückgängig mit Strg+Z',
-  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen',
+  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen', setSound:'Töne', soundVol:'Lautstärke', soundTest:'Anhören', setSoundHint:'Kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für Münzen. Gilt nur auf diesem Gerät.',
   labelColorPop:'Label-Farbe', hexColor:'Hex-Farbe', channelR:'Rot', channelG:'Grün', channelB:'Blau',
   sampleTitle:'Meine Matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Feld', csvCellName:'Feldname', csvTitle:'Titel', csvDesc:'Beschreibung', csvCoins:'Münzen', csvDue:'Frist', csvCreated:'Erstellt', csvDone:'Erledigt',
@@ -1339,7 +1343,7 @@ en:{
   swapAxes:'⇄ Swap axes', swapAxesT:'Swap axes', swapped:'Axes swapped. Undo with Ctrl+Z',
   swapHint:(x,y)=>x+' horizontal, '+y+' vertical', hideAxes:'Hide axes',
   flipDirT:n=>'Reverse direction: '+n, flipAxis:n=>'Reverse '+n, flipDone:'Direction reversed. Undo with Ctrl+Z',
-  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset',
+  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset', setSound:'Sounds', soundVol:'Volume', soundTest:'Play', setSoundHint:'Short sounds when you add, move, finish, delete or undo, a chime for coins. Only on this device.',
   labelColorPop:'Label colour', hexColor:'Hex colour', channelR:'Red', channelG:'Green', channelB:'Blue',
   sampleTitle:'My matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Cell', csvCellName:'Cell name', csvTitle:'Title', csvDesc:'Description', csvCoins:'Coins', csvDue:'Due', csvCreated:'Created', csvDone:'Done',
@@ -3212,6 +3216,7 @@ function renderSettings(){
   renderSettingsMatrix();
   renderSettingsLabels();
   renderSettingsCoins();
+  renderSettingsSound();
   renderSettingsDisplay();
   renderSettingsDateFmt();
 }
@@ -3399,6 +3404,90 @@ function coinFloat(amount,rect){
   document.body.append(el);
   setTimeout(()=>el.remove(),760);
 }
+/* ---------- sounds: per device, off by default, made in the browser (no files) ---------- */
+let soundOn=false, soundVol=60, audioCtx=null;
+const soundLog=[];
+function loadSound(){
+  try{soundOn=localStorage.getItem('em-sound')==='1';const v=localStorage.getItem('em-soundvol');if(v!=null)soundVol=clamp(Math.round(Number(v)/5)*5||60,5,100);}catch(e){}
+}
+function setSoundOn(v){soundOn=!!v;try{localStorage.setItem('em-sound',soundOn?'1':'0');}catch(e){}renderSettingsSound();if(soundOn)playSound('done');}
+function setSoundVol(v){soundVol=clamp(Math.round(Number(v)/5)*5||60,5,100);try{localStorage.setItem('em-soundvol',String(soundVol));}catch(e){}renderSettingsSound();}
+function renderSettingsSound(){
+  const cb=$('#setSound'); if(cb) cb.checked=soundOn;
+  const row=$('#setSoundVolRow'); if(row) row.hidden=!soundOn;
+  const hint=$('#setSoundHint'); if(hint) hint.hidden=!soundOn;
+  const inp=$('#setSoundVol'); if(inp&&inp.value!==String(soundVol)) inp.value=String(soundVol);
+  const out=$('#setSoundVolOut'); if(out) out.textContent=soundVol+' %';
+}
+function audio(){
+  if(!audioCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{audioCtx=new A();}catch(e){return null;}}
+  if(audioCtx.state==='suspended') audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+/* one voice: frequency f (glide to f2), soft attack, exponential fade */
+function voice(ctx,{f,f2,at=0,dur=.12,type='sine',vol=1}){
+  const t0=ctx.currentTime+.01+at, o=ctx.createOscillator(), g=ctx.createGain();
+  const peak=Math.max(.0002,.22*vol*(soundVol/100)**1.6);
+  o.type=type; o.frequency.setValueAtTime(f,t0); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(.0001,t0); g.gain.exponentialRampToValueAtTime(peak,t0+.006); g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0+dur+.03);
+}
+const bell=(f,at=0,vol=1)=>[{f,at,dur:.32,vol:.8*vol},{f:f*2.76,at,dur:.16,vol:.25*vol},{f:f*5.4,at,dur:.07,vol:.1*vol}];
+const SOUNDS={
+  add:()=>[{f:620,f2:930,dur:.09,vol:.7}],
+  move:()=>[{f:430,f2:350,dur:.07,type:'triangle',vol:.8}],
+  done:()=>[{f:587,dur:.1,vol:.7},{f:880,at:.075,dur:.18,vol:.7}],
+  delete:()=>[{f:300,f2:150,dur:.2,type:'triangle',vol:.9}],
+  undo:()=>[{f:760,f2:540,dur:.09,vol:.55},{f:500,at:.06,dur:.1,vol:.45}],
+  redo:()=>[{f:540,f2:760,dur:.09,vol:.55},{f:780,at:.06,dur:.1,vol:.45}],
+  coin:(i=0)=>bell(1320*2**(Math.min(i,7)*2/12)),
+  reward:()=>[523,659,784,1047].flatMap((f,i)=>bell(f,i*.09,i===3?1:.8)),
+  spend:()=>[...bell(1175),...bell(880,.09,.8)]
+};
+function playSound(name,arg){
+  if(!soundOn||!SOUNDS[name]) return;
+  soundLog.push(name); if(soundLog.length>50) soundLog.shift();
+  const ctx=audio(); if(!ctx) return;
+  try{for(const v of SOUNDS[name](arg)) voice(ctx,v);}catch(e){/* audio is a nice-to-have */}
+}
+/* ---------- coins fly from the card to the counter, the counter counts up ---------- */
+const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+let coinFlight=0;
+function coinTarget(){
+  for(const sel of ['#coinsBtn','#mobileCoinsBtn']){const b=$(sel);if(b&&!b.hidden){const r=b.getBoundingClientRect();if(r.width>0&&r.height>0)return {el:b,r};}}
+  return null;
+}
+function showCoinCount(n){['#coinsBtn','#mobileCoinsBtn'].forEach(sel=>{const b=$(sel);if(b&&!b.hidden)b.textContent=n+' 🪙';});}
+function coinReward(gain,rect,before){
+  if(!coinsOn()||gain<=0) return;
+  const ok=rect&&rect.width>0&&rect.height>0;
+  const from=ok?{x:rect.left+rect.width/2,y:rect.top+rect.height/2}:{x:innerWidth/2,y:innerHeight/2};
+  coinFloat(gain,ok?rect:{left:from.x,top:from.y,width:0,height:0});
+  const target=coinTarget();
+  if(!target||reducedMotion()||!Element.prototype.animate){pulseCoins();playSound('coin',0);return;}
+  const token=++coinFlight, n=clamp(gain,1,8), to={x:target.r.left+target.r.width/2,y:target.r.top+target.r.height/2};
+  showCoinCount(before);
+  for(let i=0;i<n;i++){
+    const el=document.createElement('span'); el.className='coin-fly'; el.textContent='🪙'; el.setAttribute('aria-hidden','true');
+    document.body.append(el);
+    const jx=(Math.random()-.5)*36, jy=(Math.random()-.5)*20;
+    const sx=from.x+jx, sy=from.y+jy, mx=(sx+to.x)/2+(Math.random()-.5)*60, my=Math.max(18,Math.min(sy,to.y)-40-Math.random()*40);
+    const at=(x,y,sc)=>`translate(${x-9}px,${y-9}px) scale(${sc})`;
+    const a=el.animate([
+      {transform:at(sx,sy,.6),opacity:0},
+      {transform:at(sx,sy-6,1),opacity:1,offset:.12},
+      {transform:at(mx,my,1.1),opacity:1,offset:.55},
+      {transform:at(to.x,to.y,.7),opacity:.9}
+    ],{duration:620,delay:i*75,easing:'cubic-bezier(.45,0,.55,1)',fill:'both'});
+    a.onfinish=()=>{
+      el.remove();
+      if(token!==coinFlight) return;
+      showCoinCount(before+Math.round(gain*(i+1)/n));
+      pulseCoins(); playSound('coin',i);
+      if(i===n-1) renderCoinsHeader();
+    };
+  }
+}
 function setTaskCoins(id,value){
   const task=findTask(id); if(!task) return;
   if(value==='?'){
@@ -3497,6 +3586,7 @@ async function buyReward(id){
   if(!await ask(t('coinsConfirmReward',r.name,r.price))) return;
   if(coinsState()!==c||c.balance<r.price) return;
   commit(()=>{c.balance-=r.price;pushCoinLog(-r.price,r.name,null);},{board:false,inbox:false,mobile:false,header:true});
+  playSound('reward');
   clearAccMsg(); renderAccount();
 }
 function saveRewardEdit(id){
@@ -3521,6 +3611,7 @@ function withdrawCoins(){
   if(amount>c.balance){showAccMsg(t('coinsNotEnough',c.balance));return;}
   const purpose=String($('#accPurpose')?.value||'').trim().slice(0,MAX_COIN_TEXT)||t('coinsWithdrawDefault');
   commit(()=>{c.balance-=amount;pushCoinLog(-amount,purpose,null);},{board:false,inbox:false,mobile:false,header:true});
+  playSound('spend');
   const a=$('#accAmount'),p=$('#accPurpose'); if(a)a.value='';if(p)p.value='';
   clearAccMsg(); renderAccount();
 }
@@ -4277,6 +4368,7 @@ function renderAllDynamic(){
 function undo(){
   if(!undoStack.length) return;
   if(colorState.open) closeColorPop(false);
+  playSound('undo');
   redoStack.push(snapshot());
   state=JSON.parse(undoStack.pop()); editSnap=null; editActive=false; dirty=true; stateRev++;
   taskModSnap=taskModMap();
@@ -4285,6 +4377,7 @@ function undo(){
 function redo(){
   if(!redoStack.length) return;
   if(colorState.open) closeColorPop(false);
+  playSound('redo');
   undoStack.push(snapshot());
   state=JSON.parse(redoStack.pop()); editSnap=null; editActive=false; dirty=true; stateRev++;
   taskModSnap=taskModMap();
@@ -4437,6 +4530,7 @@ function addTask(title,cell){
   if(!cell) ensureInboxOpen();
   const task={id:uid(),title,desc:'',due:null,cell:cell?[cell[0],cell[1]]:null,at:cell?cellCenter(cell[0],cell[1],state.rows,state.cols):null,created:isoNow(),labels:[],coins:0};
   commit(()=>state.tasks.push(task));
+  playSound('add');
   requestAnimationFrame(()=>{
     const key=cell?cell[0]+','+cell[1]:'inbox';
     const list=document.querySelector(`.cell-list[data-cellkey="${key}"]`);
@@ -4477,6 +4571,7 @@ async function archiveTask(id){
   const rect=card?card.getBoundingClientRect():null;
   const value=asked?asked.coins:task.coins;
   const gain=Number.isInteger(value)&&value>0?value:0;
+  const before=coinsState().balance;
   leaveExample();
   const nextDate=nextOnDone(task);
   let nextTask=null;
@@ -4492,7 +4587,8 @@ async function archiveTask(id){
     if(gain>0){const c=coinsState();c.balance=Math.min(MAX_COIN_BALANCE,c.balance+gain);pushCoinLog(gain,task.title,task.id);}
   },{archive:true,detail:true});
   if(ui.detailId===id) closeDetail();
-  if(gain>0&&coinsOn()){coinFloat(gain,rect);pulseCoins();}
+  playSound('done');
+  if(gain>0&&coinsOn()) coinReward(gain,rect,before);
   toast(nextTask?t('archivedNext',dueInfo(nextTask.due).short):t('archived'),{label:t('undoAction'),fn:undo});
 }
 function restoreArchive(id){
@@ -4513,6 +4609,7 @@ function restoreArchive(id){
     }
   },{archive:true,header:true});
   ui.expandedArchive?.delete(id);
+  playSound('move');
   toast(t('restored'));
 }
 /* deleting asks no question (a browser may block confirm dialogs silently); the toast offers undo instead */
@@ -4520,6 +4617,7 @@ function deleteArchived(id){
   leaveExample();
   commit(()=>{state.archive=state.archive.filter(x=>x.id!==id);},{archive:true});
   ui.expandedArchive?.delete(id);
+  playSound('delete');
   toast(t('deleted'),{label:t('undoAction'),fn:undo});
 }
 function deleteTask(id){
@@ -4527,6 +4625,7 @@ function deleteTask(id){
   leaveExample();
   commit(()=>{state.tasks=state.tasks.filter(x=>x.id!==id);});
   if(ui.detailId===id) closeDetail();
+  playSound('delete');
   toast(t('deleted'),{label:t('undoAction'),fn:undo});
 }
 function moveTaskTo(id,cellKey,targetId,after){
@@ -4547,6 +4646,7 @@ function moveTaskTo(id,cellKey,targetId,after){
     if(targetId){const ti=state.tasks.findIndex(x=>x.id===targetId);if(ti>=0) at=ti+(after?1:0);}
     state.tasks.splice(at,0,task);
   },{detail:true});
+  playSound('move');
 }
 function moveByIdToCell(id,cellKey){moveTaskTo(id,cellKey,null,false);}
 
@@ -5179,6 +5279,10 @@ $('#setUseInbox').addEventListener('change',e=>setUseInbox(e.target.checked));
 $('#setTint').addEventListener('input',e=>setTint(e.target.value));
 $('#setTintReset').addEventListener('click',()=>setTint(26));
 $('#setTaskFont').addEventListener('input',e=>setTaskFont(e.target.value));
+$('#setSound').addEventListener('change',e=>setSoundOn(e.target.checked));
+$('#setSoundVol').addEventListener('input',e=>setSoundVol(e.target.value));
+$('#setSoundVol').addEventListener('change',()=>playSound('coin',2));
+$('#setSoundTest').addEventListener('click',()=>playSound('reward'));
 $('#setTaskFontReset').addEventListener('click',()=>setTaskFont(100));
 $('#setThemeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(b){setTheme(b.dataset.th);renderSettingsDisplay();}});
 $('#setLangSeg').addEventListener('click',e=>{const b=e.target.closest('[data-lang]');if(b&&b.dataset.lang!==LANG)setLang(b.dataset.lang);});
@@ -5695,7 +5799,7 @@ function init(){
   if(!Array.isArray(state.labels)) state.labels=[];
   ui.mobileCell=null; ui.detailId=null; ui.archiveOpen=false; ui.search=''; ui.archiveQuery='';
   ui.inboxOpen=initialInboxOpen();
-  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint(); loadDateFmt();
+  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint(); loadDateFmt(); loadSound();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
   checkRepeats();

@@ -346,6 +346,36 @@ async function main() {
     noErrors(p);
   });
 
+  await test('sounds: off by default, per device; coins fly to the counter and it counts up', async () => {
+    const p = await open(browser, base);
+    await p.ev(`setCoinsEnabled(true)`);
+    const id = await p.ev(`(addTask('quiet',[0,0]), state.tasks.find(t=>t.title==='quiet').id)`);
+    check(await p.ev(`soundOn===false && soundLog.length===0`), 'off by default, nothing played');
+    await p.ev(`openSettings()`); await sleep(100);
+    check(await p.ev(`document.querySelector('#setSoundVolRow').hidden && !document.querySelector('#setSound').checked`), 'volume hidden while off');
+    await p.ev(`(()=>{const c=document.querySelector('#setSound');c.checked=true;c.dispatchEvent(new Event('change'));})()`);
+    check(await p.ev(`soundOn && localStorage.getItem('em-sound')==='1' && !document.querySelector('#setSoundVolRow').hidden && !('sound' in JSON.parse(driveText()))`), 'switched on, stored on the device, not in the file');
+    await p.ev(`document.querySelector('#settingsDlg').close()`);
+    await p.ev(`soundLog.length=0; setTaskCoins('${id}',4); addTask('loud',[0,1])`);
+    await p.ev(`moveByIdToCell(state.tasks.find(t=>t.title==='loud').id,'1,1')`);
+    const before = await p.ev(`state.coins.balance`);
+    await p.ev(`archiveTask('${id}')`); await sleep(120);
+    const mid = await p.ev(`({fly:document.querySelectorAll('.coin-fly').length, txt:document.querySelector('#coinsBtn').textContent})`);
+    check(mid.fly === 4 && mid.txt === before + ' 🪙', 'four coins in flight, counter still at the old value ' + JSON.stringify(mid));
+    await sleep(1200);
+    const end = await p.ev(`({fly:document.querySelectorAll('.coin-fly').length, txt:document.querySelector('#coinsBtn').textContent, log:soundLog.join()})`);
+    check(end.fly === 0 && end.txt === (before + 4) + ' 🪙', 'coins arrived, counter counted up ' + JSON.stringify(end));
+    check(end.log === 'add,move,done,coin,coin,coin,coin', 'sounds for add, move, done and each coin: ' + end.log);
+    await p.ev(`soundLog.length=0; undo()`);
+    check(await p.ev(`soundLog.join()`) === 'undo', 'undo sound');
+    await p.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await p.ev(`archiveTask('${id}')`); await sleep(80);
+    check(await p.ev(`document.querySelectorAll('.coin-fly').length===0 && document.querySelector('#coinsBtn').textContent==='${before + 4} 🪙'`), 'reduced motion: no flight, counter set at once');
+    await p.reload();
+    check(await p.ev(`soundOn===true`), 'setting kept after reload');
+    noErrors(p);
+  });
+
   await test('repeat: next dates like Google Calendar', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`({
