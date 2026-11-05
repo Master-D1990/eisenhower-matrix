@@ -52,8 +52,6 @@ Click **? Help → Download the tool (use offline)**, or download [`index.html`]
 
 **Install as an app:** in Chrome or Edge click the install icon in the address bar (or menu → *Install*). The tool then opens in its own window, has its own icon and also starts without internet. On Android: menu → *Add to home screen*.
 
-**Start with the PC:** in desktop Chrome or Edge (Windows, macOS, Linux), install the app, open `chrome://apps` (or `edge://apps`) and choose *Start app when you sign in* on it. The settings show the steps, only in browsers that offer it.
-
 ### Questions, bugs, ideas
 
 Open an [issue on GitHub](https://github.com/Master-D1990/eisenhower-matrix/issues).
@@ -100,8 +98,6 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 Klicke auf **? Hilfe → Tool herunterladen (offline nutzen)** oder lade [`index.html`](index.html) herunter. Ein Doppelklick auf die Datei genügt, und das Tool läuft ohne Internet. Die Datei enthält nur das Tool, nicht deine Daten.
 
 **Als App installieren:** In Chrome oder Edge auf das Installieren-Symbol in der Adressleiste klicken (oder Menü → *Installieren*). Das Tool öffnet sich dann in einem eigenen Fenster, hat ein eigenes Symbol und startet auch ohne Internet. Auf Android: Menü → *Zum Startbildschirm hinzufügen*.
-
-**Mit dem PC starten:** In Chrome oder Edge am Computer (Windows, macOS, Linux) die App installieren, `chrome://apps` (oder `edge://apps`) öffnen und bei der App *App beim Anmelden starten* wählen. Die Einstellungen zeigen die Schritte, nur in Browsern, die das können.
 
 ### Fragen, Fehler, Ideen
 
