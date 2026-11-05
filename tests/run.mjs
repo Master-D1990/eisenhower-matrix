@@ -711,6 +711,25 @@ async function main() {
     check(await p.ev(`localStorage.getItem('em-state-broken')`) === '{"format":"eisenhower-matrix","broken":true}', 'unreadable stored matrix kept as em-state-broken');
   });
 
+  await test('Drive (emulated): an unreadable local matrix never touches the Drive file', async () => {
+    const p = await open(browser, base, { init: DRIVE_MOCK });
+    await p.ev(`connectDrive()`); await sleep(400);
+    await p.ev(`state.tasks=[];state.archive=[];commit(()=>{});addTask('mine 1',[0,0]);addTask('mine 2',[1,1])`); await sleep(1500);
+    const before = await p.ev(`__drive.files[0].content`);
+    check(JSON.parse(before).tasks.map(t=>t.title).join() === 'mine 1,mine 2', 'own matrix in Drive');
+    // local copy damaged (e.g. by an old bug), Drive file fine: reload
+    await p.ev(`localStorage.setItem('em-state','{"format":"eisenhower-matrix","broken":true}')`);
+    await p.reload(); await sleep(1500);
+    const r = await p.ev(`({shown:state.tasks.map(t=>t.title).join(), drive:JSON.parse(__drive.files[0].content).tasks.map(t=>t.title).join(), ex:exampleMode, mode:gdriveMode})`);
+    check(r.drive === 'mine 1,mine 2', 'Drive file untouched: ' + JSON.stringify(r));
+    check(r.shown === 'mine 1,mine 2' && !r.ex && r.mode, 'own matrix loaded from Drive, no example: ' + JSON.stringify(r));
+    // a Drive file this version cannot read is never overwritten without a copy
+    await p.ev(`(()=>{const f=__drive.files[0];f.content='{"format":"eisenhower-matrix","future":true}';f.version=String(++__drive.ver);})()`);
+    await p.ev(`addTask('edit here',[2,2])`); await sleep(1800);
+    const k = await p.ev(`({kept:localStorage.getItem('em-drive-broken'), drive:__drive.files[0].content})`);
+    check(k.kept === '{"format":"eisenhower-matrix","future":true}' || k.drive === '{"format":"eisenhower-matrix","future":true}', 'unreadable Drive file kept: ' + JSON.stringify(k).slice(0,200));
+  });
+
   await test('merge: the order of the device that reordered wins', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{const C=o=>JSON.parse(JSON.stringify(o)),b=C(state),ids=s=>s.tasks.map(t=>t.id).join();

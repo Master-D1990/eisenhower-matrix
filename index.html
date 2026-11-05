@@ -1166,7 +1166,7 @@ de:{
   gdriveSaved:'gespeichert', gdriveSaving:'speichert …', gdriveOffline:'offline, wird nachgeholt', gdriveReconnect:'erneut verbinden',
   gdriveAlwaysOn:'Bei Google Drive immer an',
   gdriveLoaded:'Aus Google Drive geladen', gdriveUpdated:'Neue Änderungen von einem anderen Gerät geladen',
-  gdriveMerged:'Änderungen von einem anderen Gerät übernommen',
+  gdriveMerged:'Änderungen von einem anderen Gerät übernommen', gdriveUnreadable:'Die Datei in Google Drive lässt sich mit dieser Version nicht lesen. Eine Kopie ist auf diesem Gerät gesichert.',
   gdriveMergedConflicts:n=>n===1?' (1 Konflikt, jeweils die neuere Änderung behalten)':' ('+n+' Konflikte, jeweils die neuere Änderung behalten)',
   gdriveMissing:'Die Matrix in Google Drive wurde nicht gefunden.',
   gdriveMissingHint:'Bitte neu verbinden.',
@@ -1300,7 +1300,7 @@ en:{
   gdriveSaved:'saved', gdriveSaving:'saving …', gdriveOffline:'offline, will retry', gdriveReconnect:'reconnect',
   gdriveAlwaysOn:'Always on with Google Drive',
   gdriveLoaded:'Loaded from Google Drive', gdriveUpdated:'Loaded new changes from another device',
-  gdriveMerged:'Changes from another device merged',
+  gdriveMerged:'Changes from another device merged', gdriveUnreadable:'The file in Google Drive cannot be read by this version. A copy is kept on this device.',
   gdriveMergedConflicts:n=>n===1?' (1 conflict, kept the newer change)':' ('+n+' conflicts, kept the newer change)',
   gdriveMissing:'The matrix in Google Drive was not found.',
   gdriveMissingHint:'Please connect again.',
@@ -2272,6 +2272,8 @@ function loadDriveBaseState(){
 function saveDriveBase(text){
   try{ if(text==null) localStorage.removeItem(GDRIVE_BASE_KEY); else localStorage.setItem(GDRIVE_BASE_KEY,text); }catch(e){}
 }
+/* a Drive file this version cannot read is kept on this device before anything may replace it */
+function keepUnreadableDrive(text){try{if(typeof text==='string'&&text)localStorage.setItem('em-drive-broken',text);}catch(e){}}
 function mergeWithRemote(text){
   return mergeStates(loadDriveBaseState(),state,parseFileText(text));
 }
@@ -2401,8 +2403,9 @@ async function driveSave(){
       try{
         merged=mergeWithRemote(remoteText);
       }catch(e){
-        /* invalid remote file: keep the local version (no confirm in autosave) */
+        /* invalid remote file: keep the local version (no confirm in autosave), the remote text stays on this device */
         console.warn('drive merge failed',e);
+        keepUnreadableDrive(remoteText);
       }
       if(merged&&!sameAsState(merged.state)){
         applyRemoteState(merged.state,{dirty:true});
@@ -2517,7 +2520,7 @@ async function connectDrive(){
       const wasExample=exampleMode;
       const text=await driveRead(meta.id);
       let next=null;
-      try{ next=parseFileText(text); }catch(e){ next=null; }
+      try{ next=parseFileText(text); }catch(e){ next=null; keepUnreadableDrive(text); }
       let same=false;
       if(next){ try{ same=matrixComparable(next)===matrixComparable(state); }catch(e){ same=false; } }
       const conn={fileId:meta.id,name:meta.name||GDRIVE_FILE_NAME,version:meta.version||''};
@@ -2610,7 +2613,7 @@ async function continueDrive(){
   let next=null,remoteText=null;
   try{
     remoteText=await driveRead(gdrive.fileId);
-    try{ next=parseFileText(remoteText); }catch(err){ next=null; }
+    try{ next=parseFileText(remoteText); }catch(err){ next=null; keepUnreadableDrive(remoteText); }
   }catch(e){
     handleDriveError(e); return;
   }
@@ -2621,6 +2624,16 @@ async function continueDrive(){
   const conn={fileId:(meta&&meta.id)||gdrive.fileId,name:(meta&&meta.name)||gdrive.name,version:(meta&&meta.version)||gdrive.version};
   saveDriveConn(conn);
   activateDriveMode();
+  /* only the example is here (site data lost or unreadable): load the own matrix, never merge the example into it */
+  if(next&&remoteText&&exampleMode){
+    applyRemoteState(next,{dirty:false});
+    gdriveMode=true;
+    saveDriveBase(remoteText);
+    setDriveStatus('saved');
+    toast(t('gdriveLoaded'));
+    refreshDriveUi();
+    return;
+  }
   let same=false;
   if(next){ try{ same=matrixComparable(next)===matrixComparable(state); }catch(e){ same=false; } }
   if(next&&remoteText&&!same){
@@ -2673,7 +2686,8 @@ async function continueDrive(){
   }
   if(next&&remoteText) saveDriveBase(remoteText);
   setDriveStatus('saved');
-  toast(t('gdriveConnected',conn.name));
+  if(!next&&remoteText) toast(t('gdriveUnreadable'));
+  else toast(t('gdriveConnected',conn.name));
   if(dirty) scheduleDriveSave(true);
   refreshDriveUi();
 }
