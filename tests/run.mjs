@@ -355,14 +355,15 @@ async function main() {
     await p.ev(`leaveExample(); setCoinsEnabled(true)`);
     const id = await p.ev(`(addTask('big',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='big');setTaskCoins(t.id,8);return t.id;})())`);
     { const one = await p.ev(`(()=>{addTask('solo',[0,0]);const t=state.tasks.find(x=>x.title==='solo');setTaskCoins(t.id,8);const r=[];for(const n of ['x','y','z']){addSteps(t.id,n);r.push(findTask(t.id).steps.map(s=>s.coins).join('+'));}deleteTask(t.id);return r.join(' ');})()`);
-      check(one === '8 4+4 3+3+2', 'steps added one by one share the value evenly: ' + one); }
+      check(one === '0 0+0 0+0+0', 'steps added one by one: nothing spread, each starts with ? ' + one); }
     await p.ev(`addSteps('${id}','- a\\n- b\\n- c\\n- d')`);
-    check(await p.ev(`JSON.stringify(findTask('${id}').steps.map(s=>s.title+s.coins))`) === '["a2","b2","c2","d2"]', 'the value is spread over the steps, list marks stripped');
+    check(await p.ev(`JSON.stringify(findTask('${id}').steps.map(s=>s.title+(s.ask?'?':s.coins)))`) === '["a?","b?","c?","d?"]', 'new steps start with ?, list marks stripped');
+    await p.ev(`findTask('${id}').steps.forEach(s=>setStepCoins('${id}',s.id,2))`);
     await p.ev(`addSteps('${id}','e')`);
-    check(await p.ev(`findTask('${id}').steps.map(s=>s.coins).join()`) === '2,2,2,1,1', 'a later step joins the even split, the total stays');
-    await p.ev(`setStepCoins('${id}',findTask('${id}').steps[4].id,5)`);
+    check(await p.ev(`findTask('${id}').steps.map(s=>s.coins).join()==='2,2,2,2,0' && findTask('${id}').steps[4].ask===true`), 'a later step starts with ?, nothing is spread');
+    await p.ev(`setStepCoins('${id}',findTask('${id}').steps[4].id,4)`);
     await p.ev(`addSteps('${id}','f')`);
-    check(await p.ev(`(()=>{const s=findTask('${id}').steps;return s[4].coins===5&&s[5].ask===true&&findTask('${id}').coinsAsk===true;})()`), 'own values stay, the new step is asked');
+    check(await p.ev(`(()=>{const s=findTask('${id}').steps;return s[4].coins===4&&s[5].ask===true&&findTask('${id}').coinsAsk===true;})()`), 'own values stay, the new step is asked');
     await p.ev(`openDetail('${id}')`); await sleep(50);
     check(await p.ev(`document.querySelector('#dCoinsField .coin-edit').hidden && !document.querySelector('#dCoinsStepsHint').hidden`), 'detail: no task value with steps, the hint says the steps pay');
     await p.ev(`setTaskCoins('${id}',50); closeDetail()`);
@@ -426,7 +427,7 @@ async function main() {
     await p.ev(`restoreArchive('${id}')`);
     check(await p.ev(`!!findTask('${id}') && state.coins.balance===${bal} && findTask('${id}').steps.length===6`), 'restore takes the booking back, steps return');
     // repeats: the next entry has the same steps, all open
-    const rid = await p.ev(`(()=>{addTask('daily',[0,1]);const t=state.tasks.find(t=>t.title==='daily');t.due=localDateStr();t.repeat={f:'d',n:1};t.coinsAsk=false;delete t.coinsAsk;addSteps(t.id,'x\\ny');toggleStep(t.id,findTask(t.id).steps[0].id);toggleStep(t.id,findTask(t.id).steps[1].id);return t.id;})()`);
+    const rid = await p.ev(`(()=>{addTask('daily',[0,1]);const t=state.tasks.find(t=>t.title==='daily');t.due=localDateStr();t.repeat={f:'d',n:1};t.coinsAsk=false;delete t.coinsAsk;addSteps(t.id,'x\\ny');findTask(t.id).steps.forEach(s=>setStepCoins(t.id,s.id,1));toggleStep(t.id,findTask(t.id).steps[0].id);toggleStep(t.id,findTask(t.id).steps[1].id);return t.id;})()`);
     await sleep(100);
     await p.ev(`archiveTask('${rid}')`); await sleep(150);
     check(await p.ev(`(()=>{const n=state.tasks.find(t=>t.series==='${rid}');return !!n&&n.steps.length===2&&n.steps.every(s=>!s.done&&!s.got);})()`), 'next repeat: same steps, all open');
@@ -460,7 +461,9 @@ async function main() {
     await p.ev(`(()=>{const a=document.querySelector('#dSteps input.step-name');a.value='first';a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(80);
     check(await p.ev(`findTask('${sid}').steps[0].title==='first' && document.querySelector('#dSteps .step-card .step-title').textContent==='first'`), 'detail: a click on a step title edits it in place');
     await p.ev(`document.querySelector('#dSteps .step-card .step-done').click()`); await sleep(80);
-    check(await p.ev(`!!findTask('${sid}').steps[0].done && document.querySelector('#dSteps .step-card').classList.contains('done')`), 'detail: a step has its done button like a task');
+    check(await p.ev(`document.querySelector('#coinAskDlg').open`), 'detail: a new step starts with ? and asks its value when ticked');
+    await p.ev(`document.querySelector('#coinAskQuick [data-coin-ask="1"]').click()`); await sleep(80);
+    { const dd = await p.ev(`JSON.stringify({done:!!findTask('${sid}').steps[0].done,cls:document.querySelector('#dSteps .step-card').className,inp:document.querySelectorAll('#dSteps input').length,dlg:document.querySelector('#coinAskDlg').open})`); check(dd.includes('"done":true') && / done /.test(JSON.parse(dd).cls+' '), 'detail: a step has its done button like a task ' + dd); }
     // drag and drop of steps: reorder, into another task, out into a field
     await p.ev(`closeDetail(); ui.openSteps.add('${sid}'); renderAllDynamic()`);
     const drag = (fromSel, toSel, where) => p.ev(`(()=>{
