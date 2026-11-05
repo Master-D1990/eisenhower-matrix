@@ -1117,7 +1117,7 @@ de:{
   origin:'Herkunft', inboxOption:'Ablage', noDesc:'(keine Beschreibung)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label-Name', noLabels:'Noch keine Labels',
   labelVisible:'Label anzeigen oder ausblenden', labelColor:'Farbe ändern (Klick wechselt die Farbe)', labelRename:'Klicken zum Umbenennen', labelDelete:'Label löschen',
-  focusLabelT:'Tasks mit diesem Label in jedem Feld einmal nach oben schieben', focusMenu:'Nach Label', sortMenu:'Sortieren', sortCoins:'Nach Münzen', sortCoinsT:'Jedes Feld einmal nach Münzen sortieren, die wertvollsten zuerst', sortedLabel:n=>'«'+n+'» nach oben geschoben', sortedCoins:'Nach Münzen sortiert', sortNoChange:'Reihenfolge stimmt schon', showAllLabels:'Alle zeigen', hideAllLabels:'Alle ausblenden', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
+  focusLabelT:'Tasks mit diesem Label in jedem Feld einmal nach oben schieben', focusMenu:'Nach Label', sortMenu:'Sortieren', sortCoinsDown:'Nach Münzen, viele zuerst', sortCoinsUp:'Nach Münzen, wenige zuerst', sortCoinsT:'Jedes Feld einmal nach Münzen sortieren, Tasks mit ? ans Ende', sortedLabel:n=>'«'+n+'» nach oben geschoben', sortedCoins:'Nach Münzen sortiert', sortNoChange:'Reihenfolge stimmt schon', showAllLabels:'Alle zeigen', hideAllLabels:'Alle ausblenden', noLabelTasks:'Ohne Label', csvLabels:'Labels', labelRenamed:'Label umbenannt',
   settings:'Einstellungen', settingsT:'Einstellungen öffnen',
   setMatrix:'Matrix', setAxes:'Achsen', setDisplay:'Darstellung', setCustom:'Eigene:',
   setShowAxes:'Achsen anzeigen', setUseInbox:'Ablage verwenden', setUseInboxHint:'Zuerst die Tasks in der Ablage einordnen oder erledigen.', setManageLabels:'Labels verwalten …', setNewLabel:'+ Neues Label',
@@ -1251,7 +1251,7 @@ en:{
   origin:'Origin', inboxOption:'Inbox', noDesc:'(no description)',
   labels:'Labels', newLabel:'+ Label', labelNamePh:'Label name', noLabels:'No labels yet',
   labelVisible:'Show or hide the label', labelColor:'Change colour (click cycles the colour)', labelRename:'Click to rename', labelDelete:'Delete label',
-  focusLabelT:'Move tasks with this label to the top of every cell, once', focusMenu:'By label', sortMenu:'Sort', sortCoins:'By coins', sortCoinsT:'Sort every cell by coins once, most valuable first', sortedLabel:n=>'«'+n+'» moved to the top', sortedCoins:'Sorted by coins', sortNoChange:'Already in that order', showAllLabels:'Show all', hideAllLabels:'Hide all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
+  focusLabelT:'Move tasks with this label to the top of every cell, once', focusMenu:'By label', sortMenu:'Sort', sortCoinsDown:'By coins, most first', sortCoinsUp:'By coins, fewest first', sortCoinsT:'Sort every cell by coins once, tasks with ? at the end', sortedLabel:n=>'«'+n+'» moved to the top', sortedCoins:'Sorted by coins', sortNoChange:'Already in that order', showAllLabels:'Show all', hideAllLabels:'Hide all', noLabelTasks:'No label', csvLabels:'Labels', labelRenamed:'Label renamed',
   settings:'Settings', settingsT:'Open settings',
   setMatrix:'Matrix', setAxes:'Axes', setDisplay:'Appearance', setCustom:'Custom:',
   setShowAxes:'Show axes', setUseInbox:'Use the inbox', setUseInboxHint:'First sort or finish the tasks in the inbox.', setManageLabels:'Manage labels …', setNewLabel:'+ New label',
@@ -1912,7 +1912,8 @@ function labelToTop(id){
   const top=x=>Array.isArray(x.labels)&&x.labels.includes(id)?0:1;
   sortTasksOnce((a,b)=>top(a)-top(b),t('sortedLabel',l.name));
 }
-function sortByCoins(){sortTasksOnce((a,b)=>taskCoinValue(b)-taskCoinValue(a),t('sortedCoins'));}
+/* dir 1: most coins first, -1: fewest first; a task marked ? has no value yet and goes last either way */
+function sortByCoins(dir=1){const ask=x=>x.coinsAsk?1:0;sortTasksOnce((a,b)=>ask(a)-ask(b)||dir*(taskCoinValue(b)-taskCoinValue(a)),t('sortedCoins'));}
 function applyFilterChange(){saveFilter();renderBoard();renderInbox();renderMobile();if(ui.archiveOpen)renderArchive();refreshHeader();}
 function setLabelVisible(id,visible){if(visible)filter.hidden.delete(id);else filter.hidden.add(id);applyFilterChange();}
 function showAllLabels(){filter.hidden.clear();filter.none=true;applyFilterChange();renderLabelsMenu();}
@@ -2762,7 +2763,7 @@ function renderLabelsMenu(){
         const tx=document.createElement('span'); tx.textContent=l.name; b.append(dot,tx); list.append(b);
       }
     }
-    if(coinsOn()){const b=document.createElement('button'); b.type='button'; b.dataset.labelSort='coins'; b.textContent=t('sortCoins')+' 🪙'; b.title=t('sortCoinsT'); list.append(b);}
+    if(coinsOn()) [['down',t('sortCoinsDown')],['up',t('sortCoinsUp')]].forEach(([d,txt])=>{const b=document.createElement('button'); b.type='button'; b.dataset.labelSort=d; b.textContent=txt+' 🪙'; b.title=t('sortCoinsT'); list.append(b);});
   }
   list.append(document.createElement('hr'));
   const manage=document.createElement('button'); manage.type='button'; manage.dataset.labelAction='manage'; manage.textContent=t('setManageLabels'); list.append(manage);
@@ -4332,7 +4333,7 @@ function buildMobileMenu(){
   if(state.labels.length||coinsOn()){
     sep(); const fl=document.createElement('div');fl.className='menulabel';fl.textContent=t('sortMenu');list.append(fl);
     state.labels.forEach(l=>add(t('focusMenu')+': '+l.name,'focus:'+l.id));
-    if(coinsOn()) add(t('sortCoins')+' 🪙','sortcoins');
+    if(coinsOn()){add(t('sortCoinsDown')+' 🪙','sortcoins:down');add(t('sortCoinsUp')+' 🪙','sortcoins:up');}
   }
   sep();
   add((soundOn?'🔊 ':'🔇 ')+t('setSound'),'sound',soundOn);
@@ -4877,7 +4878,7 @@ async function downloadTool(){
 }
 function performAction(a){
   if(typeof a==='string'&&a.startsWith('focus:')){labelToTop(a.slice(6));return;}
-  if(a==='sortcoins'){sortByCoins();return;}
+  if(a==='sortcoins:down'||a==='sortcoins:up'){sortByCoins(a==='sortcoins:up'?-1:1);return;}
   if(typeof a==='string'&&a.startsWith('label:')){
     const id=a.slice(6);
     if(id==='showall') showAllLabels();
@@ -5726,7 +5727,7 @@ $('#labelsMenuList').addEventListener('click',e=>{
   const fb=e.target.closest('[data-label-focus]');
   if(fb){e.preventDefault();e.stopPropagation();closeMenus();labelToTop(fb.dataset.labelFocus);return;}
   const sb=e.target.closest('[data-label-sort]');
-  if(sb){e.stopPropagation();closeMenus();sortByCoins();return;}
+  if(sb){e.stopPropagation();closeMenus();sortByCoins(sb.dataset.labelSort==='up'?-1:1);return;}
   const color=e.target.closest('[data-label-color]');
   if(color){
     e.stopPropagation();

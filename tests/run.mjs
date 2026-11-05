@@ -639,15 +639,16 @@ async function main() {
       moveTaskTo('fa','0,0','fb',false); const dragged=shown();
       undo(); undo(); const back=shown();
       setCoinsEnabled(true); sortByCoins(); const coins=shown();
+      sortByCoins(-1); const up=shown(); sortByCoins(1);
       labelToTop(id); const both=shown();
       const again=labelToTop(id)===undefined&&shown()===both;
       setCoinsEnabled(false); document.querySelector('#labelsMenuBtn').click();
       const noCoinItem=!document.querySelector('#labelsMenuList [data-label-sort]'); closeMenus(); setCoinsEnabled(true);
-      return {label,menuClosed,dragged,back,coins,both,again,noCoinItem,othersKept:others()===o0};
+      return {label,menuClosed,dragged,back,coins,up,both,again,noCoinItem,othersKept:others()===o0};
     })()`);
     check(so.label === 'bdac/bdac' && so.menuClosed, 'by label: its tasks on top, stored: ' + JSON.stringify(so));
     check(so.dragged === 'abdc' && so.back === 'abcd', 'drag & drop works after sorting, undo takes it back: ' + JSON.stringify(so));
-    check(so.coins === 'cabd' && so.both === 'bdca' && so.again, 'by coins, "?" counts as none; label after coins keeps the coin order: ' + JSON.stringify(so));
+    check(so.coins === 'cabd' && so.up === 'bacd' && so.both === 'bdca' && so.again, 'by coins up and down, "?" last; label after coins keeps the coin order: ' + JSON.stringify(so));
     check(so.noCoinItem && so.othersKept, 'coins off: no coin sort offered; other cells untouched: ' + JSON.stringify(so));
     noErrors(p);
   });
