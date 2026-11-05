@@ -701,6 +701,30 @@ async function main() {
     check(r.sameTasks, 'merging identical states changes nothing');
   });
 
+  await test('start with the PC: only in desktop Chrome and Edge', async () => {
+    const p = await open(browser, base);
+    const k = await p.ev(`JSON.stringify([
+      autostartKind({platform:'Linux',mobile:false,brands:[{brand:'Google Chrome',version:'155'}]}),
+      autostartKind({platform:'Windows',mobile:false,brands:[{brand:'Microsoft Edge',version:'140'},{brand:'Chromium',version:'140'}]}),
+      autostartKind({platform:'Android',mobile:true,brands:[{brand:'Google Chrome',version:'155'}]}),
+      autostartKind({platform:'Chrome OS',mobile:false,brands:[{brand:'Google Chrome',version:'155'}]}),
+      autostartKind({platform:'Linux',mobile:false,brands:[{brand:'Brave',version:'140'},{brand:'Chromium',version:'140'}]}),
+      autostartKind({platform:'macOS',mobile:false,brands:[{brand:'Google Chrome',version:'90'}]}),
+      autostartKind(undefined)])`);
+    check(k === '["chrome","edge",null,null,null,null,null]', 'kind per browser: ' + k);
+    const sec = d => p.ev(`(()=>{Object.defineProperty(navigator,'userAgentData',{configurable:true,value:${d}});openSettings();
+      const s=document.querySelector('#setAutostart');return JSON.stringify({hidden:s.hidden,items:s.querySelectorAll('li').length,text:s.textContent});})()`);
+    const off = JSON.parse(await sec(`undefined`));
+    check(off.hidden && off.items === 0, 'hidden without Chrome/Edge (Firefox, Safari)');
+    const on = JSON.parse(await sec(`{platform:'Linux',mobile:false,brands:[{brand:'Google Chrome',version:'155'}]}`));
+    check(!on.hidden && on.items === 2 && on.text.includes('chrome://apps') && on.text.includes('App beim Anmelden starten'), 'Chrome tab: install + chrome://apps ' + on.text);
+    const edge = JSON.parse(await sec(`{platform:'Windows',mobile:false,brands:[{brand:'Microsoft Edge',version:'140'}]}`));
+    check(!edge.hidden && edge.text.includes('edge://apps'), 'Edge: edge://apps');
+    const ph = JSON.parse(await sec(`{platform:'Android',mobile:true,brands:[{brand:'Google Chrome',version:'155'}]}`));
+    check(ph.hidden, 'hidden on the phone');
+    noErrors(p);
+  });
+
   await test('merge: remote swapped axes or resized, local edits survive', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{

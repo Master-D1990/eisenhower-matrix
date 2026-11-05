@@ -604,6 +604,11 @@ kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);border-bottom-
 #mobileInboxBtn{grid-row:1;grid-column:4;margin-left:6px;min-width:54px;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:650;cursor:pointer;padding:2px 5px;line-height:1.15}
 body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{display:none!important}
 .set-hint{margin:2px 0 0 0;font-size:12px;color:var(--muted)}
+.set-steps{margin:0;padding-left:20px;font-size:13.5px;line-height:1.5}
+.set-steps.single{list-style:none;padding-left:0}
+.set-steps li+li{margin-top:6px}
+.set-steps code{font-size:12.5px;background:var(--hover);border-radius:4px;padding:1px 5px}
+.set-steps .btn{margin-left:6px;vertical-align:baseline}
 #mobileInboxBtn.sel{border:2px solid var(--accent);box-shadow:0 0 0 2px var(--ring)}
 #mobileInboxBtn.drop-hover{outline:3px solid var(--accent);outline-offset:-3px}
 #mobileInboxBtn .inbox-count{font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 5px;line-height:15px}
@@ -999,6 +1004,10 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <label class="set-row set-datefmt"><span data-i18n="dateFmtLabel"></span><select id="setDateFmt"></select></label>
       <div class="set-row set-tint"><span data-i18n="taskFontLabel"></span><input type="range" id="setTaskFont" min="80" max="160" step="5" data-i18n-aria="taskFontLabel"><output id="setTaskFontOut"></output><button type="button" class="linkbtn" id="setTaskFontReset" data-i18n="resetShort"></button></div>
     </section>
+    <section class="set-section" data-section="autostart" id="setAutostart" hidden>
+      <h3><span class="set-coin" aria-hidden="true">⏻</span> <span data-i18n="setAutostart"></span></h3>
+      <ol class="set-steps" id="setAutostartSteps"></ol>
+    </section>
   </div>
 </dialog>
 
@@ -1216,7 +1225,7 @@ de:{
   swapAxes:'⇄ Achsen tauschen', swapAxesT:'Achsen tauschen', swapped:'Achsen getauscht. Rückgängig mit Strg+Z',
   swapHint:(x,y)=>x+' waagrecht, '+y+' senkrecht', hideAxes:'Achsen ausblenden',
   flipDirT:n=>'Richtung umkehren: '+n, flipAxis:n=>n+' umkehren', flipDone:'Richtung umgekehrt. Rückgängig mit Strg+Z',
-  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen', setSound:'Töne', soundPlay:'Töne abspielen', soundVol:'Lautstärke', soundTest:'Anhören', setSoundHint:'Kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für Münzen. Gilt nur auf diesem Gerät, schnell umschalten mit 🔊 in der Symbolleiste.', soundOnT:'Töne an – klicken zum Ausschalten', soundOffT:'Töne aus – klicken zum Einschalten', soundOnMsg:'Töne an', soundOffMsg:'Töne aus',
+  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen', setAutostart:'Mit dem PC starten', autoInstall:'Als App installieren:', autoInstallHow:'Installieren-Symbol rechts in der Adressleiste oder Menü ⋮ → Installieren. Schon installiert? Dann weiter mit 2.', autoInstallBtn:'Installieren', autoChrome:'In der App-Übersicht {url} auf Eisenhower Matrix+ rechtsklicken und „App beim Anmelden starten“ wählen. Die Adresse in einem neuen Tab einfügen.', autoEdge:'In der App-Übersicht {url} bei Eisenhower Matrix+ auf ⋯ klicken und den automatischen Start bei der Anmeldung einschalten. Die Adresse in einem neuen Tab einfügen.', autoCopy:'Kopieren', autoCopied:'Adresse kopiert', setSound:'Töne', soundPlay:'Töne abspielen', soundVol:'Lautstärke', soundTest:'Anhören', setSoundHint:'Kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für Münzen. Gilt nur auf diesem Gerät, schnell umschalten mit 🔊 in der Symbolleiste.', soundOnT:'Töne an – klicken zum Ausschalten', soundOffT:'Töne aus – klicken zum Einschalten', soundOnMsg:'Töne an', soundOffMsg:'Töne aus',
   labelColorPop:'Label-Farbe', hexColor:'Hex-Farbe', channelR:'Rot', channelG:'Grün', channelB:'Blau',
   sampleTitle:'Meine Matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Feld', csvCellName:'Feldname', csvTitle:'Titel', csvDesc:'Beschreibung', csvCoins:'Münzen', csvDue:'Frist', csvCreated:'Erstellt', csvDone:'Erledigt',
@@ -1350,7 +1359,7 @@ en:{
   swapAxes:'⇄ Swap axes', swapAxesT:'Swap axes', swapped:'Axes swapped. Undo with Ctrl+Z',
   swapHint:(x,y)=>x+' horizontal, '+y+' vertical', hideAxes:'Hide axes',
   flipDirT:n=>'Reverse direction: '+n, flipAxis:n=>'Reverse '+n, flipDone:'Direction reversed. Undo with Ctrl+Z',
-  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset', setSound:'Sounds', soundPlay:'Play sounds', soundVol:'Volume', soundTest:'Play', setSoundHint:'Short sounds when you add, move, finish, delete or undo, a chime for coins. Only on this device, switch quickly with 🔊 in the toolbar.', soundOnT:'Sounds on – click to turn off', soundOffT:'Sounds off – click to turn on', soundOnMsg:'Sounds on', soundOffMsg:'Sounds off',
+  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset', setAutostart:'Start with the PC', autoInstall:'Install as an app:', autoInstallHow:'install icon on the right of the address bar, or menu ⋮ → Install. Already installed? Go on with 2.', autoInstallBtn:'Install', autoChrome:'In the app overview {url}, right-click Eisenhower Matrix+ and choose “Start app when you sign in”. Paste the address into a new tab.', autoEdge:'In the app overview {url}, click ⋯ on Eisenhower Matrix+ and turn on “Auto-start on device login”. Paste the address into a new tab.', autoCopy:'Copy', autoCopied:'Address copied', setSound:'Sounds', soundPlay:'Play sounds', soundVol:'Volume', soundTest:'Play', setSoundHint:'Short sounds when you add, move, finish, delete or undo, a chime for coins. Only on this device, switch quickly with 🔊 in the toolbar.', soundOnT:'Sounds on – click to turn off', soundOffT:'Sounds off – click to turn on', soundOnMsg:'Sounds on', soundOffMsg:'Sounds off',
   labelColorPop:'Label colour', hexColor:'Hex colour', channelR:'Red', channelG:'Green', channelB:'Blue',
   sampleTitle:'My matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Cell', csvCellName:'Cell name', csvTitle:'Title', csvDesc:'Description', csvCoins:'Coins', csvDue:'Due', csvCreated:'Created', csvDone:'Done',
@@ -3225,6 +3234,7 @@ function renderSettings(){
   renderSettingsCoins();
   renderSettingsSound();
   renderSettingsDisplay();
+  renderSettingsAutostart();
   renderSettingsDateFmt();
 }
 function scrollSettingsTo(section){
@@ -3426,6 +3436,41 @@ function renderSoundBtn(){
   b.title=t(soundOn?'soundOnT':'soundOffT'); b.setAttribute('aria-label',t('setSound'));
 }
 function setSoundVol(v){soundVol=clamp(Math.round(Number(v)/5)*5||60,5,100);try{localStorage.setItem('em-soundvol',String(soundVol));}catch(e){}renderSettingsSound();}
+/* "Start with the PC": a page cannot add itself to autostart, but desktop Chrome and Edge (91+, Windows, macOS, Linux)
+   can start an installed app at sign-in. The section shows only there; elsewhere the option does not exist. */
+function autostartKind(ua){
+  if(!ua||ua.mobile||!/^(Windows|macOS|Linux)$/.test(ua.platform||'')) return null;
+  const b=ua.brands||[], hit=n=>b.find(x=>x.brand===n&&+x.version>=91);
+  return hit('Microsoft Edge')?'edge':hit('Google Chrome')?'chrome':null;
+}
+let installPrompt=null;
+addEventListener('beforeinstallprompt',e=>{installPrompt=e;renderSettingsAutostart();});
+addEventListener('appinstalled',()=>{installPrompt=null;renderSettingsAutostart();});
+function renderSettingsAutostart(){
+  const sec=$('#setAutostart'), ol=$('#setAutostartSteps'); if(!sec||!ol) return;
+  const kind=autostartKind(navigator.userAgentData);
+  sec.hidden=!kind; if(!kind){ol.replaceChildren();return;}
+  const inApp=matchMedia('(display-mode: standalone),(display-mode: window-controls-overlay)').matches;
+  const url=kind+'://apps';
+  const btn=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent=label;b.addEventListener('click',fn);return b;};
+  ol.replaceChildren(); ol.classList.toggle('single',inApp);
+  if(!inApp){
+    const li=document.createElement('li');
+    const b=document.createElement('b'); b.textContent=t('autoInstall');
+    li.append(b,' ');
+    if(installPrompt) li.append(btn(t('autoInstallBtn'),async()=>{const ev=installPrompt;installPrompt=null;try{await ev.prompt();}catch(e){}renderSettingsAutostart();}));
+    else li.append(t('autoInstallHow'));
+    ol.append(li);
+  }
+  const li=document.createElement('li');
+  const [a,z]=t(kind==='edge'?'autoEdge':'autoChrome').split('{url}');
+  const code=document.createElement('code'); code.textContent=url;
+  li.append(a,code,btn(t('autoCopy'),()=>{
+    const done=()=>toast(t('autoCopied'));
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,()=>{});
+  }),z);
+  ol.append(li);
+}
 function renderSettingsSound(){
   const cb=$('#setSound'); if(cb) cb.checked=soundOn;
   const row=$('#setSoundVolRow'); if(row) row.hidden=!soundOn;
