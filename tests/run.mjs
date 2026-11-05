@@ -361,13 +361,16 @@ async function main() {
     await p.ev(`setStepCoins('${id}',findTask('${id}').steps[4].id,5)`);
     await p.ev(`addSteps('${id}','f')`);
     check(await p.ev(`(()=>{const s=findTask('${id}').steps;return s[4].coins===5&&s[5].ask===true&&findTask('${id}').coinsAsk===true;})()`), 'own values stay, the new step is asked');
-    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '0/6', 'card shows 0/6');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '▸0/6', 'card shows 0/6');
     check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .coins-badge').textContent`) === '12+? 🪙', 'card shows the open value and ?');
     await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').click()`); await sleep(50);
-    check(await p.ev(`document.querySelectorAll('.step-panel[data-steps-of="${id}"] .step-row').length`) === 6 && await p.ev(`ui.detailId===null`), 'the badge unfolds the steps, no detail opened');
-    await p.ev(`document.querySelector('.step-panel[data-steps-of="${id}"] .step-row').click()`); await sleep(100);
+    check(await p.ev(`document.querySelectorAll('.task-card[data-task="${id}"].steps-open .card-steps .step-row').length`) === 6 && await p.ev(`ui.detailId===null`), 'the badge unfolds the steps inside the card, no detail opened');
+    check(await p.ev(`(()=>{const c=document.querySelector('.task-card[data-task="${id}"]'),r=c.getBoundingClientRect(),l=c.querySelector('.card-steps .step-row:last-child').getBoundingClientRect(),ti=c.querySelector('.task-title').getBoundingClientRect();return l.bottom<=r.bottom&&ti.bottom<=c.querySelector('.card-steps').getBoundingClientRect().top+1;})()`), 'the card grows, the steps stand under the title');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge .chev').textContent==='▸' && document.querySelector('.task-card[data-task="${id}"] .steps-badge').classList.contains('open')`), 'the badge shows an arrow, turned when open');
+    await p.ev(`document.querySelector('.task-card[data-task="${id}"] .card-steps .step-done').click()`); await sleep(100);
+    check(await p.ev(`ui.detailId===null`), 'ticking a step in the card opens no detail');
     check(await p.ev(`state.coins.balance===2 && !!findTask('${id}').steps[0].done && findTask('${id}').coins===10`), 'ticking a step books its coins at once');
-    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '1/6', 'card shows 1/6');
+    check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '▸1/6', 'card shows 1/6');
     await p.ev(`undo()`);
     check(await p.ev(`state.coins.balance===0 && !findTask('${id}').steps[0].done`), 'undo takes the tick and the coins back');
     await p.ev(`redo()`); await p.ev(`toggleStep('${id}',findTask('${id}').steps[0].id)`);
@@ -442,8 +445,30 @@ async function main() {
     check(v.unique && v.bad, 'file: doubled step id repaired, broken step rejected ' + JSON.stringify(v));
     // the detail: add with Enter, a pasted list gives one step per line
     await p.ev(`openDetail('${sid}')`); await sleep(80);
-    await p.ev(`(()=>{const a=document.querySelector('#dStepAdd');a.value='one\\ntwo';a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(80);
-    check(await p.ev(`findTask('${sid}').steps.length===2 && document.querySelectorAll('#dSteps .step-edit').length===2 && document.querySelector('#dStepAdd').value===''`), 'detail: Enter adds one step per line');
+    await p.ev(`document.querySelector('#dStepAdd').click()`); await sleep(50);
+    await p.ev(`(()=>{const a=document.querySelector('#dSteps input.inline-add');a.value='one';a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(80);
+    check(await p.ev(`findTask('${sid}').steps.length===1 && document.querySelectorAll('#dSteps .step-card').length===1 && document.activeElement.matches('#dSteps input.inline-add')`), 'detail: + opens an input like a new task, Enter adds and opens the next');
+    await p.ev(`(()=>{const a=document.querySelector('#dSteps input.inline-add');const dt=new DataTransfer();dt.setData('text','two\\nthree');a.dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true}));})()`); await sleep(80);
+    { const got = await p.ev(`findTask('${sid}').steps.map(s=>s.title).join()`); check(got === 'one,two,three', 'detail: a pasted list adds one step per line: ' + got); }
+    await p.ev(`(()=>{const a=document.querySelector('#dSteps input.inline-add');a&&a.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('#dSteps [data-step-name]').click();})()`); await sleep(50);
+    await p.ev(`(()=>{const a=document.querySelector('#dSteps input.step-name');a.value='first';a.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`); await sleep(80);
+    check(await p.ev(`findTask('${sid}').steps[0].title==='first' && document.querySelector('#dSteps .step-card .step-title').textContent==='first'`), 'detail: a click on a step title edits it in place');
+    await p.ev(`document.querySelector('#dSteps .step-card .step-done').click()`); await sleep(80);
+    check(await p.ev(`!!findTask('${sid}').steps[0].done && document.querySelector('#dSteps .step-card').classList.contains('done')`), 'detail: a step has its done button like a task');
+    // drag and drop of steps: reorder, into another task, out into a field
+    await p.ev(`closeDetail(); ui.openSteps.add('${sid}'); renderAllDynamic()`);
+    const drag = (fromSel, toSel, where) => p.ev(`(()=>{
+      const a=document.querySelector(${JSON.stringify(fromSel)}), b=document.querySelector(${JSON.stringify(toSel)}); if(!a||!b) return 'missing';
+      const r=b.getBoundingClientRect(), y=${where}==='top'?r.top+2:${where}==='bottom'?r.bottom-2:r.top+r.height/2;
+      const o={clientX:r.left+r.width/2,clientY:y,bubbles:true,cancelable:true,dataTransfer:new DataTransfer()};
+      a.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:new DataTransfer()}));
+      b.dispatchEvent(new DragEvent('dragover',o)); b.dispatchEvent(new DragEvent('drop',o)); a.dispatchEvent(new DragEvent('dragend',{bubbles:true})); return 'ok';})()`);
+    await drag(`.task-card[data-task="${sid}"] .step-row[data-step-id="${await p.ev(`findTask('${sid}').steps[2].id`)}"]`, `.task-card[data-task="${sid}"] .step-row[data-step-id="${await p.ev(`findTask('${sid}').steps[1].id`)}"]`, "'top'");
+    check(await p.ev(`findTask('${sid}').steps.map(s=>s.title).join()`) === 'first,three,two', 'drag a step above another: reordered');
+    await drag(`.task-card[data-task="${sid}"] .step-row[data-step-id="${await p.ev(`findTask('${sid}').steps[1].id`)}"]`, `.task-card[data-task="${id}"] .task-title`, "'mid'");
+    check(await p.ev(`findTask('${sid}').steps.map(s=>s.title).join()==='first,two' && findTask('${id}').steps.at(-1).title==='three'`), 'drag a step onto another task: it moves there');
+    await drag(`.task-card[data-task="${sid}"] .step-row[data-step-id="${await p.ev(`findTask('${sid}').steps[1].id`)}"]`, `.cell-list[data-cellkey="2,2"]`, "'mid'");
+    check(await p.ev(`(()=>{const t=state.tasks.find(x=>x.title==='two');return !!t&&t.cell[0]===2&&t.cell[1]===2&&findTask('${sid}').steps.length===1;})()`), 'drag a step into a field: a task of its own there');
     noErrors(p);
   });
 
