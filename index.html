@@ -1272,7 +1272,7 @@ de:{
   stepsOpenFinish:n=>n===1?'Ein Schritt ist noch offen. Mit dem Task als erledigt buchen?':n+' Schritte sind noch offen. Mit dem Task als erledigt buchen?',
   stepsTooMany:n=>'Höchstens '+n+' Schritte pro Task.', stepDeleted:'Schritt gelöscht', stepExtracted:'Als eigener Task herausgelöst',
   stepMerged:n=>'Als Schritt zu «'+n+'» hinzugefügt', stepNoRepeat:'Ein wiederholender Task kann kein Schritt werden.',
-  stepsValueSpread:(n,k)=>n+' Münzen auf '+k+' offene Schritte verteilt', coinsStepsHint:'Summe der offenen Schritte, eine Zahl hier wird auf sie verteilt.',
+  coinsStepsHint:'Die Münzen kommen von den Schritten: Jeder Schritt bringt seinen Wert beim Abhaken.',
   dropAsStep:'Als Schritt einfügen', dropStepInto:'Hierhin verschieben', asStepOf:'Als Schritt zu …', asStepPick:'Als Schritt zu diesem Task', asStepNone:'Kein anderer Task da.',
   mobileEmptyCell:'Noch keine Aufgaben in diesem Feld. Tippe auf +, um eine anzulegen.',
   mobileEmptyInbox:'Die Ablage ist leer. Tippe auf +, um eine Aufgabe anzulegen.',
@@ -1292,6 +1292,7 @@ de:{
   helpSaveOff:'<b>Speichern</b>: Datei → Speichern. Der Browserspeicher allein ist keine Sicherung.',
   helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
     <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
+    <li><b>Schritte</b>: In der Aufgabe <b>+</b> neben „Schritte“, oder eine Aufgabe mitten auf eine andere ziehen. <b>▸</b> auf der Karte klappt sie auf, <b>✓</b> hakt einen Schritt ab und bringt seine Münzen. Mit Schritten zahlen nur die Schritte, der Wert der Aufgabe wird auf sie verteilt. Schritte haben keine eigene Frist und Wiederholung. Die Aufgabe schliesst du selbst ab.</li>
     <li class="help-save"></li>
     <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
     <li><b>Tasten</b>: <kbd>N</kbd> neue Aufgabe, <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig, <kbd>Strg</kbd>+<kbd>S</kbd> speichern, <kbd>Alt</kbd>+<kbd>A</kbd> Achsen.</li>
@@ -1414,7 +1415,7 @@ en:{
   stepsOpenFinish:n=>n===1?'One step is still open. Book it as done with the task?':n+' steps are still open. Book them as done with the task?',
   stepsTooMany:n=>'At most '+n+' steps per task.', stepDeleted:'Step deleted', stepExtracted:'Made a task of its own',
   stepMerged:n=>'Added as a step to «'+n+'»', stepNoRepeat:'A repeating task cannot become a step.',
-  stepsValueSpread:(n,k)=>n+' coins spread over '+k+' open steps', coinsStepsHint:'Sum of the open steps, a number here is spread over them.',
+  coinsStepsHint:'The coins come from the steps: each step pays its value when ticked off.',
   dropAsStep:'Add as step', dropStepInto:'Move here', asStepOf:'Add as step to …', asStepPick:'Add as a step to this task', asStepNone:'No other task yet.',
   mobileEmptyCell:'No tasks in this cell yet. Tap + to add one.',
   mobileEmptyInbox:'The inbox is empty. Tap + to add a task.',
@@ -1434,6 +1435,7 @@ en:{
   helpSaveOff:'<b>Saving</b>: File → Save. The browser cache alone is not a backup.',
   helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
     <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
+    <li><b>Steps</b>: In the task <b>+</b> next to "Steps", or drop a task onto the middle of another. <b>▸</b> on the card unfolds them, <b>✓</b> ticks a step off and pays its coins. With steps only the steps pay, the task's value is spread over them. Steps have no due date or repeat of their own. You finish the task yourself.</li>
     <li class="help-save"></li>
     <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
     <li><b>Keys</b>: <kbd>N</kbd> new task, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Ctrl</kbd>+<kbd>S</kbd> save, <kbd>Alt</kbd>+<kbd>A</kbd> axes.</li>
@@ -3711,7 +3713,7 @@ function coinReward(gain,rect,before){
 }
 function setTaskCoins(id,value){
   const task=findTask(id); if(!task) return;
-  if(stepsOf(task).length){setOpenStepsValue(task,value);return;}
+  if(stepsOf(task).length) return;   // with steps the coins come from the steps
   if(value==='?'){
     if(task.coinsAsk){refreshDetail(true);return;}
     commit(()=>{task.coinsAsk=true;task.coins=0;},{detail:true});
@@ -3746,17 +3748,18 @@ function syncStepValue(task){
 }
 const stepLogId=(task,step,suffix='')=>task.id.slice(0,40)+'-'+step.id+'-'+(step.n||0)+suffix;
 const stepText=(task,step)=>(task.title||t('untitled'))+': '+(step.title||t('untitled'));
-/* the value new steps get: a task without steps hands its value on, an even split is spread again,
-   steps with values of their own stay as they are and the new ones are asked (with coins on) */
+/* the value new steps get: with steps the coins come only from the steps. The task's value stays the total and is
+   spread evenly over its open steps, also when they are added one by one (8 -> 8, then 4+4, then 3+3+2); ticked steps
+   keep what they paid. Once a step value is set by hand nothing is spread any more, new steps start with ? (coins on). */
 function stepValuesFor(task,count){
-  const open=openStepsOf(task);
   if(!stepsOf(task).length){
     if(task.coinsAsk) return Array(count).fill('?');
     return {spread:shareCoins(Number.isInteger(task.coins)?task.coins:0,count)};
   }
+  const open=openStepsOf(task);
   if(open.length&&open.every(s=>s.ask)) return Array(count).fill('?');
   const total=open.reduce((a,s)=>a+s.coins,0);
-  if(open.length&&open.every(s=>!s.ask)&&JSON.stringify(open.map(s=>s.coins))===JSON.stringify(shareCoins(total,open.length)))
+  if(open.length&&total>0&&open.every(s=>!s.ask)&&JSON.stringify(open.map(s=>s.coins))===JSON.stringify(shareCoins(total,open.length)))
     return {spread:shareCoins(total,open.length+count),again:true};
   return Array(count).fill(coinsOn()?'?':0);
 }
@@ -3773,10 +3776,7 @@ function addSteps(id,text){
     const taken=new Set();
     const added=lines.map(title=>{const s={id:newStepId(task,taken),title,coins:0};taken.add(s.id);return s;});
     if(Array.isArray(vals)) added.forEach((s,i)=>applyStepValue(s,vals[i]));
-    else{
-      const open=vals.again?steps.filter(s=>!s.done):[];
-      [...open,...added].forEach((s,i)=>applyStepValue(s,vals.spread[i]));
-    }
+    else [...(vals.again?steps.filter(s=>!s.done):[]),...added].forEach((s,i)=>applyStepValue(s,vals.spread[i]));
     steps.push(...added);
     syncStepValue(task);
   },{detail:true});
@@ -3796,16 +3796,6 @@ function setStepCoins(id,sid,value){
   if(v==='?'?step.ask:(!step.ask&&step.coins===v)){refreshDetail(true);return;}
   leaveExample();
   commit(()=>{applyStepValue(step,v);syncStepValue(task);},{detail:true});
-}
-/* the value field of a task with steps sets its open steps: ? for all, a number spread over them */
-function setOpenStepsValue(task,value){
-  const open=openStepsOf(task); if(!open.length){refreshDetail(true);return;}
-  const n=value==='?'?null:normalizeCoins(value);
-  const vals=n===null?open.map(()=>'?'):shareCoins(n,open.length);
-  if(open.every((s,i)=>vals[i]==='?'?s.ask:(!s.ask&&s.coins===vals[i]))){refreshDetail(true);return;}
-  leaveExample();
-  commit(()=>{open.forEach((s,i)=>applyStepValue(s,vals[i]));syncStepValue(task);},{detail:true});
-  toast(n===null?t('coinsAskLater'):t('stepsValueSpread',n,open.length));
 }
 function deleteStep(id,sid){
   const task=findTask(id); if(!findStep(task,sid)) return;
@@ -4513,8 +4503,11 @@ function renderDetailCoins(task){
   const on=coinsOn();
   field.hidden=!on;
   if(!on) return;
-  const val=task.coinsAsk&&!(stepsOf(task).length&&task.coins>0)?'?':(Number.isInteger(task.coins)?task.coins:0);
-  const hint=$('#dCoinsStepsHint'); if(hint) hint.hidden=!stepsOf(task).length;
+  const withSteps=stepsOf(task).length>0;
+  const hint=$('#dCoinsStepsHint'); if(hint) hint.hidden=!withSteps;
+  field.querySelector('.coin-edit').hidden=withSteps; field.querySelector('.coin-rule:not(#dCoinsStepsHint)').hidden=withSteps;
+  if(withSteps) return;
+  const val=task.coinsAsk?'?':(Number.isInteger(task.coins)?task.coins:0);
   const quick=$('#dCoinQuick');
   if(quick){
     quick.replaceChildren();

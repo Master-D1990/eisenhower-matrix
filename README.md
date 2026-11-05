@@ -24,12 +24,23 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - **Tasks:** add them with **+** in the field, move them by drag & drop, open them for a description, due date, labels and more. Overdue and soon-due dates are highlighted.
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
-- **Steps:** break a task into steps with **+** in the task, or drop a task onto the middle of another. The steps unfold inside the card, each one is ticked off on its own and pays its coins at once; drag a step to reorder it, into another task or out into a field. You still finish the task yourself.
+- **Steps:** break a task into smaller steps, each one ticked off on its own and paying its coins at once, see [Steps](#steps).
 - **Labels** such as "Work" and "Private" with your own colours, and a filter to show or hide them. **Sort** by label (its tasks move to the top of every cell) or by coins (most or fewest first), once per click: afterwards drag & drop works as usual, and undo takes it back.
 - **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. New tasks start with **?**: you name the value when the task is done, or set it in the task right away.
 - **Sounds (optional, per device):** short sounds when you add, move, finish, delete or undo, a chime for every coin.
 - **Phone:** the list of the chosen field at the top, the matrix as buttons at the bottom; long-press a card and drop it on a button to move it, swipe right to finish it.
 - **Export** to CSV or PDF (print), **dark mode**, colour strength, **English and Swiss German**, built-in help.
+
+### Steps
+
+Break a bigger task into smaller steps and tick them off one by one.
+
+- **Add:** open the task and press **+** next to "Steps". Enter adds the step and opens the next one; a pasted list adds one step per line. Or drag a task onto the middle of another task: it becomes its last step (on a phone: "Add as step to …" in the task).
+- **Work:** the arrow on the card (`▸ 2/5`) unfolds the steps inside the card. ✓ ticks a step off, it stays in the list struck through; ✓ again takes the tick back.
+- **Coins:** a task with steps pays only through its steps, each step pays its value the moment it is ticked off. The value the task had is spread evenly over its steps, also when you add them one by one (8 coins: one step 8, two steps 4 + 4, three steps 3 + 3 + 2); ticked steps keep what they paid. Once you set a step value yourself, nothing is spread any more and new steps start with **?**.
+- **Finish:** you finish the task yourself, also when all steps are done; the app offers it in the message. Steps still open are asked about and then ticked off with the task.
+- **Move:** drag a step onto another step to reorder, onto another task to move it there, between tasks or into an empty field to make it a task of its own (or ↗ in the task). A step that came from a task brings back its description, due date, labels and field.
+- **Not for steps:** steps have no due date and no repeat of their own, the task has them. A repeating task brings its steps along to the next date, all open again. A repeating task cannot become a step. When a step needs its own date, make it a task again.
 
 ### Where is my data stored?
 
@@ -72,12 +83,23 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - **Aufgaben:** mit **+** direkt im Feld anlegen, per Drag & Drop verschieben, öffnen für Beschreibung, Frist, Labels und mehr. Überfällige und bald fällige Fristen sind markiert.
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
-- **Schritte:** Eine Aufgabe mit **+** in der Aufgabe in Schritte zerlegen oder eine Aufgabe mitten auf eine andere ziehen. Die Schritte klappen in der Karte auf, jeder wird einzeln abgehakt und bringt seine Münzen sofort; ein Schritt lässt sich umsortieren, in eine andere Aufgabe oder als eigene Aufgabe in ein Feld ziehen. Die Aufgabe selbst schliesst du danach ab.
+- **Schritte:** eine Aufgabe in kleine Schritte zerlegen, jeder wird einzeln abgehakt und bringt seine Münzen sofort, siehe [Schritte](#schritte).
 - **Labels** wie „Beruf“ und „Privat“ mit eigenen Farben, dazu ein Filter zum Ein- und Ausblenden. **Sortieren** nach Label (seine Tasks kommen in jedem Feld nach oben) oder nach Münzen (viele oder wenige zuerst), einmal pro Klick: Danach gilt wieder Drag & Drop, Rückgängig nimmt es zurück.
 - **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Neue Aufgaben starten mit **?**: Den Wert nennst du beim Erledigen oder gleich in der Aufgabe.
 - **Töne (freiwillig, pro Gerät):** kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für jede Münze.
 - **Handy:** oben die Liste des gewählten Felds, unten die Matrix als Knöpfe. Karte lange drücken und auf einen Knopf ziehen zum Verschieben, nach rechts wischen zum Erledigen.
 - **Export** als CSV oder PDF (Drucken), **Dark Mode**, Farbstärke, **Schweizerdeutsch und Englisch**, eingebaute Hilfe.
+
+### Schritte
+
+Eine grössere Aufgabe in kleine Schritte zerlegen und diese einzeln abhaken.
+
+- **Anlegen:** Aufgabe öffnen und **+** neben „Schritte“ drücken. Enter fügt den Schritt hinzu und öffnet gleich den nächsten; eine eingefügte Liste ergibt einen Schritt pro Zeile. Oder eine Aufgabe mitten auf eine andere ziehen: Sie wird deren letzter Schritt (auf dem Handy: „Als Schritt zu …“ in der Aufgabe).
+- **Arbeiten:** Der Pfeil auf der Karte (`▸ 2/5`) klappt die Schritte in der Karte auf. ✓ hakt einen Schritt ab, er bleibt durchgestrichen in der Liste; nochmals ✓ nimmt den Haken zurück.
+- **Münzen:** Eine Aufgabe mit Schritten zahlt nur über ihre Schritte, jeder Schritt bringt seinen Wert im Moment des Abhakens. Der Wert, den die Aufgabe hatte, wird gleichmässig auf die Schritte verteilt, auch wenn du sie einzeln anlegst (8 Münzen: ein Schritt 8, zwei Schritte 4 + 4, drei Schritte 3 + 3 + 2); abgehakte Schritte behalten, was sie gebracht haben. Sobald du einen Schrittwert selbst setzt, wird nichts mehr verteilt und neue Schritte starten mit **?**.
+- **Abschliessen:** Die Aufgabe schliesst du selbst ab, auch wenn alle Schritte erledigt sind; die App bietet es in der Meldung an. Noch offene Schritte werden nachgefragt und dann mit der Aufgabe abgehakt.
+- **Verschieben:** Einen Schritt auf einen anderen Schritt ziehen sortiert um, auf eine andere Aufgabe verschiebt ihn dorthin, zwischen Aufgaben oder in ein leeres Feld macht ihn zu einer eigenen Aufgabe (oder ↗ in der Aufgabe). Ein Schritt, der aus einer Aufgabe entstanden ist, bringt Beschreibung, Frist, Labels und Feld wieder mit.
+- **Nicht für Schritte:** Schritte haben keine eigene Frist und keine eigene Wiederholung, die hat die Aufgabe. Eine wiederholende Aufgabe nimmt ihre Schritte zum nächsten Termin mit, alle wieder offen. Eine wiederholende Aufgabe kann kein Schritt werden. Braucht ein Schritt ein eigenes Datum, mach ihn wieder zur Aufgabe.
 
 ### Wo werden meine Daten gespeichert?
 
@@ -143,6 +165,7 @@ Google gives a browser-only app a one-hour sign-in only. [`worker/token-worker.j
 
 - `rows` are the levels of the vertical axis (index 0 = top = highest), `cols` the levels of the horizontal axis (index 0 = left = lowest). `swapped`, `flipX` and `flipY` only change how the matrix is shown.
 - `cell` is `null` for tasks in the inbox. `at` is the task's position on both axes (0 to 1); it decides the field again whenever the size changes.
+- `steps` (optional) lists the steps of a task: `{"id": "s1a2b3c", "title": "…", "coins": 2}`, with `"ask": true` when the value is asked on ticking, `"done"` (time) and `"got"` (coins paid) once ticked, `"n"` counts the ticks (it names the coin log entry, so a step ticked on two devices is booked once), `"from"` keeps what a dropped task had (`desc`, `due`, `labels`, `at`, `created`, `id`). Steps have no due date or repeat of their own; with steps the task's `coins` is what its open steps still pay.
 - Personal view settings (theme, language, colour strength, filters, hidden axes) are kept in the browser only, not in the file.
 
 ## License

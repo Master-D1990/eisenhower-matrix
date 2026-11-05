@@ -354,13 +354,19 @@ async function main() {
     const p = await open(browser, base);
     await p.ev(`leaveExample(); setCoinsEnabled(true)`);
     const id = await p.ev(`(addTask('big',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='big');setTaskCoins(t.id,8);return t.id;})())`);
+    { const one = await p.ev(`(()=>{addTask('solo',[0,0]);const t=state.tasks.find(x=>x.title==='solo');setTaskCoins(t.id,8);const r=[];for(const n of ['x','y','z']){addSteps(t.id,n);r.push(findTask(t.id).steps.map(s=>s.coins).join('+'));}deleteTask(t.id);return r.join(' ');})()`);
+      check(one === '8 4+4 3+3+2', 'steps added one by one share the value evenly: ' + one); }
     await p.ev(`addSteps('${id}','- a\\n- b\\n- c\\n- d')`);
     check(await p.ev(`JSON.stringify(findTask('${id}').steps.map(s=>s.title+s.coins))`) === '["a2","b2","c2","d2"]', 'the value is spread over the steps, list marks stripped');
     await p.ev(`addSteps('${id}','e')`);
-    check(await p.ev(`findTask('${id}').steps.map(s=>s.coins).join()`) === '2,2,2,1,1' && await p.ev(`findTask('${id}').coins`) === 8, 'an even split is spread again, the sum stays');
+    check(await p.ev(`findTask('${id}').steps.map(s=>s.coins).join()`) === '2,2,2,1,1', 'a later step joins the even split, the total stays');
     await p.ev(`setStepCoins('${id}',findTask('${id}').steps[4].id,5)`);
     await p.ev(`addSteps('${id}','f')`);
     check(await p.ev(`(()=>{const s=findTask('${id}').steps;return s[4].coins===5&&s[5].ask===true&&findTask('${id}').coinsAsk===true;})()`), 'own values stay, the new step is asked');
+    await p.ev(`openDetail('${id}')`); await sleep(50);
+    check(await p.ev(`document.querySelector('#dCoinsField .coin-edit').hidden && !document.querySelector('#dCoinsStepsHint').hidden`), 'detail: no task value with steps, the hint says the steps pay');
+    await p.ev(`setTaskCoins('${id}',50); closeDetail()`);
+    check(await p.ev(`findTask('${id}').coins===12`), 'a task with steps takes no value of its own');
     check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').textContent`) === '▸0/6', 'card shows 0/6');
     check(await p.ev(`document.querySelector('.task-card[data-task="${id}"] .coins-badge').textContent`) === '12+? 🪙', 'card shows the open value and ?');
     await p.ev(`document.querySelector('.task-card[data-task="${id}"] .steps-badge').click()`); await sleep(50);
