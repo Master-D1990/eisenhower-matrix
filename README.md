@@ -24,6 +24,7 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - **Tasks:** add them with **+** in the field, move them by drag & drop, open them for a description, due date, labels and more. Overdue and soon-due dates are highlighted.
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
+- **Steps:** break a task into steps with **+** in the task, or drop a task onto the middle of another. The steps unfold inside the card, each one is ticked off on its own and pays its coins at once; drag a step to reorder it, into another task or out into a field. You still finish the task yourself.
 - **Labels** such as "Work" and "Private" with your own colours, and a filter to show or hide them. **Sort** by label (its tasks move to the top of every cell) or by coins (most or fewest first), once per click: afterwards drag & drop works as usual, and undo takes it back.
 - **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. New tasks start with **?**: you name the value when the task is done, or set it in the task right away.
 - **Sounds (optional, per device):** short sounds when you add, move, finish, delete or undo, a chime for every coin.
@@ -71,6 +72,7 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - **Aufgaben:** mit **+** direkt im Feld anlegen, per Drag & Drop verschieben, öffnen für Beschreibung, Frist, Labels und mehr. Überfällige und bald fällige Fristen sind markiert.
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
+- **Schritte:** Eine Aufgabe mit **+** in der Aufgabe in Schritte zerlegen oder eine Aufgabe mitten auf eine andere ziehen. Die Schritte klappen in der Karte auf, jeder wird einzeln abgehakt und bringt seine Münzen sofort; ein Schritt lässt sich umsortieren, in eine andere Aufgabe oder als eigene Aufgabe in ein Feld ziehen. Die Aufgabe selbst schliesst du danach ab.
 - **Labels** wie „Beruf“ und „Privat“ mit eigenen Farben, dazu ein Filter zum Ein- und Ausblenden. **Sortieren** nach Label (seine Tasks kommen in jedem Feld nach oben) oder nach Münzen (viele oder wenige zuerst), einmal pro Klick: Danach gilt wieder Drag & Drop, Rückgängig nimmt es zurück.
 - **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Neue Aufgaben starten mit **?**: Den Wert nennst du beim Erledigen oder gleich in der Aufgabe.
 - **Töne (freiwillig, pro Gerät):** kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für jede Münze.
