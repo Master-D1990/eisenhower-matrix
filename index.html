@@ -532,6 +532,13 @@ dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);c
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .ask-dlg{max-width:460px}
 #askText{white-space:pre-line;margin:2px 0 0;line-height:1.45;overflow-wrap:anywhere}
+#coinAskText{margin:2px 0 12px;line-height:1.45;overflow-wrap:anywhere}
+.coin-ask-dlg .coin-quick .btn{padding:6px 13px;font-size:15px}
+.coin-ask-own{display:flex;gap:6px;margin-top:10px}
+#coinAskInput{width:92px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text);padding:5px 7px;font-size:14px}
+.coin-ask-keep{display:flex;gap:7px;align-items:center;margin-top:10px;font-size:13px}
+.coin-rule{display:block;margin:6px 0 0;font-size:12px;font-weight:400;color:var(--muted)}
+#settingsDlg .set-coin{font-size:15px;line-height:1}
 .dlg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .dlg-head h2{margin:0;font-size:19px}
 .dlg-close{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;border-radius:5px;width:30px;height:30px;flex:0 0 auto}
@@ -888,6 +895,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
         <div class="coin-quick" id="dCoinQuick"></div>
         <input id="dCoins" type="number" min="0" max="9999" step="1" inputmode="numeric" data-i18n-aria="coinsValue">
       </div>
+      <span class="coin-rule" data-i18n="coinsRule"></span>
     </div>
     <label class="field"><span data-i18n="cellField"></span><select id="dCell"></select></label>
     <div class="field"><span data-i18n="labels"></span><div class="label-chips" id="dLabels"></div><div id="dLabelNewWrap"><button type="button" class="btn small" id="dLabelAdd" data-i18n="newLabel"></button></div></div>
@@ -912,6 +920,14 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
   <div class="drawer-foot"><button class="btn danger" id="archiveClear" data-i18n="archiveClear"></button></div>
 </aside>
 
+<dialog id="coinAskDlg" class="ask-dlg coin-ask-dlg"><form method="dialog">
+  <p id="coinAskText"></p>
+  <div class="coin-quick" id="coinAskQuick"></div>
+  <div class="coin-ask-own"><input id="coinAskInput" type="number" min="0" max="9999" step="1" inputmode="numeric" data-i18n-aria="coinsValue"><button class="btn" type="button" id="coinAskOk">OK</button></div>
+  <label class="coin-ask-keep" id="coinAskKeepRow" hidden><input type="checkbox" id="coinAskKeep"><span data-i18n="coinAskKeep"></span></label>
+  <p class="coin-rule" data-i18n="coinsRule"></p>
+  <div class="dlg-foot"><button class="btn" value="" data-i18n="cancel"></button><span class="spacer"></span><button class="btn" type="button" id="coinAskNone" data-i18n="coinAskNone"></button></div>
+</form></dialog>
 <dialog id="askDlg" class="ask-dlg"><form method="dialog"><p id="askText"></p><div class="dlg-foot"><span class="spacer"></span><button class="btn" id="askCancel" value="" data-i18n="cancel"></button><button class="btn primary" id="askOk" value="ok">OK</button></div></form></dialog>
 <dialog id="helpDlg">
   <div class="dlg-head"><h2 data-i18n="helpH"></h2><button class="dlg-close" id="helpClose" aria-label="Close">✕</button></div>
@@ -958,9 +974,11 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       </div>
     </section>
     <section class="set-section" data-section="coins">
-      <h3 data-i18n="setCoins"></h3>
+      <h3><span class="set-coin" aria-hidden="true">🪙</span> <span data-i18n="setCoins"></span></h3>
       <label class="set-row"><input type="checkbox" id="setUseCoins"><span data-i18n="useCoins"></span></label>
-      <label class="set-row" id="setCoinQuickRow" hidden><span data-i18n="coinQuick"></span><input id="setCoinQuick" type="text" inputmode="numeric" autocomplete="off" placeholder="1, 5, 10, 25"></label>
+      <p class="set-hint" id="setCoinsRule" data-i18n="coinsRule" hidden></p>
+      <label class="set-row" id="setCoinQuickRow" hidden><span data-i18n="coinQuick"></span><input id="setCoinQuick" type="text" inputmode="numeric" autocomplete="off" placeholder="1, 2, 4, 6, 8"></label>
+      <label class="set-row" id="setCoinAskRow" hidden><input type="checkbox" id="setCoinAsk"><span data-i18n="coinAskNew"></span></label>
       <p class="set-hint" id="setCoinsHint" data-i18n="setCoinsHint" hidden></p>
     </section>
     <section class="set-section" data-section="display">
@@ -1106,6 +1124,9 @@ de:{
   coinsHistory:'Verlauf', coinsNoHistory:'Noch keine Buchungen.', coinsShowMore:'mehr zeigen',
   coinsRestoredSuffix:'wiederhergestellt', coinsPartial:(taken,total)=>'(nur '+taken+' von '+total+' vorhanden)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Nicht genug Münzen',
+  coinsRule:'Faustregel: 1 🪙 ≈ 15 Minuten Arbeit.', coinAskNew:'Wert erst beim Erledigen fragen (neue Aufgaben zeigen ?)',
+  coinAskTitle:title=>'Wie viele Goldmünzen hat «'+title+'» eingebracht?', coinAskNone:'Keine Münzen', coinAskKeep:'Diesen Wert für die nächsten Wiederholungen behalten',
+  coinsAskLater:'Wert wird beim Erledigen gefragt', coinsAskBadge:'Wert beim Erledigen',
   themeSystem:'System',
   autoSave:'Automatisch speichern', autoSaveT:'Änderungen sofort in die Datei schreiben',
   autoShort:'Auto', autoOnlyChrome:'Nur in Chrome und Edge möglich',
@@ -1237,6 +1258,9 @@ en:{
   coinsHistory:'History', coinsNoHistory:'No entries yet.', coinsShowMore:'show more',
   coinsRestoredSuffix:'restored', coinsPartial:(taken,total)=>'(only '+taken+' of '+total+' available)',
   coinsGain:n=>'+'+n+' 🪙', coinsNotEnoughShort:'Not enough coins',
+  coinsRule:'Rule of thumb: 1 🪙 ≈ 15 minutes of work.', coinAskNew:'Ask for the value when done (new tasks show ?)',
+  coinAskTitle:title=>'How many gold coins did «'+title+'» earn?', coinAskNone:'No coins', coinAskKeep:'Keep this value for the next repeats',
+  coinsAskLater:'Value is asked when done', coinsAskBadge:'Value when done',
   themeSystem:'System',
   autoSave:'Auto-save', autoSaveT:'Write changes into the file immediately',
   autoShort:'Auto', autoOnlyChrome:'Only possible in Chrome and Edge',
@@ -1443,11 +1467,11 @@ function sampleState(lang=LANG){
   ];
   const mk=(title,desc,c,extra={})=>Object.assign({id:uid(),title,desc,due:null,cell:c,created:isoAgo(3),labels:[],coins:0},extra);
   const tasks=[
-    mk(de?'Angebot an Kunde B senden':'Send quote to client B',de?'Preis und Liefertermin bestätigen, dann per Mail raus.': 'Confirm price and delivery date, then send by email.',[0,0],{due:isoDate(0),created:isoAgo(5),labels:[workId],coins:10}),
-    mk(de?'Quartalsplanung vorbereiten':'Prepare quarterly planning',de?'Ziele, Budget und offene Entscheide zusammentragen.':'Collect goals, budget and open decisions.',[0,1],{due:isoDate(5),labels:[workId],coins:25}),
-    mk(de?'Team-Retrospektive ansetzen':'Schedule team retrospective','',[0,2],{due:isoDate(1),labels:[workId],coins:5}),
-    mk(de?'Rechnung prüfen':'Check invoice',de?'Betrag und Spesenbelege vergleichen.':'Compare amount and expense receipts.',[1,0],{due:isoDate(-1),created:isoAgo(8),labels:[workId],coins:5}),
-    mk(de?'Steuerunterlagen zusammenstellen':'Collect tax documents','',[1,1],{due:isoDate(20),labels:[privateId],coins:25}),
+    mk(de?'Angebot an Kunde B senden':'Send quote to client B',de?'Preis und Liefertermin bestätigen, dann per Mail raus.': 'Confirm price and delivery date, then send by email.',[0,0],{due:isoDate(0),created:isoAgo(5),labels:[workId],coins:2}),
+    mk(de?'Quartalsplanung vorbereiten':'Prepare quarterly planning',de?'Ziele, Budget und offene Entscheide zusammentragen.':'Collect goals, budget and open decisions.',[0,1],{due:isoDate(5),labels:[workId],coins:8}),
+    mk(de?'Team-Retrospektive ansetzen':'Schedule team retrospective','',[0,2],{due:isoDate(1),labels:[workId],coins:1}),
+    mk(de?'Rechnung prüfen':'Check invoice',de?'Betrag und Spesenbelege vergleichen.':'Compare amount and expense receipts.',[1,0],{due:isoDate(-1),created:isoAgo(8),labels:[workId],coins:1}),
+    mk(de?'Steuerunterlagen zusammenstellen':'Collect tax documents','',[1,1],{due:isoDate(20),labels:[privateId],coins:6}),
     mk(de?'Neues CRM evaluieren':'Evaluate a new CRM',de?'Drei Anbieter vergleichen, Demo vereinbaren.':'Compare three vendors, book a demo.',[1,2],{labels:[workId]}),
     mk(de?'Protokoll an Praktikantin delegieren':'Delegate minutes to intern','',[2,0],{due:isoDate(3),labels:[workId]}),
     mk(de?'Reisekosten bündeln':'Bundle travel expenses',de?'Alle Belege dieser Woche in eine Abrechnung.':'Put all receipts from this week into one claim.',[2,1],{labels:[workId]}),
@@ -1545,6 +1569,10 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     out.mod=reqStr(x.mod,path+'.mod',40,false);
     if(!isValidISODate(out.mod)) throw new Error(t('invalidReason',path+'.mod'));
   }
+  if(x.coinsAsk!==undefined){
+    if(typeof x.coinsAsk!=='boolean') throw new Error(t('invalidReason',path+'.coinsAsk'));
+    if(x.coinsAsk&&!isArchive) out.coinsAsk=true;
+  }
   if(x.repeat!==undefined&&x.repeat!==null) out.repeat=cleanRepeat(x.repeat,path+'.repeat');
   if(x.series!==undefined&&x.series!==null){
     out.series=reqStr(x.series,path+'.series',MAX_ID,false);
@@ -1637,6 +1665,10 @@ function cleanCoins(raw){
   if(raw.quick!==undefined){
     if(!Array.isArray(raw.quick)||raw.quick.length>MAX_COIN_QUICK||raw.quick.some(v=>!Number.isInteger(v)||v<1||v>MAX_TASK_COINS)) throw new Error(t('invalidReason','coins.quick'));
     out.quick=[...new Set(raw.quick)];
+  }
+  if(raw.askNew!==undefined){
+    if(typeof raw.askNew!=='boolean') throw new Error(t('invalidReason','coins.askNew'));
+    if(raw.askNew) out.askNew=true;
   }
   return out;
 }
@@ -2064,9 +2096,10 @@ function mergeStates(base,local,remote){
   balance=clamp(Math.round(balance),0,MAX_COIN_BALANCE);
   const qj=c=>c&&c.quick?JSON.stringify(c.quick):undefined;
   const quickJ=bc?three(qj(bc),qj(lc),qj(rc),true):(qj(rc)===undefined?qj(lc):qj(rc));
+  const askNew=bc?three(!!bc.askNew,!!lc.askNew,!!rc.askNew,true):!!(rc.askNew===undefined?lc.askNew:rc.askNew);
 
   const raw={format:FORMAT,version:VERSION,title,rows:r.rows,cols:r.cols,swapped:r.swapped,flipX,flipY,axisY,axisX,
-    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:Object.assign({enabled,balance,rewards,log},quickJ?{quick:JSON.parse(quickJ)}:{}),savedAt:isoNow()};
+    rowLabels,colLabels,cellNames,tasks,archive,labels,coins:Object.assign({enabled,balance,rewards,log},quickJ?{quick:JSON.parse(quickJ)}:{},askNew?{askNew:true}:{}),savedAt:isoNow()};
   return {state:validateState(raw),conflicts};
 }
 
@@ -2927,6 +2960,7 @@ function makeNextInstance(task,next,{leftDrop=1}={}){
   if(r.left!==undefined) r.left=Math.max(1,r.left-leftDrop);
   const nt={id,title:task.title,desc:task.desc,due:next,cell:task.cell?task.cell.slice():null,
     at:Array.isArray(task.at)?task.at.slice():null,created:isoNow(),labels:(task.labels||[]).slice(),coins:task.coins,repeat:r,series};
+  if(task.coinsAsk) nt.coinsAsk=true;
   if(next>localDateStr()) nt.sleep=next;
   return nt;
 }
@@ -3319,7 +3353,7 @@ function coinsState(){
   return state.coins;
 }
 function coinsOn(){return !!(state.coins&&state.coins.enabled);}
-const DEFAULT_COIN_QUICK=[1,5,10,25], MAX_COIN_QUICK=8;
+const DEFAULT_COIN_QUICK=[1,2,4,6,8], MAX_COIN_QUICK=8;
 function coinQuickValues(){const q=state.coins&&state.coins.quick;return Array.isArray(q)&&q.length?q:DEFAULT_COIN_QUICK;}
 /* "1, 5, 10" -> [1,5,10]: whole numbers 1..max, no duplicates, sorted, at most 8; empty -> default */
 function parseCoinQuick(text){
@@ -3373,11 +3407,23 @@ function coinFloat(amount,rect){
 }
 function setTaskCoins(id,value){
   const task=findTask(id); if(!task) return;
+  if(value==='?'){
+    if(task.coinsAsk){refreshDetail(true);return;}
+    commit(()=>{task.coinsAsk=true;task.coins=0;},{detail:true});
+    toast(t('coinsAskLater'));
+    return;
+  }
   const n=normalizeCoins(value);
   const el=$('#dCoins'); if(el) el.value=String(n);
-  if(n===task.coins){refreshDetail(true);return;}
-  commit(()=>{task.coins=n;},{detail:true});
+  if(n===task.coins&&!task.coinsAsk){refreshDetail(true);return;}
+  commit(()=>{task.coins=n;delete task.coinsAsk;},{detail:true});
   toast(t('coinsValueSet',n));
+}
+function setCoinAskNew(v){
+  const c=coinsState(); v=!!v;
+  if(!!c.askNew===v){renderSettingsCoins();return;}
+  commit(()=>{if(v)c.askNew=true;else delete c.askNew;},{board:false,inbox:false,mobile:false});
+  renderSettingsCoins();
 }
 function setCoinsEnabled(v){
   v=!!v; const c=coinsState();
@@ -3391,6 +3437,9 @@ function renderSettingsCoins(){
   const hint=$('#setCoinsHint'); if(hint) hint.hidden=!coinsOn();
   const qr=$('#setCoinQuickRow'); if(qr) qr.hidden=!coinsOn();
   const qi=$('#setCoinQuick'); if(qi&&document.activeElement!==qi) qi.value=coinQuickValues().join(', ');
+  const rule=$('#setCoinsRule'); if(rule) rule.hidden=!coinsOn();
+  const ar=$('#setCoinAskRow'); if(ar) ar.hidden=!coinsOn();
+  const ac=$('#setCoinAsk'); if(ac) ac.checked=!!(state.coins&&state.coins.askNew);
 }
 function accountOpen(){const d=$('#accountDlg');return !!(d&&d.open);}
 function openAccount(){
@@ -3512,7 +3561,8 @@ function taskCard(task){
   const title=document.createElement('span'); title.className='task-title'; title.textContent=task.title||t('untitled'); el.append(title);
   const meta=document.createElement('span'); meta.className='task-meta';
   if(task.desc.trim()){const dm=document.createElement('span');dm.className='descmark';dm.textContent='≡';dm.title=t('description');meta.append(dm);}
-  if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
+  if(coinsOn()&&task.coinsAsk){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent='? 🪙';cb.title=t('coinsAskBadge');meta.append(cb);}
+  else if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
   if(task.repeat){const ri=document.createElement('span');ri.className='repeat-ic';ri.textContent='↻';ri.title=t('repeat')+': '+repeatSummary(task.repeat,task.due||localDateStr());meta.append(ri);}
   if(info){const due=document.createElement('span');due.className='due '+info.cls;due.textContent=info.label;due.title=info.title;meta.append(due);}
   el.append(meta);
@@ -3900,18 +3950,19 @@ function renderDetailCoins(task){
   const on=coinsOn();
   field.hidden=!on;
   if(!on) return;
-  const val=Number.isInteger(task.coins)?task.coins:0;
+  const val=task.coinsAsk?'?':(Number.isInteger(task.coins)?task.coins:0);
   const quick=$('#dCoinQuick');
   if(quick){
     quick.replaceChildren();
-    [0,...coinQuickValues()].forEach(v=>{
+    ['?',0,...coinQuickValues()].forEach(v=>{
       const b=document.createElement('button'); b.type='button'; b.className='btn small'+(v===val?' on':'');
       b.dataset.coinQuick=String(v); b.textContent=String(v);
+      if(v==='?') b.title=t('coinsAskBadge');
       b.setAttribute('aria-pressed',String(v===val));
       quick.append(b);
     });
   }
-  const inp=$('#dCoins'); if(inp&&document.activeElement!==inp) inp.value=String(val);
+  const inp=$('#dCoins'); if(inp&&document.activeElement!==inp){inp.value=val==='?'?'':String(val);inp.placeholder=val==='?'?'?':'';}
 }
 /* ---------- repeat in the task detail (options like Google Calendar) ---------- */
 function repeatAnchor(task){return task.due||localDateStr();}
@@ -4398,6 +4449,7 @@ function addTask(title,cell){
   leaveExample();
   if(!cell) ensureInboxOpen();
   const task={id:uid(),title,desc:'',due:null,cell:cell?[cell[0],cell[1]]:null,at:cell?cellCenter(cell[0],cell[1],state.rows,state.cols):null,created:isoNow(),labels:[],coins:0};
+  if(coinsOn()&&state.coins.askNew) task.coinsAsk=true;
   commit(()=>state.tasks.push(task));
   requestAnimationFrame(()=>{
     const key=cell?cell[0]+','+cell[1]:'inbox';
@@ -4405,18 +4457,51 @@ function addTask(title,cell){
     if(list) list.lastElementChild?.scrollIntoView({block:'nearest'});
   });
 }
-function archiveTask(id){
-  const task=findTask(id); if(!task) return;
+/* the value of a task marked ? is asked when it is ticked off; null = cancelled */
+function askTaskCoins(task){
+  const d=$('#coinAskDlg');
+  if(d.open){d.returnValue='';d.close();}
+  $('#coinAskText').textContent=t('coinAskTitle',task.title||'…');
+  const quick=$('#coinAskQuick'); quick.replaceChildren();
+  coinQuickValues().forEach(v=>{
+    const b=document.createElement('button'); b.type='button'; b.className='btn'; b.dataset.coinAsk=String(v); b.textContent=v+' 🪙';
+    quick.append(b);
+  });
+  const inp=$('#coinAskInput'); inp.value='';
+  $('#coinAskKeepRow').hidden=!task.repeat; $('#coinAskKeep').checked=false;
+  d.returnValue='';
+  return new Promise(res=>{
+    d.addEventListener('close',()=>{
+      const v=d.returnValue;
+      res(v===''?null:{coins:normalizeCoins(v),keep:!!task.repeat&&$('#coinAskKeep').checked});
+    },{once:true});
+    d.showModal(); quick.firstElementChild?.focus();
+  });
+}
+function closeCoinAsk(v){const d=$('#coinAskDlg');if(!d.open)return;d.returnValue=String(v);d.close();}
+async function archiveTask(id){
+  let task=findTask(id); if(!task) return;
+  let asked=null;
+  if(coinsOn()&&task.coinsAsk){
+    asked=await askTaskCoins(task);
+    if(!asked) return;
+    task=findTask(id); if(!task) return;
+  }
   const card=document.querySelector('.task-card[data-task="'+id+'"]');
   const rect=card?card.getBoundingClientRect():null;
-  const gain=Number.isInteger(task.coins)&&task.coins>0?task.coins:0;
+  const value=asked?asked.coins:task.coins;
+  const gain=Number.isInteger(value)&&value>0?value:0;
   leaveExample();
   const nextDate=nextOnDone(task);
   let nextTask=null;
   commit(()=>{
     const i=state.tasks.findIndex(x=>x.id===id); if(i<0) return;
     state.tasks.splice(i,1);
-    if(nextDate){nextTask=makeNextInstance(task,nextDate);if(nextTask) state.tasks.splice(i,0,nextTask);}
+    if(nextDate){
+      nextTask=makeNextInstance(task,nextDate);
+      if(nextTask&&asked&&asked.keep){nextTask.coins=asked.coins;delete nextTask.coinsAsk;}
+      if(nextTask) state.tasks.splice(i,0,nextTask);
+    }
     state.archive.push({id:task.id,title:task.title,desc:task.desc,due:task.due,created:task.created,doneAt:isoNow(),fromCell:task.cell?[task.cell[0],task.cell[1]]:null,at:Array.isArray(task.at)?task.at.slice():null,labels:Array.isArray(task.labels)?task.labels.slice():[],coins:gain});
     if(gain>0){const c=coinsState();c.balance=Math.min(MAX_COIN_BALANCE,c.balance+gain);pushCoinLog(gain,task.title,task.id);}
   },{archive:true,detail:true});
@@ -4974,7 +5059,7 @@ function exportCsv(){
     const co=task.cell?coordOf(task.cell[0],task.cell[1]):t('inboxOption');
     const name=task.cell?cellNameAt(task.cell[0],task.cell[1]):t('inboxOption');
     const row=[t('csvOpen'),co,name,task.title,task.desc,labelNames(task).join(', ')];
-    if(showCoins) row.push(task.coins||0);
+    if(showCoins) row.push(task.coinsAsk?'?':(task.coins||0));
     row.push(task.due||'',task.created,'');
     rows.push(row);
   }
@@ -5392,6 +5477,14 @@ $('#dCoins').addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault();e.stopPropagation();e.target.blur();}
   else e.stopPropagation();
 });
+$('#coinAskQuick').addEventListener('click',e=>{const b=e.target.closest('[data-coin-ask]');if(b)closeCoinAsk(b.dataset.coinAsk);});
+$('#coinAskNone').addEventListener('click',()=>closeCoinAsk(0));
+$('#coinAskOk').addEventListener('click',()=>closeCoinAsk(normalizeCoins($('#coinAskInput').value)));
+$('#coinAskInput').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'){e.preventDefault();closeCoinAsk(normalizeCoins(e.target.value));}
+});
+$('#setCoinAsk').addEventListener('change',e=>setCoinAskNew(e.target.checked));
 $('#dCell').addEventListener('change',e=>setDetailCell(e.target.value));
 $('#dLabels').addEventListener('click',e=>{
   const chip=e.target.closest('[data-toggle-label]');
@@ -5525,6 +5618,7 @@ document.addEventListener('keydown',e=>{
   if(mod&&key==='s'){e.preventDefault();if(autoWrite&&fileHandle){writeCurrentFile(true);toast(t('savedShort'));}else saveFile();return;}
   if(mod&&key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
   if(mod&&(key==='y'||(key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
+  if($('#coinAskDlg').open||$('#askDlg').open) return;
   if(e.key==='Escape'){
     if($('#helpDlg').open) return;
     if($('#accountDlg').open) return;

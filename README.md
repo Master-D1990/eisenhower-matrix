@@ -25,7 +25,7 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
 - **Labels** such as "Work" and "Private" with your own colours, and a filter to show or hide them.
-- **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards.
+- **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. Mark a task with **?** to name its value only when it is done.
 - **Phone:** the list of the chosen field at the top, the matrix as buttons at the bottom; long-press a card and drop it on a button to move it, swipe right to finish it.
 - **Export** to CSV or PDF (print), **dark mode**, colour strength, **English and Swiss German**, built-in help.
 
@@ -71,7 +71,7 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
 - **Labels** wie „Beruf“ und „Privat“ mit eigenen Farben, dazu ein Filter zum Ein- und Ausblenden.
-- **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen.
+- **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Mit **?** nennst du den Wert erst beim Erledigen.
 - **Handy:** oben die Liste des gewählten Felds, unten die Matrix als Knöpfe. Karte lange drücken und auf einen Knopf ziehen zum Verschieben, nach rechts wischen zum Erledigen.
 - **Export** als CSV oder PDF (Drucken), **Dark Mode**, Farbstärke, **Schweizerdeutsch und Englisch**, eingebaute Hilfe.
 
