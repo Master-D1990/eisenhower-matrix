@@ -372,7 +372,17 @@ async function main() {
     await p.ev(`archiveTask('${id}')`); await sleep(80);
     check(await p.ev(`document.querySelectorAll('.coin-fly').length===0 && document.querySelector('#coinsBtn').textContent==='${before + 4} 🪙'`), 'reduced motion: no flight, counter set at once');
     await p.reload();
-    check(await p.ev(`soundOn===true`), 'setting kept after reload');
+    check(await p.ev(`soundOn===true && document.querySelector('#soundBtn').textContent==='🔊'`), 'setting kept after reload, toolbar shows 🔊');
+    await p.ev(`document.querySelector('#soundBtn').click()`);
+    check(await p.ev(`soundOn===false && localStorage.getItem('em-sound')==='0' && document.querySelector('#soundBtn').textContent==='🔇' && document.querySelector('#soundBtn').getAttribute('aria-pressed')==='false'`), 'toolbar button switches off');
+    await p.ev(`document.querySelector('#soundBtn').click()`);
+    check(await p.ev(`soundOn===true && document.querySelector('#soundBtn').textContent==='🔊'`), 'and on again');
+    const q = await open(browser, base, { width: 390, height: 844, mobile: true });
+    await q.ev(`buildMobileMenu()`);
+    check(await q.ev(`!!document.querySelector('#mobileMenuList [data-mobile-action="sound"]')`), 'phone: sound in the menu');
+    await q.ev(`performAction('sound')`);
+    check(await q.ev(`soundOn===true`), 'phone: menu switches it on');
+    await q.close(); current = p;
     noErrors(p);
   });
 

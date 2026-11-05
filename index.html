@@ -130,6 +130,9 @@ select{border:1px solid var(--line);border-radius:6px;padding:3px 5px;background
 .seg svg{width:15px;height:15px;display:block}
 #helpBtn{font-weight:600}
 #settingsBtn{display:inline-flex;align-items:center;gap:3px}
+.sound-btn{font-size:14px;line-height:1;padding-left:7px;padding-right:7px}
+.sound-btn[aria-pressed="false"]{opacity:.65}
+.sound-btn[aria-pressed="false"]:hover{opacity:1}
 #settingsBtn .set-gear{font-size:14px;line-height:1}
 #settingsBtn .set-label{white-space:nowrap}
 @media screen and (max-width:1239px){#settingsBtn .set-label{display:none}}
@@ -809,6 +812,7 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     <button class="btn" id="labelsMenuBtn" aria-haspopup="true"><span data-i18n="labels"></span><span class="filter-dot" id="labelsActive" hidden></span></button>
     <span class="menu-list right" id="labelsMenuList" role="menu" hidden></span>
   </span>
+  <button class="btn desktop-only sound-btn" id="soundBtn" type="button" aria-pressed="false">🔇</button>
   <button class="btn desktop-only coins-btn" id="coinsBtn" type="button" hidden>0 🪙</button>
   <button class="btn desktop-only" id="archiveBtn" data-i18n-title="archiveT"><span data-i18n="archive"></span><span id="archiveCount">0</span></button>
   <button class="btn desktop-only" id="helpBtn" data-i18n="helpBtn" data-i18n-title="helpBtnT"></button>
@@ -981,6 +985,12 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <label class="set-row" id="setCoinQuickRow" hidden><span data-i18n="coinQuick"></span><input id="setCoinQuick" type="text" inputmode="numeric" autocomplete="off" placeholder="1, 2, 4, 6, 8"></label>
       <p class="set-hint" id="setCoinsHint" data-i18n="setCoinsHint" hidden></p>
     </section>
+    <section class="set-section" data-section="sound">
+      <h3><span class="set-coin" aria-hidden="true">🔊</span> <span data-i18n="setSound"></span></h3>
+      <label class="set-row"><input type="checkbox" id="setSound"><span data-i18n="soundPlay"></span></label>
+      <div class="set-row set-tint" id="setSoundVolRow" hidden><span data-i18n="soundVol"></span><input type="range" id="setSoundVol" min="5" max="100" step="5" data-i18n-aria="soundVol"><output id="setSoundVolOut"></output><button type="button" class="linkbtn" id="setSoundTest" data-i18n="soundTest"></button></div>
+      <p class="set-hint" id="setSoundHint" data-i18n="setSoundHint"></p>
+    </section>
     <section class="set-section" data-section="display">
       <h3 data-i18n="setDisplay"></h3>
       <div class="set-row"><span class="seg" id="setThemeSeg"><button type="button" data-th="auto"></button><button type="button" data-th="light"></button><button type="button" data-th="dark"></button></span></div>
@@ -988,9 +998,6 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
       <div class="set-row set-tint"><span data-i18n="tintLabel"></span><input type="range" id="setTint" min="0" max="100" step="1" data-i18n-aria="tintLabel"><output id="setTintOut"></output><button type="button" class="linkbtn" id="setTintReset" data-i18n="resetShort"></button></div>
       <label class="set-row set-datefmt"><span data-i18n="dateFmtLabel"></span><select id="setDateFmt"></select></label>
       <div class="set-row set-tint"><span data-i18n="taskFontLabel"></span><input type="range" id="setTaskFont" min="80" max="160" step="5" data-i18n-aria="taskFontLabel"><output id="setTaskFontOut"></output><button type="button" class="linkbtn" id="setTaskFontReset" data-i18n="resetShort"></button></div>
-      <label class="set-row"><input type="checkbox" id="setSound"><span data-i18n="setSound"></span></label>
-      <div class="set-row set-tint" id="setSoundVolRow" hidden><span data-i18n="soundVol"></span><input type="range" id="setSoundVol" min="5" max="100" step="5" data-i18n-aria="soundVol"><output id="setSoundVolOut"></output><button type="button" class="linkbtn" id="setSoundTest" data-i18n="soundTest"></button></div>
-      <p class="set-hint" id="setSoundHint" data-i18n="setSoundHint" hidden></p>
     </section>
   </div>
 </dialog>
@@ -1209,7 +1216,7 @@ de:{
   swapAxes:'⇄ Achsen tauschen', swapAxesT:'Achsen tauschen', swapped:'Achsen getauscht. Rückgängig mit Strg+Z',
   swapHint:(x,y)=>x+' waagrecht, '+y+' senkrecht', hideAxes:'Achsen ausblenden',
   flipDirT:n=>'Richtung umkehren: '+n, flipAxis:n=>n+' umkehren', flipDone:'Richtung umgekehrt. Rückgängig mit Strg+Z',
-  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen', setSound:'Töne', soundVol:'Lautstärke', soundTest:'Anhören', setSoundHint:'Kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für Münzen. Gilt nur auf diesem Gerät.',
+  showAxisButtons:'Achsen-Knöpfe anzeigen', showCellNames:'Feldnamen anzeigen (z. B. Delegieren)', tintLabel:'Farbstärke', taskFontLabel:'Task-Schriftgrösse', resetShort:'Zurücksetzen', setSound:'Töne', soundPlay:'Töne abspielen', soundVol:'Lautstärke', soundTest:'Anhören', setSoundHint:'Kurze Töne beim Erstellen, Verschieben, Erledigen, Löschen und Rückgängig, ein Klingeln für Münzen. Gilt nur auf diesem Gerät, schnell umschalten mit 🔊 in der Symbolleiste.', soundOnT:'Töne an – klicken zum Ausschalten', soundOffT:'Töne aus – klicken zum Einschalten', soundOnMsg:'Töne an', soundOffMsg:'Töne aus',
   labelColorPop:'Label-Farbe', hexColor:'Hex-Farbe', channelR:'Rot', channelG:'Grün', channelB:'Blau',
   sampleTitle:'Meine Matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Feld', csvCellName:'Feldname', csvTitle:'Titel', csvDesc:'Beschreibung', csvCoins:'Münzen', csvDue:'Frist', csvCreated:'Erstellt', csvDone:'Erledigt',
@@ -1343,7 +1350,7 @@ en:{
   swapAxes:'⇄ Swap axes', swapAxesT:'Swap axes', swapped:'Axes swapped. Undo with Ctrl+Z',
   swapHint:(x,y)=>x+' horizontal, '+y+' vertical', hideAxes:'Hide axes',
   flipDirT:n=>'Reverse direction: '+n, flipAxis:n=>'Reverse '+n, flipDone:'Direction reversed. Undo with Ctrl+Z',
-  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset', setSound:'Sounds', soundVol:'Volume', soundTest:'Play', setSoundHint:'Short sounds when you add, move, finish, delete or undo, a chime for coins. Only on this device.',
+  showAxisButtons:'Show axis buttons', showCellNames:'Show field names (e.g. Delegate)', tintLabel:'Colour strength', taskFontLabel:'Task font size', resetShort:'Reset', setSound:'Sounds', soundPlay:'Play sounds', soundVol:'Volume', soundTest:'Play', setSoundHint:'Short sounds when you add, move, finish, delete or undo, a chime for coins. Only on this device, switch quickly with 🔊 in the toolbar.', soundOnT:'Sounds on – click to turn off', soundOffT:'Sounds off – click to turn on', soundOnMsg:'Sounds on', soundOffMsg:'Sounds off',
   labelColorPop:'Label colour', hexColor:'Hex colour', channelR:'Red', channelG:'Green', channelB:'Blue',
   sampleTitle:'My matrix', fileBase:'matrix',
   csvStatus:'Status', csvCell:'Cell', csvCellName:'Cell name', csvTitle:'Title', csvDesc:'Description', csvCoins:'Coins', csvDue:'Due', csvCreated:'Created', csvDone:'Done',
@@ -3249,6 +3256,7 @@ function applyStatic(){
   document.documentElement.lang=LANG==='de'?'de-CH':'en';
   $$('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
   $$('[data-i18n-title]').forEach(el=>{el.title=t(el.dataset.i18nTitle);});
+  renderSoundBtn();
   $$('[data-i18n-placeholder]').forEach(el=>{el.placeholder=t(el.dataset.i18nPlaceholder);});
   $$('[data-i18n-aria]').forEach(el=>{el.setAttribute('aria-label',t(el.dataset.i18nAria));});
   $$('#setLangSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.lang===LANG);b.setAttribute('aria-pressed',String(b.dataset.lang===LANG));});
@@ -3411,13 +3419,19 @@ function loadSound(){
   try{soundOn=localStorage.getItem('em-sound')==='1';const v=localStorage.getItem('em-soundvol');if(v!=null)soundVol=clamp(Math.round(Number(v)/5)*5||60,5,100);}catch(e){}
 }
 function setSoundOn(v){soundOn=!!v;try{localStorage.setItem('em-sound',soundOn?'1':'0');}catch(e){}renderSettingsSound();if(soundOn)playSound('done');}
+function toggleSound(){setSoundOn(!soundOn);toast(t(soundOn?'soundOnMsg':'soundOffMsg'));}
+function renderSoundBtn(){
+  const b=$('#soundBtn'); if(!b) return;
+  b.textContent=soundOn?'🔊':'🔇'; b.setAttribute('aria-pressed',String(soundOn));
+  b.title=t(soundOn?'soundOnT':'soundOffT'); b.setAttribute('aria-label',t('setSound'));
+}
 function setSoundVol(v){soundVol=clamp(Math.round(Number(v)/5)*5||60,5,100);try{localStorage.setItem('em-soundvol',String(soundVol));}catch(e){}renderSettingsSound();}
 function renderSettingsSound(){
   const cb=$('#setSound'); if(cb) cb.checked=soundOn;
   const row=$('#setSoundVolRow'); if(row) row.hidden=!soundOn;
-  const hint=$('#setSoundHint'); if(hint) hint.hidden=!soundOn;
   const inp=$('#setSoundVol'); if(inp&&inp.value!==String(soundVol)) inp.value=String(soundVol);
   const out=$('#setSoundVolOut'); if(out) out.textContent=soundVol+' %';
+  renderSoundBtn();
 }
 function audio(){
   if(!audioCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{audioCtx=new A();}catch(e){return null;}}
@@ -4278,6 +4292,7 @@ function buildMobileMenu(){
   add(t('noLabelTasks'),'label:none',filter.none);
   add(t('showAllLabels'),'label:showall'); add(t('hideAllLabels'),'label:hideall');
   sep();
+  add((soundOn?'🔊 ':'🔇 ')+t('setSound'),'sound',soundOn);
   if(coinsOn()) add(t('account')+' · '+coinsState().balance+' 🪙','account');
   add(t('archive'),'archive'); add(t('settings'),'settings'); add(t('helpBtn'),'help');
 }
@@ -4837,6 +4852,7 @@ function performAction(a){
     case 'archive':openArchive();break;
     case 'settings':openSettings();break;
     case 'account':openAccount();break;
+    case 'sound':toggleSound();break;
     case 'autosave':toggleAutoSave();break;
     case 'help':openHelp();break;
     case 'downloadTool':downloadTool();break;
@@ -5280,6 +5296,7 @@ $('#setTint').addEventListener('input',e=>setTint(e.target.value));
 $('#setTintReset').addEventListener('click',()=>setTint(26));
 $('#setTaskFont').addEventListener('input',e=>setTaskFont(e.target.value));
 $('#setSound').addEventListener('change',e=>setSoundOn(e.target.checked));
+$('#soundBtn').addEventListener('click',toggleSound);
 $('#setSoundVol').addEventListener('input',e=>setSoundVol(e.target.value));
 $('#setSoundVol').addEventListener('change',()=>playSound('coin',2));
 $('#setSoundTest').addEventListener('click',()=>playSound('reward'));
@@ -5799,7 +5816,7 @@ function init(){
   if(!Array.isArray(state.labels)) state.labels=[];
   ui.mobileCell=null; ui.detailId=null; ui.archiveOpen=false; ui.search=''; ui.archiveQuery='';
   ui.inboxOpen=initialInboxOpen();
-  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint(); loadDateFmt(); loadSound();
+  loadAxesHidden(); loadAxisBtns(); loadCellNames(); loadTaskFont(); loadTint(); loadDateFmt(); loadSound(); renderSettingsSound();
   loadFilter(); loadMobileSel(); resetHistory(); validateUi(); applyStatic(); renderAllDynamic();
   saveLocal(true);
   checkRepeats();
