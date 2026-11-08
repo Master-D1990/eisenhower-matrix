@@ -24,6 +24,7 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 - **Tasks:** add them with **+** in the field, move them by drag & drop, open them for a description, due date, labels and more. Overdue and soon-due dates are highlighted.
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
+- **Repeat** like in a calendar (daily, weekdays, weekly, monthly, yearly or your own). Repeats have no due date unless you set one; then every repeat gets its due date at the same distance from the day it occurs.
 - **Steps:** break a task into smaller steps, each one ticked off on its own and paying its coins at once, see [Steps](#steps).
 - **Labels** such as "Work" and "Private" with your own colours, and a filter to show or hide them. **Sort** by label (its tasks move to the top of every cell) or by coins (most or fewest first), once per click: afterwards drag & drop works as usual, and undo takes it back.
 - **Gold coins (optional):** give tasks a coin value, collect coins when you finish them and spend them on your own rewards. Rule of thumb: 1 coin ≈ 15 minutes of work. New tasks start with **?**: you name the value when the task is done, or set it in the task right away.
@@ -83,6 +84,7 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 - **Aufgaben:** mit **+** direkt im Feld anlegen, per Drag & Drop verschieben, öffnen für Beschreibung, Frist, Labels und mehr. Überfällige und bald fällige Fristen sind markiert.
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
+- **Wiederholen** wie im Kalender (täglich, werktags, wöchentlich, monatlich, jährlich oder eigene). Wiederholungen haben keine Frist, ausser du setzt eine; dann bekommt jede Wiederholung ihre Frist im gleichen Abstand zu ihrem Termin.
 - **Schritte:** eine Aufgabe in kleine Schritte zerlegen, jeder wird einzeln abgehakt und bringt seine Münzen sofort, siehe [Schritte](#schritte).
 - **Labels** wie „Beruf“ und „Privat“ mit eigenen Farben, dazu ein Filter zum Ein- und Ausblenden. **Sortieren** nach Label (seine Tasks kommen in jedem Feld nach oben) oder nach Münzen (viele oder wenige zuerst), einmal pro Klick: Danach gilt wieder Drag & Drop, Rückgängig nimmt es zurück.
 - **Goldmünzen (freiwillig):** Gib Aufgaben einen Münzwert, sammle die Münzen beim Erledigen und gönn dir damit deine eigenen Belohnungen. Faustregel: 1 Münze ≈ 15 Minuten Arbeit. Neue Aufgaben starten mit **?**: Den Wert nennst du beim Erledigen oder gleich in der Aufgabe.
@@ -166,6 +168,7 @@ Google gives a browser-only app a one-hour sign-in only. [`worker/token-worker.j
 - `rows` are the levels of the vertical axis (index 0 = top = highest), `cols` the levels of the horizontal axis (index 0 = left = lowest). `swapped`, `flipX` and `flipY` only change how the matrix is shown.
 - `cell` is `null` for tasks in the inbox. `at` is the task's position on both axes (0 to 1); it decides the field again whenever the size changes.
 - `steps` (optional) lists the steps of a task: `{"id": "s1a2b3c", "title": "…", "coins": 2}`, with `"ask": true` when the value is asked on ticking, `"done"` (time) and `"got"` (coins paid) once ticked, `"n"` counts the ticks (it names the coin log entry, so a step ticked on two devices is booked once), `"from"` keeps what a dropped task had (`desc`, `due`, `labels`, `at`, `created`, `id`). Steps have no due date or repeat of their own; with steps the task's `coins` is what its open steps still pay.
+- `repeat` (optional) makes a task repeat: `{"f": "w", "n": 1, "days": [0]}` (`f` = `d`/`w`/`m`/`y`, every `n`; `days` 0 = Monday, `md` day of month, `nth` + `wd` e.g. last Friday, `mo` month, `until`, `left`, `fromDone`, `stack`). `day` is the date the repeating task occurs on. `dueIn` gives every repeat a due date that many days after its `day`; without it the repeats have no due date. A repeating task without `day` (older files) counts from its `due` with `dueIn` 0. The next entry gets `series` and, until its day, `sleep`.
 - Personal view settings (theme, language, colour strength, filters, hidden axes) are kept in the browser only, not in the file.
 
 ## License

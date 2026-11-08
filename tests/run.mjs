@@ -102,6 +102,7 @@ let current = null;
 function check(cond, msg) { if (!cond) throw new Error(msg); }
 function near(a, b, tol, msg) { check(Math.abs(a - b) <= tol, `${msg}: ${a} vs ${b} (±${tol})`); }
 async function test(name, fn) {
+  if (process.env.ONLY && !name.includes(process.env.ONLY)) return;
   const t0 = Date.now();
   try { await fn(); results.push({ name, ok: true }); console.log(`  ✓ ${name} (${Date.now() - t0} ms)`); }
   catch (e) { results.push({ name, ok: false }); console.log(`  ✗ ${name}\n      ${e.message}`); }
@@ -708,9 +709,10 @@ async function main() {
       await p.ev(`openDetail('${id}')`); await sleep(100);
       const sel = v => p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='${v}';s.dispatchEvent(new Event('change'));})()`);
       await sel('wd');
-      const r1 = await p.ev(`({rep:JSON.stringify(findTask('${id}').repeat), due:findTask('${id}').due, today:localDateStr(),
-        ic:!!document.querySelector('.task-card[data-task="${id}"] .repeat-ic'), stackRow:!document.querySelector('#dRepeatStackRow').hidden})`);
-      check(r1.rep === '{"f":"w","n":1,"days":[0,1,2,3,4]}' && r1.due === r1.today && r1.ic && r1.stackRow, 'weekday preset: ' + JSON.stringify(r1));
+      const r1 = await p.ev(`({rep:JSON.stringify(findTask('${id}').repeat), due:findTask('${id}').due, day:findTask('${id}').day, today:localDateStr(),
+        ic:!!document.querySelector('.task-card[data-task="${id}"] .repeat-ic'), stackRow:!document.querySelector('#dRepeatStackRow').hidden,
+        dayRow:!document.querySelector('#dDayRow').hidden, note:!document.querySelector('#dDueNote').hidden})`);
+      check(r1.rep === '{"f":"w","n":1,"days":[0,1,2,3,4]}' && r1.due === null && r1.day === r1.today && r1.ic && r1.stackRow && r1.dayRow && !r1.note, 'weekday preset, no due date: ' + JSON.stringify(r1));
       await sel('custom'); await sleep(50);
       check(await p.ev(`!document.querySelector('#dRepeatCustom').hidden`), 'custom panel opens');
       await p.ev(`(()=>{const n=document.querySelector('#rcN');n.value='2';n.dispatchEvent(new Event('change'));
@@ -725,6 +727,44 @@ async function main() {
       check(await p.ev(`findTask('${id}').repeat===undefined`), 'repeat removed');
       noErrors(p); await p.close(); current = null;
     }
+  });
+
+  await test('repeat: without a due date by default, a set due date repeats at the same distance', async () => {
+    const p = await open(browser, base);
+    const today = await p.ev(`localDateStr()`);
+    const id = await p.ev(`(addTask('plain',[0,0]), state.tasks.find(t=>t.title==='plain').id)`);
+    await p.ev(`openDetail('${id}')`); await sleep(100);
+    const sel = v => p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='${v}';s.dispatchEvent(new Event('change'));})()`);
+    const done = tid => p.ev(`(archiveTask('${tid}'), (()=>{const n=state.tasks.find(x=>x.series==='${id}');return n?{id:n.id,due:n.due,day:n.day,sleep:n.sleep,dueIn:n.repeat.dueIn}:null;})())`);
+    await sel('d');
+    const n1 = await done(id); await sleep(100);
+    check(n1 && n1.due === null && n1.day === await p.ev(`dAdd(localDateStr(),1)`) && n1.sleep === n1.day && n1.dueIn === undefined, 'next repeat has no due date either: ' + JSON.stringify(n1));
+    // due date two days after the occurrence: shown in the detail and repeated (planned entries shown, as with the chip)
+    await p.ev(`(ui.showPlanned=true, renderAllDynamic(), openDetail('${n1.id}'))`); await sleep(100);
+    await p.ev(`(()=>{const d=document.querySelector('#dDue');d.value=dAdd('${n1.day}',2);d.dispatchEvent(new Event('change'));})()`);
+    const shown = await p.ev(`({dueIn:findTask('${n1.id}').repeat.dueIn, note:document.querySelector('#dDueNote').hidden?'':document.querySelector('#dDueNote').textContent})`);
+    check(shown.dueIn === 2 && shown.note.includes('2 Tage nach dem Termin'), 'due distance set and named: ' + JSON.stringify(shown));
+    // moving the occurrence moves the due date with it
+    await p.ev(`(()=>{const d=document.querySelector('#dDay');d.value=dAdd('${n1.day}',1);d.dispatchEvent(new Event('change'));})()`);
+    const moved = await p.ev(`({day:findTask('${n1.id}').day, due:findTask('${n1.id}').due, want:dAdd('${n1.day}',1), wantDue:dAdd('${n1.day}',3), field:document.querySelector('#dDue').value})`);
+    check(moved.day === moved.want && moved.due === moved.wantDue && moved.field === moved.wantDue, 'due date follows the occurrence: ' + JSON.stringify(moved));
+    const n2 = await done(n1.id);
+    check(n2 && n2.due === await p.ev(`dAdd('${n2.day}',2)`) && n2.dueIn === 2, 'next repeat: due 2 days after its day: ' + JSON.stringify(n2));
+    // clearing the due date ends it for the following repeats too
+    await p.ev(`openDetail('${n2.id}')`); await sleep(100);
+    await p.ev(`document.querySelector('#dDueClear').click()`);
+    check(await p.ev(`findTask('${n2.id}').repeat.dueIn===undefined && findTask('${n2.id}').due===null && document.querySelector('#dDueNote').hidden`), 'due cleared for the series');
+    const n3 = await done(n2.id);
+    check(n3 && n3.due === null, 'after clearing: no due date: ' + JSON.stringify(n3));
+    // a repeat on a task with a due date counts from that date, due on the day (as before)
+    const did = await p.ev(`(addTask('dated',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='dated');t.due=dAdd(localDateStr(),3);return t.id;})())`);
+    await p.ev(`openDetail('${did}')`); await sleep(100); await sel('w');
+    const dated = await p.ev(`({day:findTask('${did}').day, due:findTask('${did}').due, dueIn:findTask('${did}').repeat.dueIn})`);
+    check(dated.day === dated.due && dated.dueIn === 0, 'with a due date: counts from it: ' + JSON.stringify(dated));
+    // the file keeps day and dueIn
+    const kept = await p.ev(`(()=>{const s=parseFileText(JSON.stringify(state));const t=s.tasks.find(x=>x.id==='${did}');return {day:t.day,dueIn:t.repeat.dueIn};})()`);
+    check(kept.day === dated.day && kept.dueIn === 0, 'saved and loaded: ' + JSON.stringify(kept));
+    noErrors(p);
   });
 
   await test('date fields follow the matrix language or the chosen format, typing works', async () => {

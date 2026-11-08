@@ -443,6 +443,10 @@ body.inbox-closed #inbox{cursor:pointer}
 .date-native{position:absolute;right:0;bottom:0;width:34px;height:1px;opacity:0;pointer-events:none;border:0;padding:0;margin:0}
 .repeat-custom .date-field{flex:0 1 auto}
 .repeat-custom .date-text{width:8.5em;flex:0 1 auto}
+.repeat-day{margin-top:7px;font-size:13px;font-weight:400;color:var(--text)}
+.repeat-day .date-field{flex:0 1 auto}
+.repeat-day .date-text{width:8.5em;flex:0 1 auto}
+.field>.due-note{display:block;margin:5px 0 0;color:var(--muted);font-size:12.5px;font-weight:400}
 .set-datefmt select{margin-left:auto;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text);padding:4px 6px;font-size:13px}
 #dRepeat{width:100%}
 .repeat-custom{margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:7px;color:var(--text);font-size:13px}
@@ -935,9 +939,11 @@ body.no-inbox #inbox,body.no-inbox #mobileInboxBtn,body.no-inbox .picker-inbox{d
     </div>
     <label class="field"><span data-i18n="due"></span>
       <span class="field-row"><span class="date-field"><input type="text" class="date-text" id="dDueText" inputmode="numeric" autocomplete="off" data-i18n-aria="due"><button type="button" class="date-pick" data-date-pick="dDue" data-i18n-title="datePickT" data-i18n-aria="datePickT">📅</button><input id="dDue" type="date" class="date-native" tabindex="-1" aria-hidden="true"></span><button class="btn small" id="dDueClear" data-i18n="clearDue"></button></span>
+      <span class="due-note" id="dDueNote" hidden></span>
     </label>
     <div class="field" id="dRepeatField"><span data-i18n="repeat"></span>
       <select id="dRepeat" data-i18n-aria="repeat"></select>
+      <div class="rc-row repeat-day" id="dDayRow" hidden><span data-i18n="repeatDay"></span><span class="date-field"><input type="text" class="date-text" id="dDayText" inputmode="numeric" autocomplete="off" data-i18n-aria="repeatDay"><button type="button" class="date-pick" data-date-pick="dDay" data-i18n-title="datePickT" data-i18n-aria="datePickT">📅</button><input id="dDay" type="date" class="date-native" tabindex="-1" aria-hidden="true"></span></div>
       <div class="repeat-custom" id="dRepeatCustom" hidden>
         <div class="rc-row"><span data-i18n="repeatEvery"></span><input id="rcN" type="number" min="1" max="99" inputmode="numeric"><select id="rcF"></select></div>
         <div class="rc-row rc-days" id="rcDays"></div>
@@ -1124,7 +1130,7 @@ const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&
 const sameGrid=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((row,i)=>sameArray(row,b[i]));
 const FORMAT='eisenhower-matrix', VERSION=1;
 const MAX_TITLE=500, MAX_DESC=20000, MAX_LABEL=200, MAX_AXIS=200, MAX_ID=64, MAX_STEPS=50, MAX_STEP_ID=12;
-const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, STACK_MAX_OPEN=5;
+const MAX_REPEAT_EVERY=99, MAX_REPEAT_LEFT=999, MAX_REPEAT_DUE_IN=3660, STACK_MAX_OPEN=5;
 const MAX_LABELS=50, MAX_LABEL_NAME=40, LABEL_COLOR=/^#[0-9a-f]{6}$/i;
 const MAX_TASK_COINS=9999, MAX_COIN_BALANCE=999999999, MAX_REWARD_PRICE=999999, MAX_REWARD_NAME=60, MAX_COIN_LOG=2000, MAX_COIN_TEXT=300;
 /* colour-blind-friendly palette (Okabe-Ito inspired), readable on light and dark */
@@ -1258,6 +1264,7 @@ de:{
   repeatEnd:'Ende', rEndNever:'nie', rEndUntil:'am', rEndCount:'nach', repeatTimes:'Mal',
   repeatFromDone:'Ab Erledigen zählen (statt ab Frist)',
   repeatStack:'Aufstocken: an jedem fälligen Tag ein neuer Eintrag, auch wenn der alte noch offen ist (höchstens 5 offen, die ältesten fallen weg)',
+  repeatDay:'Termin am', dueNote:n=>n===0?'Jede Wiederholung: Frist am Tag des Termins':n===1?'Jede Wiederholung: Frist 1 Tag nach dem Termin':'Jede Wiederholung: Frist '+n+' Tage nach dem Termin',
   repeatSleeps:d=>'Geplant, erscheint am '+d, repeatWake:'Jetzt anzeigen',
   repeatSkipped:n=>n===1?'1 ältere Wiederholung übersprungen':n+' ältere Wiederholungen übersprungen',
   archivedNext:d=>'Erledigt. Nächste Wiederholung am '+d,
@@ -1292,6 +1299,7 @@ de:{
   helpSaveOff:'<b>Speichern</b>: Datei → Speichern. Der Browserspeicher allein ist keine Sicherung.',
   helpListHtml:`<li><b>Anlegen und verschieben</b>: <b>+</b> im Feld legt eine Aufgabe an. Karten ziehst du in ein anderes Feld, auf dem Handy nach langem Drücken.</li>
     <li><b>Details</b>: Ein Klick auf die Karte zeigt Beschreibung, Frist und Labels. Erledigtes landet im Archiv und lässt sich wiederherstellen.</li>
+    <li><b>Wiederholen</b>: In der Aufgabe unter „Wiederholen“. Eine Wiederholung hat keine Frist, ausser du setzt eine: Dann bekommt jede Wiederholung ihre Frist im gleichen Abstand zum „Termin am“.</li>
     <li><b>Schritte</b>: In der Aufgabe <b>+</b> neben „Schritte“, oder eine Aufgabe mitten auf eine andere ziehen. <b>▸</b> auf der Karte klappt sie auf, <b>✓</b> hakt einen Schritt ab und bringt seine Münzen. Mit Schritten zahlen nur die Schritte, jeder mit seinem eigenen Wert. Schritte haben keine eigene Frist und Wiederholung. Die Aufgabe schliesst du selbst ab.</li>
     <li class="help-save"></li>
     <li><b>⚙ Einstellungen</b>: Grösse, Achsen, Labels, Goldmünzen, Farben und Schrift.</li>
@@ -1401,6 +1409,7 @@ en:{
   repeatEnd:'Ends', rEndNever:'never', rEndUntil:'on', rEndCount:'after', repeatTimes:'times',
   repeatFromDone:'Count from completion (instead of the due date)',
   repeatStack:'Stack up: a new entry on every due day, even if the old one is still open (at most 5 open, the oldest give way)',
+  repeatDay:'Occurs on', dueNote:n=>n===0?'Every repeat: due on the day it occurs':n===1?'Every repeat: due 1 day after it occurs':'Every repeat: due '+n+' days after it occurs',
   repeatSleeps:d=>'Planned, appears on '+d, repeatWake:'Show now',
   repeatSkipped:n=>n===1?'1 older repetition skipped':n+' older repetitions skipped',
   archivedNext:d=>'Done. Next repetition on '+d,
@@ -1435,6 +1444,7 @@ en:{
   helpSaveOff:'<b>Saving</b>: File → Save. The browser cache alone is not a backup.',
   helpListHtml:`<li><b>Add and move</b>: <b>+</b> in a field adds a task. Drag cards to another field, on a phone after a long press.</li>
     <li><b>Details</b>: Click a card for description, due date and labels. Done tasks go to the archive, where you can restore them.</li>
+    <li><b>Repeat</b>: In the task under "Repeat". A repeat has no due date unless you set one: then every repeat gets its due date at the same distance from "Occurs on".</li>
     <li><b>Steps</b>: In the task <b>+</b> next to "Steps", or drop a task onto the middle of another. <b>▸</b> on the card unfolds them, <b>✓</b> ticks a step off and pays its coins. With steps only the steps pay, each with its own value. Steps have no due date or repeat of their own. You finish the task yourself.</li>
     <li class="help-save"></li>
     <li><b>⚙ Settings</b>: size, axes, labels, gold coins, colours and font.</li>
@@ -1665,6 +1675,10 @@ function cleanTask(x,path,isArchive,rows,cols,labelIds){
     out.series=reqStr(x.series,path+'.series',MAX_ID,false);
     if(!/^[A-Za-z0-9_-]+$/.test(out.series)) throw new Error(t('invalidReason',path+'.series'));
   }
+  if(x.day!==undefined&&x.day!==null){
+    if(!isValidDateStr(x.day)) throw new Error(t('invalidReason',path+'.day'));
+    if(out.repeat) out.day=x.day;
+  }
   if(x.sleep!==undefined&&x.sleep!==null){
     if(!isValidDateStr(x.sleep)) throw new Error(t('invalidReason',path+'.sleep'));
     out.sleep=x.sleep;
@@ -1720,7 +1734,9 @@ function cleanStepFrom(x,path,labelIds){
   return out;
 }
 /* repeat: {f:'d'|'w'|'m'|'y', n:every, days:[0=Mon..6], md:day of month, nth:1..4|-1 with wd, mo:month,
-   until:date, left:occurrences left incl. this one, fromDone:count from completion, stack:new entry on every due day} */
+   until:date, left:occurrences left incl. this one, fromDone:count from completion, stack:new entry on every due day,
+   dueIn:days from the occurrence to the due date, absent = the repeats have no due date}
+   The occurrence date of a repeating task is task.day; an older task without it counts from its due date (dueIn 0). */
 function cleanRepeat(x,path){
   const bad=()=>{throw new Error(t('invalidReason',path));};
   if(!x||typeof x!=='object'||Array.isArray(x)||!['d','w','m','y'].includes(x.f)) bad();
@@ -1738,6 +1754,7 @@ function cleanRepeat(x,path){
   if(x.left!==undefined&&x.left!==null){if(!Number.isInteger(x.left)||x.left<1||x.left>MAX_REPEAT_LEFT) bad(); out.left=x.left;}
   if(x.fromDone===true) out.fromDone=true;
   if(x.stack===true) out.stack=true;
+  if(x.dueIn!==undefined&&x.dueIn!==null){if(!Number.isInteger(x.dueIn)||x.dueIn<0||x.dueIn>MAX_REPEAT_DUE_IN) bad(); out.dueIn=x.dueIn;}
   return out;
 }
 function cleanCoins(raw){
@@ -3162,14 +3179,31 @@ function nextOccurrence(anchor,r){
   return dStr(new Date(Date.UTC(y,m0,Math.min(r.md||a.getUTCDate(),monthLen(y,m0)))));
 }
 function isAwake(task){return !task.sleep||task.sleep<=localDateStr();}
+function dDiff(a,b){return Math.round((dParse(b)-dParse(a))/86400000);}
+/* the day a repeating task occurs on; older tasks without task.day count from their due date */
+function repeatAnchor(task){return task.day||task.due||localDateStr();}
+/* days from the occurrence to the due date for the next repeats; undefined = no due date */
+function repeatDueIn(task){
+  const r=task.repeat; if(!r) return undefined;
+  if(r.dueIn!==undefined) return r.dueIn;
+  if(!task.day&&task.due) return 0;
+  return undefined;
+}
+/* give an older repeating task its own occurrence date before it is edited */
+function ensureRepeatDay(task){
+  if(!task.repeat||task.day) return;
+  task.day=task.due||localDateStr();
+  if(task.due&&task.repeat.dueIn===undefined) task.repeat={...task.repeat,dueIn:0};
+}
 function makeNextInstance(task,next,{leftDrop=1}={}){
   const series=task.series||task.id;
   const id=(series.slice(0,MAX_ID-9)+'_'+next.replace(/-/g,''));
   if(findTask(id)||state.archive.some(x=>x.id===id)) return null;
-  const r={...task.repeat};
+  const r={...task.repeat}, dueIn=repeatDueIn(task);
   if(r.left!==undefined) r.left=Math.max(1,r.left-leftDrop);
-  const nt={id,title:task.title,desc:task.desc,due:next,cell:task.cell?task.cell.slice():null,
-    at:Array.isArray(task.at)?task.at.slice():null,created:isoNow(),labels:(task.labels||[]).slice(),coins:task.coins,repeat:r,series};
+  if(dueIn!==undefined) r.dueIn=dueIn;
+  const nt={id,title:task.title,desc:task.desc,due:dueIn===undefined?null:dAdd(next,dueIn),cell:task.cell?task.cell.slice():null,
+    at:Array.isArray(task.at)?task.at.slice():null,created:isoNow(),labels:(task.labels||[]).slice(),coins:task.coins,repeat:r,series,day:next};
   if(task.coinsAsk) nt.coinsAsk=true;
   if(stepsOf(task).length){
     nt.steps=stepsOf(task).map(s=>Object.assign({id:s.id,title:s.title,coins:s.ask?0:s.coins},s.ask?{ask:true}:{}));
@@ -3183,7 +3217,7 @@ function nextOnDone(task){
   const r=task.repeat; if(!r||task.spawned) return null;
   if(r.left!==undefined&&r.left<=1) return null;
   const today=localDateStr();
-  let cur=r.fromDone?today:(task.due||today);
+  let cur=r.fromDone?today:repeatAnchor(task);
   for(let g=0;g<5000;g++){
     const nx=nextOccurrence(cur,r);
     if(r.until&&nx>r.until) return null;
@@ -3201,7 +3235,7 @@ function spawnStacked(){
   for(let i=0;i<state.tasks.length;i++){
     const task=state.tasks[i], r=task.repeat;
     if(!r||!r.stack||task.spawned) continue;
-    const dates=[]; let cur=task.due||today, left=r.left;
+    const dates=[]; let cur=repeatAnchor(task), left=r.left;
     for(let g=0;g<5000;g++){
       if(left!==undefined&&left<=1) break;
       const nx=nextOccurrence(cur,r);
@@ -3222,7 +3256,7 @@ function spawnStacked(){
     state.tasks.splice(i+1,0,...add); i+=add.length;
     /* the open entries of this series beyond the newest STACK_MAX_OPEN give way (ids are per day, so devices agree) */
     const series=task.series||task.id;
-    const open=state.tasks.filter(x=>(x.series||x.id)===series).sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+    const open=state.tasks.filter(x=>(x.series||x.id)===series).sort((a,b)=>repeatAnchor(b).localeCompare(repeatAnchor(a)));
     const drop=new Set(open.slice(STACK_MAX_OPEN).map(x=>x.id));
     if(drop.size){
       i-=state.tasks.slice(0,i+1).filter(x=>drop.has(x.id)).length;
@@ -3418,7 +3452,7 @@ function openDatePicker(id){
 function setDateFmt(v){
   dateFmt=['auto','dmy','mdy','ymd'].includes(v)?v:'auto';
   try{localStorage.setItem('em-datefmt',dateFmt);}catch(e){}
-  syncDateText('dDue'); syncDateText('rcUntil'); renderSettingsDateFmt();
+  syncDateText('dDue'); syncDateText('dDay'); syncDateText('rcUntil'); renderSettingsDateFmt();
 }
 function renderSettingsDateFmt(){
   const sel=$('#setDateFmt'); if(!sel) return;
@@ -4068,7 +4102,7 @@ function taskCard(task){
   }
   if(coinsOn()&&task.coinsAsk){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=(task.coins>0?task.coins+'+':'')+'? 🪙';cb.title=t('coinsAskBadge');meta.append(cb);}
   else if(coinsOn()&&Number.isInteger(task.coins)&&task.coins>0){const cb=document.createElement('span');cb.className='coins-badge';cb.textContent=task.coins+' 🪙';cb.title=t('coinsValue')+': '+task.coins;meta.append(cb);}
-  if(task.repeat){const ri=document.createElement('span');ri.className='repeat-ic';ri.textContent='↻';ri.title=t('repeat')+': '+repeatSummary(task.repeat,task.due||localDateStr());meta.append(ri);}
+  if(task.repeat){const ri=document.createElement('span');ri.className='repeat-ic';ri.textContent='↻';ri.title=t('repeat')+': '+repeatSummary(task.repeat,repeatAnchor(task));meta.append(ri);}
   if(info){const due=document.createElement('span');due.className='due '+info.cls;due.textContent=info.label;due.title=info.title;meta.append(due);}
   el.append(meta);
   if(!isAwake(task)){el.classList.add('sleeping');el.title=t('repeatSleeps',dueInfo(task.sleep).full)+'\n'+el.title;}
@@ -4588,7 +4622,6 @@ function openStepPicker(id){
   $('#movePicker').hidden=false;
 }
 /* ---------- repeat in the task detail (options like Google Calendar) ---------- */
-function repeatAnchor(task){return task.due||localDateStr();}
 function nthOf(s){const d=dParse(s).getUTCDate(),L=monthLen(dParse(s).getUTCFullYear(),dParse(s).getUTCMonth());return d+7>L?-1:Math.ceil(d/7);}
 function repeatPreset(key,anchor){
   const a=dParse(anchor);
@@ -4603,7 +4636,7 @@ function repeatPreset(key,anchor){
   return null;
 }
 const REPEAT_PRESETS=['d','wd','w','m','mn','y'];
-function repeatCore(r){const c={...r};delete c.stack;return JSON.stringify(c);}
+function repeatCore(r){const c={...r};delete c.stack;delete c.dueIn;return JSON.stringify(c);}
 function matchRepeatPreset(r,anchor){
   if(!r) return 'none';
   for(const k of REPEAT_PRESETS) if(repeatCore(r)===JSON.stringify(repeatPreset(k,anchor))) return k;
@@ -4641,6 +4674,10 @@ function renderDetailRepeat(task){
   const showCustom=!!r&&(cur==='custom'||ui.repeatCustom);
   $('#dRepeatCustom').hidden=!showCustom;
   $('#dRepeatStackRow').hidden=!r;
+  $('#dDayRow').hidden=!r;
+  if(r&&document.activeElement!==$('#dDay')){$('#dDay').value=anchor;syncDateText('dDay');}
+  const dueIn=repeatDueIn(task), note=$('#dDueNote');
+  note.hidden=!r||dueIn===undefined; if(!note.hidden) note.textContent=t('dueNote',dueIn);
   $('#dRepeatStack').checked=!!(r&&r.stack);
   if(showCustom) renderRepeatCustom(r,anchor);
   const sl=$('#dSleep');
@@ -4680,15 +4717,38 @@ function repeatFromCustom(task){
   if(end==='until'){const u=$('#rcUntil').value;r.until=isValidDateStr(u)?u:dAdd(anchor,30);}
   if(end==='count') r.left=clamp(Math.round(Number($('#rcLeft').value))||10,1,MAX_REPEAT_LEFT);
   if($('#rcFromDone').checked) r.fromDone=true;
+  return r;
+}
+/* stacking and the due date distance stay when the pattern changes */
+function keepRepeatExtras(task,r){
   if(task.repeat&&task.repeat.stack) r.stack=true;
+  const dueIn=repeatDueIn(task); if(dueIn!==undefined) r.dueIn=dueIn;
   return r;
 }
 function setTaskRepeat(task,r){
   leaveExample();
   commit(()=>{
-    if(r){task.repeat=r; if(!task.due) task.due=localDateStr();}   // a repeat needs a date to count from
-    else{delete task.repeat; delete task.spawned;}
+    if(r){
+      /* a repeat counts from its own date: the due date if the task has one, else today.
+         Without a due date the repeats have none either; with one, each repeat gets it at the same distance */
+      if(!task.repeat||!task.day){task.day=task.day||task.due||localDateStr(); if(task.due&&r.dueIn===undefined) r.dueIn=Math.max(0,dDiff(task.day,task.due));}
+      task.repeat=r;
+    }
+    else{delete task.repeat; delete task.spawned; delete task.day;}
   },{detail:true});
+}
+function setDetailDay(value){
+  const task=detailTask(); if(!task||!task.repeat||!isValidDateStr(value)) return;
+  leaveExample();
+  commit(()=>{
+    ensureRepeatDay(task);
+    task.day=value;
+    if(task.repeat.dueIn!==undefined) task.due=dAdd(value,task.repeat.dueIn);
+    // a sleeping repeat follows its date: an earlier date wakes it earlier
+    if(task.sleep){if(value>localDateStr()) task.sleep=value; else delete task.sleep;}
+  },{detail:true});
+  // the date field may still have focus, so the detail is not redrawn: update what follows from the date
+  renderDetailRepeat(task); $('#dDue').value=task.due||''; syncDateText('dDue');
 }
 function onRepeatSelect(){
   const task=detailTask(); if(!task) return;
@@ -4700,10 +4760,9 @@ function onRepeatSelect(){
     return;
   }
   ui.repeatCustom=false;
-  const r=repeatPreset(v,anchor); if(task.repeat&&task.repeat.stack) r.stack=true;
-  setTaskRepeat(task,r);
+  setTaskRepeat(task,keepRepeatExtras(task,repeatPreset(v,anchor)));
 }
-function onRepeatCustomChange(){const task=detailTask(); if(task&&task.repeat) setTaskRepeat(task,repeatFromCustom(task));}
+function onRepeatCustomChange(){const task=detailTask(); if(task&&task.repeat) setTaskRepeat(task,keepRepeatExtras(task,repeatFromCustom(task)));}
 function renderDetailValues(task){
   $('#detailHead').textContent=task.cell?cellLabel(task.cell[0],task.cell[1]):t('inboxOption');
   $('#dTitle').value=task.title; $('#dDesc').value=task.desc; $('#dDue').value=task.due||''; syncDateText('dDue');
@@ -4719,7 +4778,7 @@ function refreshDetail(force=false){
   const task=findTask(ui.detailId);
   if(!task){closeDetail();return;}
   const ae=document.activeElement;
-  if(!force&&ae&&['dTitle','dDesc','dDue','dDueText','rcN','rcLeft','rcUntil','rcUntilText'].includes(ae.id)) return;
+  if(!force&&ae&&['dTitle','dDesc','dDue','dDueText','dDay','dDayText','rcN','rcLeft','rcUntil','rcUntilText'].includes(ae.id)) return;
   renderDetailValues(task);
   scheduleDetailPosition();
 }
@@ -5161,7 +5220,7 @@ async function archiveTask(id){
   if(ui.detailId===id) closeDetail();
   playSound('done');
   if(gain>0&&coinsOn()) coinReward(gain,rect,before);
-  toast(nextTask?t('archivedNext',dueInfo(nextTask.due).short):t('archived'),{label:t('undoAction'),fn:undo});
+  toast(nextTask?t('archivedNext',dueInfo(nextTask.day).short):t('archived'),{label:t('undoAction'),fn:undo});
 }
 function restoreArchive(id){
   const idx=state.archive.findIndex(x=>x.id===id); if(idx<0) return;
@@ -5237,10 +5296,16 @@ function setDetailDue(value){
   const task=detailTask(); if(!task) return;
   leaveExample();
   commit(()=>{
+    if(task.repeat){
+      /* a repeat keeps its own date; the due date sets the distance every following repeat gets */
+      ensureRepeatDay(task);
+      const r={...task.repeat};
+      if(value) r.dueIn=clamp(dDiff(task.day,value),0,MAX_REPEAT_DUE_IN); else delete r.dueIn;
+      task.repeat=r;
+    }
     task.due=value||null;
-    // a sleeping repeat follows its date: earlier date wakes it earlier, no date wakes it now
-    if(task.sleep){if(value&&value>localDateStr()) task.sleep=value; else delete task.sleep;}
-  });
+  },{detail:true});
+  renderDetailRepeat(task);
 }
 function setDetailCell(value){
   const task=detailTask(); if(!task) return;
@@ -6156,7 +6221,8 @@ $('#rcDays').addEventListener('click',e=>{const b=e.target.closest('[data-rc-day
 $('#dRepeatStack').addEventListener('change',e=>{const task=detailTask();if(!task||!task.repeat)return;const r={...task.repeat};if(e.target.checked)r.stack=true;else delete r.stack;setTaskRepeat(task,r);checkRepeats();});
 $('#dSleepWake').addEventListener('click',()=>{const task=detailTask();if(!task||!task.sleep)return;commit(()=>{delete task.sleep;},{detail:true});});
 $('#dDueClear').addEventListener('click',()=>{$('#dDue').value='';syncDateText('dDue');setDetailDue('');});
-wireDateField('dDue'); wireDateField('rcUntil');
+wireDateField('dDue'); wireDateField('dDay'); wireDateField('rcUntil');
+$('#dDay').addEventListener('change',e=>setDetailDay(e.target.value));
 document.addEventListener('click',e=>{const b=e.target.closest('[data-date-pick]');if(b){e.preventDefault();openDatePicker(b.dataset.datePick);}});
 $('#setDateFmt').addEventListener('change',e=>setDateFmt(e.target.value));
 $('#dCoinQuick').addEventListener('click',e=>{
