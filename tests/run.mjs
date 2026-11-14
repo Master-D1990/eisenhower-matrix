@@ -600,6 +600,59 @@ async function main() {
     noErrors(p);
   });
 
+  await test('repeat: stacking is a setting of the series, switched from any entry; nothing stacked backwards', async () => {
+    const p = await open(browser, base);
+    const ids = await p.ev(`(()=>{
+      const today=localDateStr();
+      addTask('daily',[0,0]); const a=state.tasks.find(x=>x.title==='daily'); a.day=dAdd(today,-8); a.repeat={f:'d',n:1,stack:true};
+      leaveExample(); spawnStacked();
+      return state.tasks.filter(x=>x.title==='daily').map(x=>x.id);
+    })()`);
+    const flags = () => p.ev(`state.tasks.filter(x=>x.title==='daily').map(x=>(x.repeat?(x.repeat.stack?'s':'-'):'n')+(x.spawned?'':'H')).join(' ')`);
+    check(ids.length === 5 && await flags() === 's s s s sH', 'five stacked, the newest makes the next: ' + await flags());
+    // off at an older entry: off for the whole series, the open entries stay
+    await p.ev(`openDetail('${ids[1]}')`); await sleep(100);
+    await p.ev(`document.querySelector('#dRepeatStack').click()`);
+    check(await flags() === '- - - - -H' && await p.ev(`spawnStacked()`) === 0, 'off at an older entry: off everywhere, all five stay: ' + await flags());
+    // the pattern changed at an older entry reaches the entry that makes the next
+    await p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='wd';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    check(await p.ev(`state.tasks.filter(x=>x.title==='daily').every(x=>JSON.stringify(x.repeat.days)==='[0,1,2,3,4]')`), 'pattern holds for the series');
+    // on again at an older entry: on everywhere, from today, nothing created for the days before
+    await p.ev(`document.querySelector('#dRepeatStack').click()`);
+    check(await flags() === 's s s s sH' && await p.ev(`state.tasks.filter(x=>x.title==='daily').every(x=>x.repeat.since===localDateStr())`), 'on at an older entry: on everywhere, from today: ' + await flags());
+    // switching on at a task that has been open for days creates nothing and keeps the task
+    const oid = await p.ev(`(addTask('open',[1,1]), (()=>{const t=state.tasks.find(t=>t.title==='open');t.day=dAdd(localDateStr(),-10);t.repeat={f:'d',n:1,fromDone:true};return t.id;})())`);
+    await p.ev(`closeDetail()`); await p.ev(`openDetail('${oid}')`); await sleep(100);
+    await p.ev(`document.querySelector('#dRepeatStack').click()`);
+    const on = await p.ev(`({n:state.tasks.filter(x=>x.title==='open').length, there:!!findTask('${oid}'), r:findTask('${oid}')&&findTask('${oid}').repeat})`);
+    check(on.n === 1 && on.there && on.r.stack === true && on.r.fromDone === undefined, 'switched on late: one entry, stacking replaces counting from completion: ' + JSON.stringify(on));
+    // counting from completion ends stacking
+    await p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='custom';s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await sleep(100);
+    await p.ev(`document.querySelector('#rcFromDone').click()`);
+    const fd = await p.ev(`findTask('${oid}').repeat`);
+    check(fd.fromDone === true && fd.stack === undefined && fd.since === undefined, 'from completion: stacking off: ' + JSON.stringify(fd));
+    // "never" ends the series for all its open entries
+    await p.ev(`closeDetail()`); await p.ev(`openDetail('${ids[2]}')`); await sleep(100);
+    await p.ev(`(()=>{const s=document.querySelector('#dRepeat');s.value='none';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    check(await flags() === 'nH nH nH nH nH', 'never: the series ends, the entries stay as tasks: ' + await flags());
+    noErrors(p);
+  });
+
+  await test('repeat: a stacked series survives a moved date', async () => {
+    const p = await open(browser, base);
+    const r = await p.ev(`(()=>{
+      const today=localDateStr();
+      addTask('moved',[0,0]); const a=state.tasks.find(x=>x.title==='moved'); a.day=dAdd(today,-3); a.repeat={f:'d',n:1,stack:true};
+      leaveExample(); spawnStacked();
+      const all=()=>state.tasks.filter(x=>x.title==='moved');
+      const head=all().find(x=>!x.spawned); head.day=dAdd(today,-1);
+      spawnStacked(); spawnStacked();
+      return {heads:all().filter(x=>!x.spawned).length, n:all().length, same:all().find(x=>!x.spawned)===head};
+    })()`);
+    check(r.heads === 1 && r.same && r.n === 4, 'the entry with the moved date still makes the next: ' + JSON.stringify(r));
+    noErrors(p);
+  });
+
   await test('repeat: stacking keeps at most five open entries, never twice', async () => {
     const p = await open(browser, base);
     const r = await p.ev(`(()=>{
@@ -756,14 +809,21 @@ async function main() {
     check(await p.ev(`findTask('${n2.id}').repeat.dueIn===undefined && findTask('${n2.id}').due===null && document.querySelector('#dDueNote').hidden`), 'due cleared for the series');
     const n3 = await done(n2.id);
     check(n3 && n3.due === null, 'after clearing: no due date: ' + JSON.stringify(n3));
-    // a repeat on a task with a due date counts from that date, due on the day (as before)
+    // a repeat on a task with a due date counts from today and keeps the distance to the due date: the order of the two fields does not matter
     const did = await p.ev(`(addTask('dated',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='dated');t.due=dAdd(localDateStr(),3);return t.id;})())`);
     await p.ev(`openDetail('${did}')`); await sleep(100); await sel('w');
     const dated = await p.ev(`({day:findTask('${did}').day, due:findTask('${did}').due, dueIn:findTask('${did}').repeat.dueIn})`);
-    check(dated.day === dated.due && dated.dueIn === 0, 'with a due date: counts from it: ' + JSON.stringify(dated));
+    check(dated.day === await p.ev(`localDateStr()`) && dated.due === await p.ev(`dAdd(localDateStr(),3)`) && dated.dueIn === 3, 'with a due date: counts from today, due 3 days later: ' + JSON.stringify(dated));
+    const nd = await p.ev(`(archiveTask('${did}'), (()=>{const n=state.tasks.find(x=>x.series==='${did}');return n?{due:n.due,day:n.day,sleep:n.sleep}:null;})())`);
+    check(nd && nd.day === await p.ev(`dAdd(localDateStr(),7)`) && nd.sleep === nd.day && nd.due === await p.ev(`dAdd(localDateStr(),10)`), 'its next repeat appears 3 days before its due date: ' + JSON.stringify(nd));
+    // a due date in the past becomes the date itself
+    const pid = await p.ev(`(addTask('late',[0,0]), (()=>{const t=state.tasks.find(t=>t.title==='late');t.due=dAdd(localDateStr(),-2);return t.id;})())`);
+    await p.ev(`openDetail('${pid}')`); await sleep(100); await sel('w');
+    const late = await p.ev(`({day:findTask('${pid}').day, due:findTask('${pid}').due, dueIn:findTask('${pid}').repeat.dueIn})`);
+    check(late.day === late.due && late.dueIn === 0, 'with a due date in the past: counts from it: ' + JSON.stringify(late));
     // the file keeps day and dueIn
-    const kept = await p.ev(`(()=>{const s=parseFileText(JSON.stringify(state));const t=s.tasks.find(x=>x.id==='${did}');return {day:t.day,dueIn:t.repeat.dueIn};})()`);
-    check(kept.day === dated.day && kept.dueIn === 0, 'saved and loaded: ' + JSON.stringify(kept));
+    const kept = await p.ev(`(()=>{const s=parseFileText(JSON.stringify(state));const t=s.tasks.find(x=>x.id==='${pid}');return {day:t.day,dueIn:t.repeat.dueIn};})()`);
+    check(kept.day === late.day && kept.dueIn === 0, 'saved and loaded: ' + JSON.stringify(kept));
     noErrors(p);
   });
 

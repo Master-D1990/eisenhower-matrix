@@ -1735,6 +1735,7 @@ function cleanStepFrom(x,path,labelIds){
 }
 /* repeat: {f:'d'|'w'|'m'|'y', n:every, days:[0=Mon..6], md:day of month, nth:1..4|-1 with wd, mo:month,
    until:date, left:occurrences left incl. this one, fromDone:count from completion, stack:new entry on every due day,
+   since:day stacking was switched on (no entries are stacked for the days up to it),
    dueIn:days from the occurrence to the due date, absent = the repeats have no due date}
    The occurrence date of a repeating task is task.day; an older task without it counts from its due date (dueIn 0). */
 function cleanRepeat(x,path){
@@ -1754,6 +1755,7 @@ function cleanRepeat(x,path){
   if(x.left!==undefined&&x.left!==null){if(!Number.isInteger(x.left)||x.left<1||x.left>MAX_REPEAT_LEFT) bad(); out.left=x.left;}
   if(x.fromDone===true) out.fromDone=true;
   if(x.stack===true) out.stack=true;
+  if(x.since!==undefined&&x.since!==null){if(!isValidDateStr(x.since)) bad(); out.since=x.since;}
   if(x.dueIn!==undefined&&x.dueIn!==null){if(!Number.isInteger(x.dueIn)||x.dueIn<0||x.dueIn>MAX_REPEAT_DUE_IN) bad(); out.dueIn=x.dueIn;}
   return out;
 }
@@ -3180,8 +3182,14 @@ function nextOccurrence(anchor,r){
 }
 function isAwake(task){return !task.sleep||task.sleep<=localDateStr();}
 function dDiff(a,b){return Math.round((dParse(b)-dParse(a))/86400000);}
-/* the day a repeating task occurs on; older tasks without task.day count from their due date */
-function repeatAnchor(task){return task.day||task.due||localDateStr();}
+/* the day a repeating task occurs on; older repeating tasks without task.day count from their due date.
+   A task that does not repeat yet would start today (a due date already in the past becomes the day itself) */
+function repeatAnchor(task){
+  if(task.day) return task.day;
+  const today=localDateStr();
+  if(task.repeat) return task.due||today;
+  return task.due&&task.due<today?task.due:today;
+}
 /* days from the occurrence to the due date for the next repeats; undefined = no due date */
 function repeatDueIn(task){
   const r=task.repeat; if(!r) return undefined;
@@ -3240,19 +3248,24 @@ function spawnStacked(){
       if(left!==undefined&&left<=1) break;
       const nx=nextOccurrence(cur,r);
       if(nx>today||(r.until&&nx>r.until)) break;
-      dates.push(nx); cur=nx; if(left!==undefined) left--;
+      cur=nx;
+      if(r.since&&nx<=r.since) continue;   // stacking was switched on later: nothing for the days before
+      dates.push(nx); if(left!==undefined) left--;
     }
     if(!dates.length) continue;
     const keep=dates.slice(-STACK_MAX_OPEN);
     const skipped=dates.length-keep.length;
+    let src=task; const add=[];
+    keep.forEach(d=>{
+      const nt=makeNextInstance(src,d,{leftDrop:add.length?1:1+skipped}); if(!nt) return;
+      nt.spawned=true; add.push(nt); src=nt;
+    });
+    /* a day whose entry exists already gives none (e.g. the date of this entry was moved): the series must keep
+       exactly one entry that makes the next, so this one stays it until a new entry really exists */
+    if(!add.length) continue;
+    delete add[add.length-1].spawned;
     skippedAll+=skipped;
     task.spawned=true; changed=true;
-    let src=task; const add=[];
-    keep.forEach((d,k)=>{
-      const nt=makeNextInstance(src,d,{leftDrop:k===0?1+skipped:1}); if(!nt) return;
-      if(k<keep.length-1) nt.spawned=true;
-      add.push(nt); src=nt;
-    });
     state.tasks.splice(i+1,0,...add); i+=add.length;
     /* the open entries of this series beyond the newest STACK_MAX_OPEN give way (ids are per day, so devices agree) */
     const series=task.series||task.id;
@@ -4636,7 +4649,7 @@ function repeatPreset(key,anchor){
   return null;
 }
 const REPEAT_PRESETS=['d','wd','w','m','mn','y'];
-function repeatCore(r){const c={...r};delete c.stack;delete c.dueIn;return JSON.stringify(c);}
+function repeatCore(r){const c={...r};delete c.stack;delete c.since;delete c.dueIn;return JSON.stringify(c);}
 function matchRepeatPreset(r,anchor){
   if(!r) return 'none';
   for(const k of REPEAT_PRESETS) if(repeatCore(r)===JSON.stringify(repeatPreset(k,anchor))) return k;
@@ -4719,22 +4732,36 @@ function repeatFromCustom(task){
   if($('#rcFromDone').checked) r.fromDone=true;
   return r;
 }
-/* stacking and the due date distance stay when the pattern changes */
+/* stacking and the due date distance stay when the pattern changes; counting from completion ends stacking */
 function keepRepeatExtras(task,r){
-  if(task.repeat&&task.repeat.stack) r.stack=true;
+  if(task.repeat&&task.repeat.stack&&!r.fromDone){r.stack=true; if(task.repeat.since) r.since=task.repeat.since;}
   const dueIn=repeatDueIn(task); if(dueIn!==undefined) r.dueIn=dueIn;
   return r;
 }
+/* the other open entries of the same series (stacking keeps several open) */
+function seriesMates(task){const s=task.series||task.id;return state.tasks.filter(x=>x!==task&&x.repeat&&(x.series||x.id)===s);}
+/* the repeat belongs to the series: set on any of its open entries, it holds for all of them
+   (only the number of repeats left is each entry's own, unless it was just changed) */
 function setTaskRepeat(task,r){
   leaveExample();
   commit(()=>{
+    const mates=task.repeat?seriesMates(task):[], oldLeft=task.repeat?task.repeat.left:undefined;
     if(r){
-      /* a repeat counts from its own date: the due date if the task has one, else today.
+      /* a repeat counts from its own date: today, whether the due date or the repeat was set first
+         (only a due date already in the past becomes the date itself).
          Without a due date the repeats have none either; with one, each repeat gets it at the same distance */
-      if(!task.repeat||!task.day){task.day=task.day||task.due||localDateStr(); if(task.due&&r.dueIn===undefined) r.dueIn=Math.max(0,dDiff(task.day,task.due));}
+      if(!task.repeat||!task.day){
+        task.day=repeatAnchor(task);
+        if(task.due&&r.dueIn===undefined) r.dueIn=clamp(dDiff(task.day,task.due),0,MAX_REPEAT_DUE_IN);
+      }
       task.repeat=r;
+      for(const m of mates){
+        const mr={...r};
+        if(r.left===oldLeft){if(m.repeat.left!==undefined) mr.left=m.repeat.left; else delete mr.left;}
+        m.repeat=mr;
+      }
     }
-    else{delete task.repeat; delete task.spawned; delete task.day;}
+    else for(const m of [task,...mates]){delete m.repeat; delete m.spawned; delete m.day;}
   },{detail:true});
 }
 function setDetailDay(value){
@@ -5302,6 +5329,8 @@ function setDetailDue(value){
       const r={...task.repeat};
       if(value) r.dueIn=clamp(dDiff(task.day,value),0,MAX_REPEAT_DUE_IN); else delete r.dueIn;
       task.repeat=r;
+      /* the distance holds for the series; the other open entries keep the due date they have */
+      for(const m of seriesMates(task)){const mr={...m.repeat}; if(r.dueIn!==undefined) mr.dueIn=r.dueIn; else delete mr.dueIn; m.repeat=mr;}
     }
     task.due=value||null;
   },{detail:true});
@@ -6218,7 +6247,7 @@ $('#dRepeat').addEventListener('change',onRepeatSelect);
 ['#rcN','#rcF','#rcMonthBy','#rcEnd','#rcUntil','#rcLeft','#rcFromDone'].forEach(sel=>$(sel).addEventListener('change',onRepeatCustomChange));
 ['#rcN','#rcLeft'].forEach(sel=>$(sel).addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();e.target.blur();}}));
 $('#rcDays').addEventListener('click',e=>{const b=e.target.closest('[data-rc-day]');if(!b)return;b.classList.toggle('on');if(!$$('#rcDays button.on').length)b.classList.add('on');onRepeatCustomChange();});
-$('#dRepeatStack').addEventListener('change',e=>{const task=detailTask();if(!task||!task.repeat)return;const r={...task.repeat};if(e.target.checked)r.stack=true;else delete r.stack;setTaskRepeat(task,r);checkRepeats();});
+$('#dRepeatStack').addEventListener('change',e=>{const task=detailTask();if(!task||!task.repeat)return;const r={...task.repeat};if(e.target.checked){r.stack=true;r.since=localDateStr();delete r.fromDone;}else{delete r.stack;delete r.since;}setTaskRepeat(task,r);checkRepeats();});
 $('#dSleepWake').addEventListener('click',()=>{const task=detailTask();if(!task||!task.sleep)return;commit(()=>{delete task.sleep;},{detail:true});});
 $('#dDueClear').addEventListener('click',()=>{$('#dDue').value='';syncDateText('dDue');setDetailDue('');});
 wireDateField('dDue'); wireDateField('dDay'); wireDateField('rcUntil');
