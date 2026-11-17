@@ -17,7 +17,7 @@
 <meta property="og:description" content="Aufgaben nach Wichtigkeit und Dringlichkeit ordnen, mit Fristen, Archiv und einstellbarer Matrixgrösse. Kostenlos, ohne Konto, Daten bleiben im Browser.">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#2f6fed">
-<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='16' height='16' rx='3.5' fill='%23a95fa3'/%3E%3Crect x='24' y='4' width='16' height='16' rx='3.5' fill='%23da3b66'/%3E%3Crect x='44' y='4' width='16' height='16' rx='3.5' fill='%23d93b3b'/%3E%3Crect x='4' y='24' width='16' height='16' rx='3.5' fill='%236d7fad'/%3E%3Crect x='24' y='24' width='16' height='16' rx='3.5' fill='%23ad6f70'/%3E%3Crect x='44' y='24' width='16' height='16' rx='3.5' fill='%23e24b00'/%3E%3Crect x='4' y='44' width='16' height='16' rx='3.5' fill='%230097b5'/%3E%3Crect x='24' y='44' width='16' height='16' rx='3.5' fill='%23708d79'/%3E%3Crect x='44' y='44' width='16' height='16' rx='3.5' fill='%23b5791c'/%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='16' height='16' rx='3.5' fill='%23b5791c'/%3E%3Crect x='24' y='4' width='16' height='16' rx='3.5' fill='%23e24b00'/%3E%3Crect x='44' y='4' width='16' height='16' rx='3.5' fill='%23d93b3b'/%3E%3Crect x='4' y='24' width='16' height='16' rx='3.5' fill='%23708d79'/%3E%3Crect x='24' y='24' width='16' height='16' rx='3.5' fill='%23ad6f70'/%3E%3Crect x='44' y='24' width='16' height='16' rx='3.5' fill='%23da3b66'/%3E%3Crect x='4' y='44' width='16' height='16' rx='3.5' fill='%230097b5'/%3E%3Crect x='24' y='44' width='16' height='16' rx='3.5' fill='%236d7fad'/%3E%3Crect x='44' y='44' width='16' height='16' rx='3.5' fill='%23a95fa3'/%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="icon" id="faviconPng" href="favicon.png" type="image/png" sizes="96x96">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -33,7 +33,7 @@
   --empty:#e1e4ea; --accent-soft:#eef3ff; --ring:#c9d8fb; --danger-line:#f0c4c4;
   --ok:#2e9e4f; --shadow:0 8px 28px rgba(20,28,45,.16);
   --coin-bg:#fff4cc; --coin-line:#e3bd54; --coin-ink:#7a5200; --coin-solid:#c9971d;
-  --imp-low:#2e9d57; --imp-high:#d93b3b; --urg-low:#2f6fd6; --urg-high:#d93b3b;
+  --imp-low:#2f6fd6; --imp-high:#d93b3b; --urg-low:#2e9d57; --urg-high:#d93b3b;
   --tint-cell:5%; --tint-head:26%; --tint-label:14%; --tint-tile:8%;
   color-scheme:light;
 }
@@ -3089,7 +3089,8 @@ function mixColor(low,high,t){
   return `color-mix(in oklab, ${low} ${100-pct}%, ${high})`;
 }
 /* rows: least vertical quantity at the bottom to most at the top; the palette
-   follows the quantity the axis shows (importance green to red, urgency blue to red) */
+   follows the quantity the axis shows (importance blue to red like temperature, urgency green to red
+   like a traffic light, owner 2026-11-17) */
 function axisColor(quantity,t){
   return quantity==='urgency'?mixColor('var(--urg-low)','var(--urg-high)',t):mixColor('var(--imp-low)','var(--imp-high)',t);
 }
@@ -6587,7 +6588,7 @@ function init(){
 }
 /* favicon: always 3x3 in the brand colours, oriented like the matrix (hot corner where the matrix has it) */
 // FAV[i][u]: importance level i and urgency level u, 0 = lowest, 2 = highest
-const FAV=[['#0097b5','#708d79','#b5791c'],['#6d7fad','#ad6f70','#e24b00'],['#a95fa3','#da3b66','#d93b3b']];
+const FAV=[['#0097b5','#6d7fad','#a95fa3'],['#708d79','#ad6f70','#da3b66'],['#b5791c','#e24b00','#d93b3b']];
 let favKey='';
 function updateFavicon(){
   const key=[!!state.swapped,!!state.flipX,!!state.flipY].join();

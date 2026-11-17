@@ -1,5 +1,5 @@
 /* Service worker: loads the newest version from the network, falls back to the cache offline. */
-const CACHE = 'em-v2';
+const CACHE = 'em-v3';
 const CORE = ['./', 'manifest.webmanifest', 'favicon.svg', 'favicon.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

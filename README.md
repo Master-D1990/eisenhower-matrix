@@ -20,7 +20,7 @@ The Eisenhower matrix sorts tasks by two questions: **how important** is it, and
 ### What can the tool do?
 
 - **Adjustable size:** 2×2 classic, 3×3 recommended, 4×4 and 5×5, or your own, e.g. 4×1 for importance only. When you change the size, every task keeps its position and comes back to its old field when you change back.
-- **Axes like a chart:** importance upwards (green to red), urgency to the right (blue to red). Swap the axes or reverse a direction, e.g. "urgent" on the left as in the classic scheme. Field names and levels can be renamed by double-click.
+- **Axes like a chart:** importance upwards (blue to red, like temperature), urgency to the right (green to red, like a traffic light). Swap the axes or reverse a direction, e.g. "urgent" on the left as in the classic scheme. Field names and levels can be renamed by double-click.
 - **Tasks:** add them with **+** in the field, move them by drag & drop, open them for a description, due date, labels and more. Overdue and soon-due dates are highlighted.
 - **Inbox:** jot something down without sorting it yet, sort it in later. Can be switched off.
 - **Archive:** done tasks go to the archive, from where you can restore them.
@@ -80,7 +80,7 @@ Die Eisenhower-Matrix ordnet Aufgaben nach zwei Fragen: **Wie wichtig** ist sie,
 ### Was kann das Tool?
 
 - **Einstellbare Grösse:** 2×2 klassisch, 3×3 empfohlen, 4×4 und 5×5 oder eigene Formate, etwa 4×1 nur für die Wichtigkeit. Beim Umstellen merkt sich jede Aufgabe ihre Lage und kommt beim Zurückstellen wieder ins alte Feld.
-- **Achsen wie im Diagramm:** Wichtigkeit nach oben (grün nach rot), Dringlichkeit nach rechts (blau nach rot). Du kannst die Achsen tauschen oder eine Richtung umkehren, etwa „dringend“ links wie im klassischen Schema. Feldnamen und Stufen änderst du per Doppelklick.
+- **Achsen wie im Diagramm:** Wichtigkeit nach oben (blau nach rot, wie Temperatur), Dringlichkeit nach rechts (grün nach rot, wie eine Ampel). Du kannst die Achsen tauschen oder eine Richtung umkehren, etwa „dringend“ links wie im klassischen Schema. Feldnamen und Stufen änderst du per Doppelklick.
 - **Aufgaben:** mit **+** direkt im Feld anlegen, per Drag & Drop verschieben, öffnen für Beschreibung, Frist, Labels und mehr. Überfällige und bald fällige Fristen sind markiert.
 - **Ablage:** schnell etwas notieren, ohne es gleich einzuordnen, und später einsortieren. Lässt sich ausschalten.
 - **Archiv:** Erledigtes wandert ins Archiv und lässt sich von dort wiederherstellen.
